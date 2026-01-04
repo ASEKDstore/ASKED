@@ -139,6 +139,28 @@ export interface Order {
   }>;
 }
 
+export interface OrderListItem {
+  id: string;
+  userId: string;
+  status: 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED';
+  totalAmount: number;
+  currency: string;
+  customerName: string;
+  customerPhone: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OrdersListResponse {
+  items: OrderListItem[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export const api = {
   async getMe(initData: string | null): Promise<User> {
     return request<User>('/users/me', {
@@ -191,6 +213,37 @@ export const api = {
       method: 'POST',
       initData,
       body: JSON.stringify(order),
+    });
+  },
+
+  // Admin endpoints
+  async getAdminMe(initData: string | null): Promise<{
+    user: {
+      id: string;
+      telegramId: string;
+      username: string | null;
+      firstName: string | null;
+      lastName: string | null;
+    };
+    role: 'OWNER' | 'MANAGER';
+  }> {
+    return request('/admin/me', {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getAdminOrders(initData: string | null): Promise<OrdersListResponse> {
+    return request<OrdersListResponse>('/admin/orders', {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getAdminProducts(initData: string | null): Promise<ProductsListResponse> {
+    return request<ProductsListResponse>('/admin/products', {
+      method: 'GET',
+      initData,
     });
   },
 };
