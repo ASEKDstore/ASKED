@@ -34,8 +34,7 @@ pnpm install
 
 ### apps/api/.env
 
-Создайте файл `apps/api/.env`:
-
+**Для локальной разработки:**
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/asked_db?schema=public"
 PORT=3001
@@ -44,14 +43,30 @@ TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 TELEGRAM_AUTH_MAX_AGE_SEC=86400
 ```
 
+**Для production на Render:**
+```env
+DATABASE_URL="postgresql://asked_postgre_user:95V87ZoCCeT7ocNVq4XNWsywyjtAz3Bx@dpg-d5dcnvali9vc73dg0do0-a/asked_postgre"
+PORT=3001
+FRONTEND_URL=https://asked-web.onrender.com
+TELEGRAM_BOT_TOKEN=8502780617:AAGir8NDDJuUqm1GTXiXpcH1tQUhJj2qT3M
+TELEGRAM_AUTH_MAX_AGE_SEC=86400
+```
+
 ### apps/web/.env.local
 
-Создайте файл `apps/web/.env.local`:
-
+**Для локальной разработки:**
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_APP_VERSION=1.0.0
 ```
+
+**Для production на Render:**
+```env
+NEXT_PUBLIC_API_URL=https://asked-api.onrender.com
+NEXT_PUBLIC_APP_VERSION=1.0.0
+```
+
+> 📝 **Примечание:** Подробная инструкция по настройке production окружения находится в [PRODUCTION_ENV.md](./PRODUCTION_ENV.md)
 
 ### apps/bot/.env
 
