@@ -40,6 +40,11 @@ async function request<T>(
     const response = await fetch(url, {
       ...fetchOptions,
       headers,
+      body: fetchOptions.body
+        ? typeof fetchOptions.body === 'string'
+          ? fetchOptions.body
+          : JSON.stringify(fetchOptions.body)
+        : undefined,
     });
 
     if (!response.ok) {
@@ -79,6 +84,61 @@ export interface User {
   photoUrl: string | null;
 }
 
+export interface Product {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number;
+  currency: string;
+  status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+  stock: number;
+  images: Array<{ id: string; url: string; sort: number }>;
+  categories: Array<{ id: string; name: string; slug: string }>;
+  tags: Array<{ id: string; name: string; slug: string }>;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface ProductsListResponse {
+  items: Product[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateOrderDto {
+  customerName: string;
+  customerPhone: string;
+  customerAddress?: string;
+  comment?: string;
+  items: Array<{ productId: string; qty: number }>;
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  status: 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED';
+  totalAmount: number;
+  currency: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string | null;
+  comment: string | null;
+  paymentMethod: 'MANAGER';
+  createdAt: Date;
+  updatedAt: Date;
+  items: Array<{
+    id: string;
+    productId: string;
+    titleSnapshot: string;
+    priceSnapshot: number;
+    qty: number;
+  }>;
+}
+
 export const api = {
   async getMe(initData: string | null): Promise<User> {
     return request<User>('/users/me', {
@@ -90,6 +150,47 @@ export const api = {
   async getHealth(): Promise<{ status: string; timestamp: string }> {
     return request<{ status: string; timestamp: string }>('/health', {
       method: 'GET',
+    });
+  },
+
+  async getProducts(params?: {
+    q?: string;
+    category?: string;
+    tags?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: 'new' | 'price_asc' | 'price_desc';
+    page?: number;
+    pageSize?: number;
+  }): Promise<ProductsListResponse> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const query = searchParams.toString();
+    return request<ProductsListResponse>(`/products${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  async getProduct(id: string): Promise<Product> {
+    return request<Product>(`/products/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  async createOrder(
+    initData: string | null,
+    order: CreateOrderDto
+  ): Promise<Order> {
+    return request<Order>('/orders', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(order),
     });
   },
 };
