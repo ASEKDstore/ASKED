@@ -1,9 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { ZodExceptionFilter } from './common/filters/zod-exception.filter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  
+  app.useGlobalFilters(new ZodExceptionFilter());
   
   app.useGlobalPipes(
     new ValidationPipe({
