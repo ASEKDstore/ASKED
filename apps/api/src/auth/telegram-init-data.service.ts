@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
-import type { TelegramUser, TelegramInitData } from './types/telegram-user.interface';
+import type { TelegramUser } from './types/telegram-user.interface';
 
 @Injectable()
 export class TelegramInitDataService {

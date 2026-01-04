@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "ASKED miniapp monorepo",
+  "packageManager": "pnpm@10.23.0",
   "scripts": {
     "dev": "concurrently \"pnpm --filter web dev\" \"pnpm --filter api start:dev\"",
     "build": "pnpm -r --filter './apps/*' build",

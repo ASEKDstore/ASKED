@@ -23,8 +23,8 @@ async function bootstrap(): Promise<void> {
   await prismaService.enableShutdownHooks(app);
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
-  console.log(`🚀 API is running on: http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 API is running on: http://0.0.0.0:${port}`);
 }
 
 bootstrap();

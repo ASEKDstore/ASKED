@@ -1,2 +1,2 @@
-export * from './telegram-user.decorator';
+export * from './current-telegram-user.decorator';
 

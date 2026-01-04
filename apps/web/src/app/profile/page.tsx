@@ -1,10 +1,11 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { AlertCircle, User as UserIcon } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 import { useTelegram } from '@/hooks/useTelegram';
 import { api } from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, User as UserIcon } from 'lucide-react';
 
 export default function ProfilePage(): JSX.Element {
   const { initData, isTelegram } = useTelegram();
