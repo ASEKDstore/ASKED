@@ -15,6 +15,24 @@ enum AdminRole {
   MANAGER
 }
 
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  IN_PROGRESS
+  DONE
+  CANCELED
+}
+
+enum PaymentMethod {
+  MANAGER
+}
+
 model User {
   id          String   @id @default(cuid())
   telegramId  String   @unique
@@ -25,6 +43,7 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   admin       Admin?
+  orders      Order[]
 
   @@map("users")
 }
@@ -37,5 +56,106 @@ model Admin {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("admins")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  sort      Int      @default(0)
+  products  ProductCategory[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id       String   @id @default(cuid())
+  name     String
+  slug     String   @unique
+  products ProductTag[]
+
+  @@map("tags")
+}
+
+model Product {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  price       Int
+  currency    String          @default("RUB")
+  status      ProductStatus   @default(DRAFT)
+  stock       Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  categories  ProductCategory[]
+  tags        ProductTag[]
+  images      ProductImage[]
+  orderItems  OrderItem[]
+
+  @@map("products")
+}
+
+model ProductCategory {
+  id         String   @id @default(cuid())
+  productId  String
+  categoryId String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, categoryId])
+  @@map("product_categories")
+}
+
+model ProductTag {
+  id        String  @id @default(cuid())
+  productId String
+  tagId     String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, tagId])
+  @@map("product_tags")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  url       String
+  sort      Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model Order {
+  id             String        @id @default(cuid())
+  userId         String
+  status         OrderStatus   @default(NEW)
+  totalAmount    Int
+  currency       String        @default("RUB")
+  customerName   String
+  customerPhone  String
+  customerAddress String?
+  comment        String?
+  paymentMethod  PaymentMethod @default(MANAGER)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items          OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String  @id @default(cuid())
+  orderId       String
+  productId     String
+  titleSnapshot String
+  priceSnapshot Int
+  qty           Int
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@map("order_items")
 }
 
