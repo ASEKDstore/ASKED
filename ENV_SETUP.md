@@ -58,10 +58,15 @@ NEXT_PUBLIC_APP_VERSION=1.0.0
 Создайте файл `apps/bot/.env`:
 
 ```env
-# Токен Telegram бота
+# Токен Telegram бота (обязательно!)
 # Можно использовать тот же токен, что и в API, или создать отдельного бота
-BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 ```
+
+> ⚠️ **Важно:** 
+> - Бот использует переменную `TELEGRAM_BOT_TOKEN` (не `BOT_TOKEN`)
+> - Если токен отсутствует или пустой, бот корректно завершит работу с кодом 0
+> - Это предотвращает падение worker на Render при отсутствии токена
 
 ---
 

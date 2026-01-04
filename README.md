@@ -70,11 +70,17 @@ NEXT_PUBLIC_APP_VERSION=1.0.0
 
 ### apps/bot/.env
 
-Создайте файл `apps/bot/.env`:
-
+**Для локальной разработки:**
 ```env
-BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 ```
+
+**Для production на Render:**
+```env
+TELEGRAM_BOT_TOKEN=8502780617:AAGir8NDDJuUqm1GTXiXpcH1tQUhJj2qT3M
+```
+
+> ⚠️ **Важно:** Если `TELEGRAM_BOT_TOKEN` отсутствует, бот корректно завершит работу с кодом 0.
 
 ## Запуск
 

@@ -3,7 +3,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const bot = new Bot(process.env.BOT_TOKEN || '');
+const token = process.env.TELEGRAM_BOT_TOKEN;
+
+if (!token || token.trim() === '') {
+  console.error('TELEGRAM_BOT_TOKEN is missing; bot is not started');
+  process.exit(0);
+}
+
+const bot = new Bot(token);
 
 // Handle /start command
 bot.command('start', async (ctx: Context) => {

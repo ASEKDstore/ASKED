@@ -44,8 +44,10 @@ NEXT_PUBLIC_APP_VERSION=1.0.0
 
 ```env
 # Telegram Bot Token
-BOT_TOKEN=8502780617:AAGir8NDDJuUqm1GTXiXpcH1tQUhJj2qT3M
+TELEGRAM_BOT_TOKEN=8502780617:AAGir8NDDJuUqm1GTXiXpcH1tQUhJj2qT3M
 ```
+
+> ⚠️ **Важно:** Если `TELEGRAM_BOT_TOKEN` отсутствует или пустой, бот выведет сообщение "TELEGRAM_BOT_TOKEN is missing; bot is not started" и корректно завершит работу с кодом 0.
 
 ---
 
@@ -69,7 +71,9 @@ BOT_TOKEN=8502780617:AAGir8NDDJuUqm1GTXiXpcH1tQUhJj2qT3M
 ### Для Bot Service:
 1. В Render Dashboard перейдите в настройки вашего Bot Service
 2. Добавьте Environment Variables:
-   - `BOT_TOKEN=8502780617:AAGir8NDDJuUqm1GTXiXpcH1tQUhJj2qT3M`
+   - `TELEGRAM_BOT_TOKEN=8502780617:AAGir8NDDJuUqm1GTXiXpcH1tQUhJj2qT3M`
+
+> ⚠️ **Важно:** Используйте `TELEGRAM_BOT_TOKEN` (не `BOT_TOKEN`). Если токен отсутствует, бот корректно завершит работу.
 
 ---
 
