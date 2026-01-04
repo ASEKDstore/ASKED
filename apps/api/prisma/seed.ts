@@ -5,6 +5,33 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting seed...');
 
+  // Create owner admin user
+  const ownerTelegramId = '930749603';
+  const ownerUser = await prisma.user.upsert({
+    where: { telegramId: ownerTelegramId },
+    update: {},
+    create: {
+      telegramId: ownerTelegramId,
+      username: 'owner',
+      firstName: 'Owner',
+      lastName: 'Admin',
+      photoUrl: null,
+    },
+  });
+
+  await prisma.admin.upsert({
+    where: { userId: ownerUser.id },
+    update: {
+      role: 'OWNER',
+    },
+    create: {
+      userId: ownerUser.id,
+      role: 'OWNER',
+    },
+  });
+
+  console.log('✅ Owner admin created (telegramId: 930749603)');
+
   // Create categories
   const category1 = await prisma.category.upsert({
     where: { slug: 't-shirts' },
