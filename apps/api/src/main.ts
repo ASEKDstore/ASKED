@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -19,8 +18,16 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  const prismaService = app.get(PrismaService);
-  await prismaService.enableShutdownHooks(app);
+  // Handle shutdown signals
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received');
+    await app.close();
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received');
+    await app.close();
+  });
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
