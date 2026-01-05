@@ -4,20 +4,20 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Lock } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTelegram } from '@/hooks/useTelegram';
 import { api } from '@/lib/api';
+import { isInTelegramWebApp } from '@/lib/telegram';
 
 interface AdminGuardProps {
   children: React.ReactNode;
 }
 
 export function AdminGuard({ children }: AdminGuardProps): JSX.Element {
-  const { initData, isTelegram } = useTelegram();
+  const isTelegram = isInTelegramWebApp();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['admin', 'me', initData],
-    queryFn: () => api.getAdminMe(initData),
-    enabled: !!initData && isTelegram,
+    queryKey: ['admin', 'me'],
+    queryFn: () => api.getAdminMe(null), // initData will be added automatically by api client
+    enabled: isTelegram,
     retry: false,
   });
 
@@ -61,6 +61,7 @@ export function AdminGuard({ children }: AdminGuardProps): JSX.Element {
   if (error || !data) {
     const statusCode = (error as { statusCode?: number })?.statusCode;
     
+    // 401 means initData is empty or invalid
     if (statusCode === 401) {
       return (
         <div className="container mx-auto px-4 py-12">
@@ -80,6 +81,7 @@ export function AdminGuard({ children }: AdminGuardProps): JSX.Element {
       );
     }
 
+    // 403 means user doesn't have admin access
     if (statusCode === 403) {
       return (
         <div className="container mx-auto px-4 py-12">

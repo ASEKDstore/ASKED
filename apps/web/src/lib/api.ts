@@ -1,3 +1,5 @@
+import { getInitData } from './telegram';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export interface ApiError {
@@ -30,8 +32,12 @@ async function request<T>(
     ...(fetchOptions.headers as Record<string, string>),
   };
 
-  if (initData) {
-    headers['x-telegram-init-data'] = initData;
+  // Automatically add initData from Telegram WebApp if available
+  const telegramInitData = getInitData();
+  const finalInitData = initData ?? telegramInitData;
+
+  if (finalInitData) {
+    headers['x-telegram-init-data'] = finalInitData;
   }
 
   const url = `${API_BASE_URL}${endpoint}`;
