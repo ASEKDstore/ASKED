@@ -26,7 +26,7 @@ interface DebugInfo {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN || 'ASKED_DEV_ADMIN';
+const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN ?? '';
 
 function AdminGateContent({ children }: AdminGateProps): JSX.Element {
   const searchParams = useSearchParams();
@@ -48,9 +48,19 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
 
   useEffect(() => {
     // TEMP DEV ACCESS (remove after Telegram WebApp enabled)
-    // Check for dev token in query params if Telegram WebApp is not available
-    const tokenParam = searchParams.get('token');
-    const hasValidDevToken = tokenParam === DEV_ADMIN_TOKEN;
+    // TOKEN FIRST: Check dev token before any Telegram checks
+    const token = searchParams.get('token') ?? '';
+    const devToken = DEV_ADMIN_TOKEN;
+    
+    // If valid dev token provided, bypass all Telegram checks
+    if (devToken !== '' && token === devToken) {
+      setTelegramState({ hasWebApp: false, initDataLen: 0 });
+      setAuthStatus('authorized');
+      setIsLoading(false);
+      return;
+    }
+
+    // Otherwise, proceed with Telegram authentication
 
     // Get Telegram WebApp
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,14 +82,6 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
       version: wa?.version ?? '',
     };
     setDebugInfo(debug);
-
-    // TEMP DEV ACCESS — if no Telegram WebApp but valid dev token, allow access
-    if (!wa && hasValidDevToken) {
-      setTelegramState({ hasWebApp: false, initDataLen: 0 });
-      setAuthStatus('authorized');
-      setIsLoading(false);
-      return;
-    }
 
     if (!wa) {
       setTelegramState({ hasWebApp: false, initDataLen: 0 });
@@ -146,6 +148,19 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
           <p className="mt-4 text-gray-600">Проверка доступа...</p>
         </div>
       </div>
+    );
+  }
+
+  // Authorized - show children (check FIRST, before Telegram checks)
+  if (authStatus === 'authorized') {
+    return (
+      <>
+        {children}
+        {/* Diagnostic info (always visible for debugging) */}
+        <div className="fixed bottom-0 left-0 right-0 bg-black/80 text-white text-xs p-2 text-center z-50">
+          TG WebApp: {telegramState.hasWebApp ? 'yes' : 'no'} | initData length: {telegramState.initDataLen}
+        </div>
+      </>
     );
   }
 
@@ -277,19 +292,6 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
           </CardHeader>
         </Card>
       </div>
-    );
-  }
-
-  // Authorized - show children
-  if (authStatus === 'authorized') {
-    return (
-      <>
-        {children}
-        {/* Diagnostic info (always visible for debugging) */}
-        <div className="fixed bottom-0 left-0 right-0 bg-black/80 text-white text-xs p-2 text-center z-50">
-          TG WebApp: {telegramState.hasWebApp ? 'yes' : 'no'} | initData length: {telegramState.initDataLen}
-        </div>
-      </>
     );
   }
 
