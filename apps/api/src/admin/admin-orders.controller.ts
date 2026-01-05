@@ -1,8 +1,8 @@
 import { Controller, Get, Param, Patch, Body, Query, UseGuards } from '@nestjs/common';
 
 import { AdminGuard } from '../auth/admin.guard';
-import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
 import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
+import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
 import { orderQuerySchema } from '../orders/dto/order-query.dto';
 import type { OrderDto, OrdersListResponse } from '../orders/dto/order.dto';
 import { updateOrderStatusSchema } from '../orders/dto/update-order-status.dto';

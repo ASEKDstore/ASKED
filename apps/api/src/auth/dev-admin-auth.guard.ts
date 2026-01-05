@@ -6,15 +6,10 @@ import type { AuthenticatedRequest } from './telegram-auth.guard';
 @Injectable()
 export class DevAdminAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest & { url?: string }>();
 
     const devTokenHeader = request.headers['x-admin-dev-token'];
     const expectedToken = process.env.ADMIN_DEV_TOKEN;
-
-    // If no dev token configured, skip this guard
-    if (!expectedToken || expectedToken.trim() === '') {
-      return false;
-    }
 
     // Handle header as string or array
     const devToken =
@@ -24,8 +19,18 @@ export class DevAdminAuthGuard implements CanActivate {
           ? devTokenHeader[0]
           : null;
 
-    // If token matches, set dev admin mode
-    if (devToken && devToken === expectedToken) {
+    const hasHeader = !!devToken;
+    const tokenMatches = devToken && expectedToken && devToken === expectedToken;
+
+    // TEMP: Log for debugging
+    console.log('DevAdminGuard:', {
+      hasHeader,
+      ok: tokenMatches,
+      path: request.url,
+    });
+
+    // If dev token is configured and matches, set dev admin mode
+    if (expectedToken && expectedToken.trim() !== '' && tokenMatches) {
       // Mark request as dev admin
       (request as any).isDevAdmin = true;
 
@@ -36,11 +41,10 @@ export class DevAdminAuthGuard implements CanActivate {
         lastName: 'Admin',
         username: 'dev_admin',
       } as any;
-
-      return true;
     }
 
-    // Token doesn't match or missing, continue to other guards
-    return false;
+    // Always return true to allow other guards to handle authentication
+    // If isDevAdmin is set, TelegramAuthGuard and AdminGuard will skip their checks
+    return true;
   }
 }
