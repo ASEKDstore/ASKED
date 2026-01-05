@@ -1,8 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ShoppingCart, Search } from 'lucide-react';
+import { ShoppingCart, Search, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { ProductCard } from '@/components/product-card';
@@ -11,6 +12,7 @@ import { api } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
 
 export default function CatalogPage(): JSX.Element {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [sort, setSort] = useState<'new' | 'price_asc' | 'price_desc'>('new');
@@ -49,17 +51,27 @@ export default function CatalogPage(): JSX.Element {
       {/* Header with cart */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Каталог</h1>
-        <Link href="/cart">
-          <Button variant="outline" className="relative">
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            Корзина
-            {itemCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
-                {itemCount}
-              </span>
-            )}
+        <div className="flex items-center gap-2">
+          {/* TODO: remove admin button after menu is ready */}
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/admin')}
+          >
+            <Settings className="w-5 h-5 mr-2" />
+            Админка
           </Button>
-        </Link>
+          <Link href="/cart">
+            <Button variant="outline" className="relative">
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              Корзина
+              {itemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
