@@ -25,6 +25,7 @@ interface DebugInfo {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN || 'ASKED_DEV_ADMIN';
 
 export function AdminGate({ children }: AdminGateProps): JSX.Element {
   const [telegramState, setTelegramState] = useState<TelegramState>({
@@ -44,6 +45,12 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
   });
 
   useEffect(() => {
+    // TEMP DEV ACCESS — remove after Telegram WebApp enabled
+    // Check for dev token in query params if Telegram WebApp is not available
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const tokenParam = urlParams?.get('token') ?? null;
+    const hasValidDevToken = tokenParam === DEV_ADMIN_TOKEN;
+
     // Get Telegram WebApp
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const hasWindow = typeof window !== 'undefined';
@@ -64,6 +71,14 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
       version: wa?.version ?? '',
     };
     setDebugInfo(debug);
+
+    // TEMP DEV ACCESS — if no Telegram WebApp but valid dev token, allow access
+    if (!wa && hasValidDevToken) {
+      setTelegramState({ hasWebApp: false, initDataLen: 0 });
+      setAuthStatus('authorized');
+      setIsLoading(false);
+      return;
+    }
 
     if (!wa) {
       setTelegramState({ hasWebApp: false, initDataLen: 0 });
