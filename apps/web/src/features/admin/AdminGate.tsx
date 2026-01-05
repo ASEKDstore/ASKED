@@ -23,6 +23,9 @@ interface DebugInfo {
   initDataPreview: string;
   platform: string;
   version: string;
+  currentUrl: string;
+  hasTgParams: boolean;
+  tgParamsList: string[];
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -44,6 +47,9 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
     initDataPreview: '',
     platform: '',
     version: '',
+    currentUrl: '',
+    hasTgParams: false,
+    tgParamsList: [],
   });
 
   useEffect(() => {
@@ -72,6 +78,23 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
 
     // Collect debug info
     const initData = wa?.initData ?? '';
+    
+    // Collect URL info
+    const href = hasWindow ? window.location.href : '';
+    let hasTgParams = false;
+    let tgParamsList: string[] = [];
+    
+    if (hasWindow) {
+      try {
+        const url = new URL(href);
+        const params = url.searchParams;
+        tgParamsList = [...params.keys()].filter((k) => k.startsWith('tgWebApp'));
+        hasTgParams = tgParamsList.length > 0;
+      } catch (error) {
+        // Ignore URL parsing errors
+      }
+    }
+    
     const debug: DebugInfo = {
       hasWindow,
       hasTelegramObject: !!telegramObj,
@@ -80,6 +103,9 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
       initDataPreview: initData.length > 0 ? initData.substring(0, 20) : '',
       platform: wa?.platform ?? '',
       version: wa?.version ?? '',
+      currentUrl: href,
+      hasTgParams,
+      tgParamsList,
     };
     setDebugInfo(debug);
 
@@ -179,6 +205,9 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
           <div>initDataPreview: {debugInfo.initDataPreview || '(empty)'}</div>
           <div>platform: {debugInfo.platform || '(empty)'}</div>
           <div>version: {debugInfo.version || '(empty)'}</div>
+          <div>currentUrl: {debugInfo.currentUrl || '(empty)'}</div>
+          <div>hasTgParams: {debugInfo.hasTgParams ? 'true' : 'false'}</div>
+          <div>tgParamsList: {debugInfo.tgParamsList.length > 0 ? debugInfo.tgParamsList.join(', ') : '(none)'}</div>
         </div>
       </CardContent>
     </Card>
