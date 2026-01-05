@@ -24,6 +24,10 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:migrate:status": "prisma migrate status",
+    "db:seed": "prisma db seed",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -75,6 +79,7 @@
     "testEnvironment": "node"
   },
   "prisma": {
+    "schema": "prisma/schema.prisma",
     "seed": "ts-node prisma/seed.ts"
   }
 }

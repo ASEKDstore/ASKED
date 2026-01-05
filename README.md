@@ -125,6 +125,16 @@ pnpm --filter api prisma:migrate
 pnpm --filter api prisma:generate
 ```
 
+#### Render Migrations
+
+На Render миграции применяются автоматически через Pre-Deploy Command:
+
+```
+pnpm --filter api db:migrate:deploy
+```
+
+Это применит все pending миграции перед каждым деплоем.
+
 ### Сборка
 
 Сборка всех приложений:
