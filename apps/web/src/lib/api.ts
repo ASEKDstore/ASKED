@@ -353,5 +353,67 @@ export const api = {
       return [];
     }
   },
+
+  // Admin Categories
+  async getAdminCategories(initData: string | null): Promise<Category[]> {
+    return request<Category[]>('/admin/categories', {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async createAdminCategory(initData: string | null, category: { name: string; slug: string; sort?: number }): Promise<Category> {
+    return request<Category>('/admin/categories', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(category),
+    });
+  },
+
+  async updateAdminCategory(initData: string | null, id: string, category: { name?: string; slug?: string; sort?: number }): Promise<Category> {
+    return request<Category>(`/admin/categories/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(category),
+    });
+  },
+
+  async deleteAdminCategory(initData: string | null, id: string): Promise<void> {
+    return request<void>(`/admin/categories/${id}`, {
+      method: 'DELETE',
+      initData,
+    });
+  },
+
+  // Admin Tags
+  async getAdminTags(initData: string | null): Promise<Tag[]> {
+    return request<Tag[]>('/admin/tags', {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async createAdminTag(initData: string | null, tag: { name: string; slug: string }): Promise<Tag> {
+    return request<Tag>('/admin/tags', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(tag),
+    });
+  },
+
+  async updateAdminTag(initData: string | null, id: string, tag: { name?: string; slug?: string }): Promise<Tag> {
+    return request<Tag>(`/admin/tags/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(tag),
+    });
+  },
+
+  async deleteAdminTag(initData: string | null, id: string): Promise<void> {
+    return request<void>(`/admin/tags/${id}`, {
+      method: 'DELETE',
+      initData,
+    });
+  },
 };
 
