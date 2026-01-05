@@ -14,6 +14,16 @@ interface TelegramState {
   initDataLen: number;
 }
 
+interface DebugInfo {
+  hasWindow: boolean;
+  hasTelegramObject: boolean;
+  hasWebApp: boolean;
+  initDataLength: number;
+  initDataPreview: string;
+  platform: string;
+  version: string;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export function AdminGate({ children }: AdminGateProps): JSX.Element {
@@ -23,11 +33,37 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
   });
   const [authStatus, setAuthStatus] = useState<'checking' | 'authorized' | 'unauthorized' | 'forbidden' | 'error'>('checking');
   const [isLoading, setIsLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<DebugInfo>({
+    hasWindow: false,
+    hasTelegramObject: false,
+    hasWebApp: false,
+    initDataLength: 0,
+    initDataPreview: '',
+    platform: '',
+    version: '',
+  });
 
   useEffect(() => {
     // Get Telegram WebApp
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const wa = typeof window !== 'undefined' ? (window as any).Telegram?.WebApp : null;
+    const hasWindow = typeof window !== 'undefined';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const telegramObj = hasWindow ? (window as any).Telegram : null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const wa = telegramObj?.WebApp ?? null;
+
+    // Collect debug info
+    const initData = wa?.initData ?? '';
+    const debug: DebugInfo = {
+      hasWindow,
+      hasTelegramObject: !!telegramObj,
+      hasWebApp: !!wa,
+      initDataLength: initData.length,
+      initDataPreview: initData.length > 0 ? initData.substring(0, 20) : '',
+      platform: wa?.platform ?? '',
+      version: wa?.version ?? '',
+    };
+    setDebugInfo(debug);
 
     if (!wa) {
       setTelegramState({ hasWebApp: false, initDataLen: 0 });
@@ -44,9 +80,7 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
       console.error('[AdminGate] Error initializing Telegram WebApp:', error);
     }
 
-    // Get initData
-    const initData = wa.initData ?? '';
-
+    // Get initData (already collected in debug info above)
     setTelegramState({
       hasWebApp: true,
       initDataLen: initData.length,
@@ -99,6 +133,26 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
     );
   }
 
+  // Helper function to render debug panel
+  const renderDebugPanel = () => (
+    <Card className="mt-4 bg-gray-100 border-gray-300">
+      <CardHeader>
+        <CardTitle className="text-sm">DEBUG Info</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-1 text-xs font-mono">
+          <div>hasWindow: {debugInfo.hasWindow ? 'true' : 'false'}</div>
+          <div>hasTelegramObject: {debugInfo.hasTelegramObject ? 'true' : 'false'}</div>
+          <div>hasWebApp: {debugInfo.hasWebApp ? 'true' : 'false'}</div>
+          <div>initDataLength: {debugInfo.initDataLength}</div>
+          <div>initDataPreview: {debugInfo.initDataPreview || '(empty)'}</div>
+          <div>platform: {debugInfo.platform || '(empty)'}</div>
+          <div>version: {debugInfo.version || '(empty)'}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // Not in Telegram WebApp
   if (!telegramState.hasWebApp) {
     return (
@@ -122,6 +176,7 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
             </div>
           </CardContent>
         </Card>
+        {renderDebugPanel()}
       </div>
     );
   }
@@ -147,6 +202,7 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
             </div>
           </CardContent>
         </Card>
+        {renderDebugPanel()}
       </div>
     );
   }
@@ -167,6 +223,7 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
             </CardDescription>
           </CardHeader>
         </Card>
+        {renderDebugPanel()}
       </div>
     );
   }
