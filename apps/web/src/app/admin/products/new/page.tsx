@@ -62,11 +62,13 @@ export default function NewProductPage(): JSX.Element {
       }
       return api.createAdminProduct(initData, data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
-      // Show success message
+    onSuccess: async (createdProduct) => {
+      // Invalidate and refetch queries
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+      await queryClient.refetchQueries({ queryKey: ['admin', 'products'] });
+      // Show success message with details
       if (typeof window !== 'undefined') {
-        window.alert('Товар успешно создан');
+        window.alert(`Создано: ${createdProduct.title} (${createdProduct.id})`);
       }
       router.push(addTokenToUrl('/admin/products', token));
     },

@@ -56,14 +56,16 @@ export default function AdminTagsPage(): JSX.Element {
       }
       return api.createAdminTag(initData, data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'tags'] });
+    onSuccess: async (createdTag) => {
+      // Invalidate and refetch queries
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'tags'] });
+      await queryClient.refetchQueries({ queryKey: ['admin', 'tags'] });
       setDialogOpen(false);
       resetForm();
       setErrorMessage(null);
-      // Show success message
+      // Show success message with details
       if (typeof window !== 'undefined') {
-        window.alert('Тег успешно создан');
+        window.alert(`Создано: ${createdTag.name} (${createdTag.id})`);
       }
     },
     onError: (error: Error) => {

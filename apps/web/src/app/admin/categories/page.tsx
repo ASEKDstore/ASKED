@@ -56,14 +56,16 @@ export default function AdminCategoriesPage(): JSX.Element {
       }
       return api.createAdminCategory(initData, data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] });
+    onSuccess: async (createdCategory) => {
+      // Invalidate and refetch queries
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] });
+      await queryClient.refetchQueries({ queryKey: ['admin', 'categories'] });
       setDialogOpen(false);
       resetForm();
       setErrorMessage(null);
-      // Show success message
+      // Show success message with details
       if (typeof window !== 'undefined') {
-        window.alert('Категория успешно создана');
+        window.alert(`Создано: ${createdCategory.name} (${createdCategory.id})`);
       }
     },
     onError: (error: Error) => {
@@ -74,8 +76,9 @@ export default function AdminCategoriesPage(): JSX.Element {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: { name?: string; slug?: string; sort?: number } }) =>
       api.updateAdminCategory(initData, id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] });
+      await queryClient.refetchQueries({ queryKey: ['admin', 'categories'] });
       setDialogOpen(false);
       setEditingCategory(null);
       resetForm();
