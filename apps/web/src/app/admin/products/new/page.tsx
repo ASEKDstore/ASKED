@@ -5,8 +5,9 @@ import { useState } from 'react';
 // eslint-disable-next-line import/order
 import { useRouter } from 'next/navigation';
 // eslint-disable-next-line import/order
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,9 @@ export default function NewProductPage(): JSX.Element {
   const router = useRouter();
   const { initData } = useTelegram();
   const token = getTokenFromUrl();
+  const queryClient = useQueryClient();
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<CreateProductDto>({
     title: '',
@@ -48,14 +52,32 @@ export default function NewProductPage(): JSX.Element {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateProductDto) => api.createAdminProduct(initData, data),
+    mutationFn: (data: CreateProductDto) => {
+      // Log in dev mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[CREATE]', {
+          endpoint: '/admin/products',
+          hasDevToken: !!token,
+        });
+      }
+      return api.createAdminProduct(initData, data);
+    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+      // Show success message
+      if (typeof window !== 'undefined') {
+        window.alert('Товар успешно создан');
+      }
       router.push(addTokenToUrl('/admin/products', token));
+    },
+    onError: (error: Error) => {
+      setErrorMessage(error.message || 'Ошибка при создании товара');
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     const images = imageInputs.filter((img) => img.url.trim()).map((img, idx) => ({
       url: img.url.trim(),
       sort: img.sort || idx,
@@ -95,6 +117,12 @@ export default function NewProductPage(): JSX.Element {
       </Button>
 
       <h1 className="text-3xl font-bold mb-8">Создать товар</h1>
+
+      {errorMessage && (
+        <Alert variant="destructive" className="mb-6">
+          {errorMessage}
+        </Alert>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Основное */}

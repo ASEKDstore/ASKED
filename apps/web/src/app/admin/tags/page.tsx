@@ -5,6 +5,7 @@ import { useState } from 'react';
 // eslint-disable-next-line import/order
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -25,6 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useTelegram } from '@/hooks/useTelegram';
+import { getTokenFromUrl } from '@/lib/admin-nav';
 import { api, type Tag } from '@/lib/api';
 
 export default function AdminTagsPage(): JSX.Element {
@@ -35,6 +37,7 @@ export default function AdminTagsPage(): JSX.Element {
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [deletingTag, setDeletingTag] = useState<Tag | null>(null);
   const [formData, setFormData] = useState({ name: '', slug: '' });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'tags', initData],
@@ -43,12 +46,28 @@ export default function AdminTagsPage(): JSX.Element {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string; slug: string }) =>
-      api.createAdminTag(initData, data),
+    mutationFn: (data: { name: string; slug: string }) => {
+      // Log in dev mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[CREATE]', {
+          endpoint: '/admin/tags',
+          hasDevToken: !!getTokenFromUrl(),
+        });
+      }
+      return api.createAdminTag(initData, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'tags'] });
       setDialogOpen(false);
       resetForm();
+      setErrorMessage(null);
+      // Show success message
+      if (typeof window !== 'undefined') {
+        window.alert('Тег успешно создан');
+      }
+    },
+    onError: (error: Error) => {
+      setErrorMessage(error.message || 'Ошибка при создании тега');
     },
   });
 
@@ -98,6 +117,7 @@ export default function AdminTagsPage(): JSX.Element {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     if (editingTag) {
       updateMutation.mutate({
         id: editingTag.id,
@@ -230,6 +250,11 @@ export default function AdminTagsPage(): JSX.Element {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
+            {errorMessage && (
+              <Alert variant="destructive" className="mb-4">
+                {errorMessage}
+              </Alert>
+            )}
             <div className="space-y-4 py-4">
               <div>
                 <label className="block text-sm font-medium mb-2">

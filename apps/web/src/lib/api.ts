@@ -56,8 +56,10 @@ async function request<T>(
   if (isAdminEndpoint && devToken) {
     // In dev mode, use dev token instead of Telegram initData
     headers['x-admin-dev-token'] = devToken;
-  } else {
-    // Normal mode: add Telegram initData
+  }
+  
+  // Always add Telegram initData if available (unless we're in dev mode for admin)
+  if (!(isAdminEndpoint && devToken)) {
     const telegramInitData = getInitData();
     const finalInitData = initData ?? telegramInitData;
 
@@ -67,6 +69,16 @@ async function request<T>(
   }
 
   const url = `${API_BASE_URL}${endpoint}`;
+
+  // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+  // Log in dev mode
+  if (process.env.NODE_ENV === 'development' && isAdminEndpoint) {
+    console.log('[API]', {
+      endpoint,
+      method: fetchOptions.method || 'GET',
+      hasDevToken: !!devToken,
+    });
+  }
 
   try {
     const response = await fetch(url, {
@@ -81,8 +93,9 @@ async function request<T>(
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
+      const errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
       throw new ApiClientError(
-        errorText || `HTTP ${response.status}: ${response.statusText}`,
+        `[${response.status}] ${errorMessage}`,
         response.status
       );
     }

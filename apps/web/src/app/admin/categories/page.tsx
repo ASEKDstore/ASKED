@@ -5,6 +5,7 @@ import { useState } from 'react';
 // eslint-disable-next-line import/order
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -25,6 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useTelegram } from '@/hooks/useTelegram';
+import { getTokenFromUrl } from '@/lib/admin-nav';
 import { api, type Category } from '@/lib/api';
 
 export default function AdminCategoriesPage(): JSX.Element {
@@ -35,6 +37,7 @@ export default function AdminCategoriesPage(): JSX.Element {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({ name: '', slug: '', sort: 0 });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'categories', initData],
@@ -43,12 +46,28 @@ export default function AdminCategoriesPage(): JSX.Element {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string; slug: string; sort?: number }) =>
-      api.createAdminCategory(initData, data),
+    mutationFn: (data: { name: string; slug: string; sort?: number }) => {
+      // Log in dev mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[CREATE]', {
+          endpoint: '/admin/categories',
+          hasDevToken: !!getTokenFromUrl(),
+        });
+      }
+      return api.createAdminCategory(initData, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] });
       setDialogOpen(false);
       resetForm();
+      setErrorMessage(null);
+      // Show success message
+      if (typeof window !== 'undefined') {
+        window.alert('Категория успешно создана');
+      }
+    },
+    onError: (error: Error) => {
+      setErrorMessage(error.message || 'Ошибка при создании категории');
     },
   });
 
@@ -99,6 +118,7 @@ export default function AdminCategoriesPage(): JSX.Element {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     if (editingCategory) {
       updateMutation.mutate({
         id: editingCategory.id,
@@ -239,6 +259,11 @@ export default function AdminCategoriesPage(): JSX.Element {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
+            {errorMessage && (
+              <Alert variant="destructive" className="mb-4">
+                {errorMessage}
+              </Alert>
+            )}
             <div className="space-y-4 py-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
