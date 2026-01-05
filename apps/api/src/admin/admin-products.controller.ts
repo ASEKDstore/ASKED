@@ -9,17 +9,21 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
+
 import { AdminGuard } from '../auth/admin.guard';
+import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
+import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
+import type { ProductDto } from '../products/dto/product.dto';
+
 import { AdminProductsService } from './admin-products.service';
+import type { AdminProductsListResponse } from './dto/admin-product-list-response.dto';
 import { adminProductQuerySchema } from './dto/admin-product-query.dto';
 import { createAdminProductSchema } from './dto/create-admin-product.dto';
 import { updateAdminProductSchema } from './dto/update-admin-product.dto';
-import type { AdminProductsListResponse } from './dto/admin-product-list-response.dto';
-import type { ProductDto } from '../products/dto/product.dto';
 
 @Controller('admin/products')
-@UseGuards(TelegramAuthGuard, AdminGuard)
+// TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+@UseGuards(DevAdminAuthGuard, TelegramAuthGuard, AdminGuard)
 export class AdminProductsController {
   constructor(private readonly adminProductsService: AdminProductsService) {}
 
@@ -41,10 +45,7 @@ export class AdminProductsController {
   }
 
   @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() body: any
-  ): Promise<ProductDto> {
+  async update(@Param('id') id: string, @Body() body: any): Promise<ProductDto> {
     const updateDto = updateAdminProductSchema.parse(body);
     return this.adminProductsService.update(id, updateDto);
   }
@@ -54,5 +55,3 @@ export class AdminProductsController {
     return this.adminProductsService.delete(id);
   }
 }
-
-

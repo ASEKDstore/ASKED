@@ -1,12 +1,10 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
+
 import type { CreateOrderDto } from './dto/create-order.dto';
-import type { OrderDto, OrdersListResponse } from './dto/order.dto';
 import type { OrderQueryDto } from './dto/order-query.dto';
+import type { OrderDto, OrdersListResponse } from './dto/order.dto';
 import type { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
@@ -14,8 +12,7 @@ export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, createOrderDto: CreateOrderDto): Promise<OrderDto> {
-    const { items, customerName, customerPhone, customerAddress, comment } =
-      createOrderDto;
+    const { items, customerName, customerPhone, customerAddress, comment } = createOrderDto;
 
     // Validate products and calculate total
     let totalAmount = 0;
@@ -31,14 +28,12 @@ export class OrdersService {
       }
 
       if (product.status !== 'ACTIVE') {
-        throw new BadRequestException(
-          `Product ${product.title} is not available for ordering`
-        );
+        throw new BadRequestException(`Product ${product.title} is not available for ordering`);
       }
 
       if (product.stock < item.qty) {
         throw new BadRequestException(
-          `Not enough stock for product ${product.title}. Available: ${product.stock}, requested: ${item.qty}`
+          `Not enough stock for product ${product.title}. Available: ${product.stock}, requested: ${item.qty}`,
         );
       }
 
@@ -108,12 +103,7 @@ export class OrdersService {
     const items = orders.map((order) => ({
       id: order.id,
       userId: order.userId,
-      status: order.status as
-        | 'NEW'
-        | 'CONFIRMED'
-        | 'IN_PROGRESS'
-        | 'DONE'
-        | 'CANCELED',
+      status: order.status as 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED',
       totalAmount: order.totalAmount,
       currency: order.currency,
       customerName: order.customerName,
@@ -148,10 +138,7 @@ export class OrdersService {
     return this.mapToDto(order);
   }
 
-  async updateStatus(
-    id: string,
-    updateDto: UpdateOrderStatusDto
-  ): Promise<OrderDto> {
+  async updateStatus(id: string, updateDto: UpdateOrderStatusDto): Promise<OrderDto> {
     const order = await this.prisma.order.findUnique({
       where: { id },
     });
@@ -177,12 +164,7 @@ export class OrdersService {
     return {
       id: order.id,
       userId: order.userId,
-      status: order.status as
-        | 'NEW'
-        | 'CONFIRMED'
-        | 'IN_PROGRESS'
-        | 'DONE'
-        | 'CANCELED',
+      status: order.status as 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED',
       totalAmount: order.totalAmount,
       currency: order.currency,
       customerName: order.customerName,
@@ -202,4 +184,3 @@ export class OrdersService {
     };
   }
 }
-

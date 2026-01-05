@@ -13,11 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useTelegram } from '@/hooks/useTelegram';
+import { addTokenToUrl, getTokenFromUrl } from '@/lib/admin-nav';
 import { api, type CreateProductDto } from '@/lib/api';
 
 export default function NewProductPage(): JSX.Element {
   const router = useRouter();
   const { initData } = useTelegram();
+  const token = getTokenFromUrl();
 
   const [formData, setFormData] = useState<CreateProductDto>({
     title: '',
@@ -48,7 +50,7 @@ export default function NewProductPage(): JSX.Element {
   const createMutation = useMutation({
     mutationFn: (data: CreateProductDto) => api.createAdminProduct(initData, data),
     onSuccess: () => {
-      router.push('/admin/products');
+      router.push(addTokenToUrl('/admin/products', token));
     },
   });
 

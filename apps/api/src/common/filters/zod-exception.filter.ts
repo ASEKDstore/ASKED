@@ -1,8 +1,4 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost } from '@nestjs/common';
 import { Response } from 'express';
 import { ZodError } from 'zod';
 
@@ -24,4 +20,3 @@ export class ZodExceptionFilter implements ExceptionFilter {
     });
   }
 }
-

@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+
 import type { TelegramUser } from '../auth/types/telegram-user.interface';
+import { PrismaService } from '../prisma/prisma.service';
+
 import { userResponseSchema, type UserResponseDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async upsertByTelegramData(
-    telegramUser: TelegramUser
-  ): Promise<UserResponseDto> {
+  async upsertByTelegramData(telegramUser: TelegramUser): Promise<UserResponseDto> {
     const telegramId = telegramUser.id.toString();
 
     const user = await this.prisma.user.upsert({
@@ -42,6 +42,3 @@ export class UsersService {
     });
   }
 }
-
-
-

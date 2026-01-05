@@ -5,7 +5,9 @@ import {
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
+
 import type { AuthenticatedRequest } from './telegram-auth.guard';
 
 @Injectable()
@@ -13,7 +15,15 @@ export class AdminGuard implements CanActivate {
   constructor(private readonly prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = context
+      .switchToHttp()
+      .getRequest<AuthenticatedRequest & { isDevAdmin?: boolean }>();
+
+    // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+    // If dev admin mode is enabled, allow access with OWNER role
+    if (request.isDevAdmin === true) {
+      return true;
+    }
 
     if (!request.user) {
       throw new UnauthorizedException('User not authenticated');
@@ -43,6 +53,3 @@ export class AdminGuard implements CanActivate {
     return true;
   }
 }
-
-
-

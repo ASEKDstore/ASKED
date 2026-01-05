@@ -1,6 +1,8 @@
+import * as crypto from 'crypto';
+
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
+
 import type { TelegramUser } from './types/telegram-user.interface';
 
 @Injectable()
@@ -10,10 +12,7 @@ export class TelegramInitDataService {
 
   constructor(private readonly configService: ConfigService) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN', '');
-    this.authMaxAgeSec = this.configService.get<number>(
-      'TELEGRAM_AUTH_MAX_AGE_SEC',
-      86400
-    );
+    this.authMaxAgeSec = this.configService.get<number>('TELEGRAM_AUTH_MAX_AGE_SEC', 86400);
 
     if (!this.botToken) {
       throw new Error('TELEGRAM_BOT_TOKEN is required');
@@ -42,10 +41,7 @@ export class TelegramInitDataService {
         .join('\n');
 
       // 4. Compute secret_key = HMAC_SHA256(key="WebAppData", msg=TELEGRAM_BOT_TOKEN)
-      const secretKey = crypto
-        .createHmac('sha256', 'WebAppData')
-        .update(this.botToken)
-        .digest();
+      const secretKey = crypto.createHmac('sha256', 'WebAppData').update(this.botToken).digest();
 
       // 5. Compute computed_hash = HMAC_SHA256(key=secret_key, msg=data_check_string) in hex
       const computedHash = crypto
@@ -58,10 +54,7 @@ export class TelegramInitDataService {
         return false;
       }
 
-      return crypto.timingSafeEqual(
-        Buffer.from(computedHash, 'hex'),
-        Buffer.from(hash, 'hex')
-      );
+      return crypto.timingSafeEqual(Buffer.from(computedHash, 'hex'), Buffer.from(hash, 'hex'));
     } catch (error) {
       return false;
     }
@@ -145,6 +138,4 @@ export class TelegramInitDataService {
 
     return user;
   }
-
 }
-

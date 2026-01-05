@@ -1,7 +1,8 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ProductsService } from './products.service';
+
 import { productQuerySchema } from './dto/product-query.dto';
 import type { ProductDto, ProductsListResponse } from './dto/product.dto';
+import { ProductsService } from './products.service';
 
 @Controller('products')
 export class ProductsController {
@@ -18,4 +19,3 @@ export class ProductsController {
     return this.productsService.findOne(id);
   }
 }
-

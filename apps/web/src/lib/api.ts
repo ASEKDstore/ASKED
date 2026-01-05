@@ -1,6 +1,22 @@
 import { getInitData } from './telegram';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN ?? '';
+
+// TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+function getDevTokenFromUrl(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get('token');
+    if (token && DEV_ADMIN_TOKEN !== '' && token === DEV_ADMIN_TOKEN) {
+      return token;
+    }
+  } catch {
+    // Ignore URL parsing errors
+  }
+  return null;
+}
 
 export interface ApiError {
   message: string;
@@ -32,12 +48,22 @@ async function request<T>(
     ...(fetchOptions.headers as Record<string, string>),
   };
 
-  // Automatically add initData from Telegram WebApp if available
-  const telegramInitData = getInitData();
-  const finalInitData = initData ?? telegramInitData;
+  // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+  // Check for dev token in URL for admin endpoints
+  const devToken = getDevTokenFromUrl();
+  const isAdminEndpoint = endpoint.startsWith('/admin');
+  
+  if (isAdminEndpoint && devToken) {
+    // In dev mode, use dev token instead of Telegram initData
+    headers['x-admin-dev-token'] = devToken;
+  } else {
+    // Normal mode: add Telegram initData
+    const telegramInitData = getInitData();
+    const finalInitData = initData ?? telegramInitData;
 
-  if (finalInitData) {
-    headers['x-telegram-init-data'] = finalInitData;
+    if (finalInitData) {
+      headers['x-telegram-init-data'] = finalInitData;
+    }
   }
 
   const url = `${API_BASE_URL}${endpoint}`;

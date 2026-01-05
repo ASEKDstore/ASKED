@@ -12,6 +12,3 @@ export const productQuerySchema = z.object({
 });
 
 export type ProductQueryDto = z.infer<typeof productQuerySchema>;
-
-
-

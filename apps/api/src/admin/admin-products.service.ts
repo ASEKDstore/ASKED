@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
+import type { ProductDto } from '../products/dto/product.dto';
+
+import type { AdminProductsListResponse } from './dto/admin-product-list-response.dto';
+import type { AdminProductQueryDto } from './dto/admin-product-query.dto';
 import type { CreateAdminProductDto } from './dto/create-admin-product.dto';
 import type { UpdateAdminProductDto } from './dto/update-admin-product.dto';
-import type { AdminProductQueryDto } from './dto/admin-product-query.dto';
-import type { AdminProductsListResponse } from './dto/admin-product-list-response.dto';
-import type { ProductDto } from '../products/dto/product.dto';
 
 @Injectable()
 export class AdminProductsService {
@@ -280,4 +282,3 @@ export class AdminProductsService {
     return this.findOne(id);
   }
 }
-

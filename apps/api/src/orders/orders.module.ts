@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+
+import { AuthModule } from '../auth/auth.module';
+import { PrismaModule } from '../prisma/prisma.module';
+import { UsersModule } from '../users/users.module';
+
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
-import { PrismaModule } from '../prisma/prisma.module';
-import { AuthModule } from '../auth/auth.module';
-import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [PrismaModule, AuthModule, UsersModule],
@@ -12,6 +14,3 @@ import { UsersModule } from '../users/users.module';
   exports: [OrdersService],
 })
 export class OrdersModule {}
-
-
-

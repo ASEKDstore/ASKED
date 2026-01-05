@@ -1,11 +1,11 @@
 'use client';
 
 import { Package, Plus, Edit, Archive, Search } from 'lucide-react';
-import { useState } from 'react';
-// eslint-disable-next-line import/order
-import { useRouter } from 'next/navigation';
 // eslint-disable-next-line import/order
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+// eslint-disable-next-line import/order
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useTelegram } from '@/hooks/useTelegram';
+import { addTokenToUrl, getTokenFromUrl } from '@/lib/admin-nav';
 import { api } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 
@@ -48,6 +49,7 @@ export default function AdminProductsPage(): JSX.Element {
   const router = useRouter();
   const { initData } = useTelegram();
   const queryClient = useQueryClient();
+  const token = getTokenFromUrl();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
@@ -165,7 +167,7 @@ export default function AdminProductsPage(): JSX.Element {
                 : 'Добавьте товары через кнопку "Создать товар"'}
             </p>
             {!searchQuery && statusFilter === 'All' && (
-              <Button onClick={() => router.push('/admin/products/new')}>
+              <Button onClick={() => router.push(addTokenToUrl('/admin/products/new', token))}>
                 <Plus className="w-4 h-4 mr-2" />
                 Создать товар
               </Button>
@@ -217,7 +219,7 @@ export default function AdminProductsPage(): JSX.Element {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => router.push(`/admin/products/${product.id}/edit`)}
+                          onClick={() => router.push(addTokenToUrl(`/admin/products/${product.id}/edit`, token))}
                         >
                           <Edit className="w-4 h-4 mr-1" />
                           Редактировать

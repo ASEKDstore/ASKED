@@ -1,11 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
-import type {
-  ProductDto,
-  ProductListItemDto,
-  ProductsListResponse,
-} from './dto/product.dto';
+
 import type { ProductQueryDto } from './dto/product-query.dto';
+import type { ProductDto, ProductListItemDto, ProductsListResponse } from './dto/product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -189,4 +187,3 @@ export class ProductsService {
     };
   }
 }
-

@@ -20,6 +20,3 @@ export interface TelegramInitData {
   auth_date: number;
   hash: string;
 }
-
-
-

@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useTelegram } from '@/hooks/useTelegram';
+import { addTokenToUrl, getTokenFromUrl } from '@/lib/admin-nav';
 import { api, type UpdateProductDto } from '@/lib/api';
 
 export default function EditProductPage(): JSX.Element {
@@ -20,6 +21,7 @@ export default function EditProductPage(): JSX.Element {
   const params = useParams();
   const { initData } = useTelegram();
   const productId = params.id as string;
+  const token = getTokenFromUrl();
 
   const [formData, setFormData] = useState<UpdateProductDto>({
     title: '',
@@ -56,7 +58,7 @@ export default function EditProductPage(): JSX.Element {
   const updateMutation = useMutation({
     mutationFn: (data: UpdateProductDto) => api.updateAdminProduct(initData, productId, data),
     onSuccess: () => {
-      router.push('/admin/products');
+      router.push(addTokenToUrl('/admin/products', token));
     },
   });
 
@@ -134,7 +136,7 @@ export default function EditProductPage(): JSX.Element {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => router.push('/admin/products')}>
+            <Button onClick={() => router.push(addTokenToUrl('/admin/products', token))}>
               Вернуться к списку
             </Button>
           </CardContent>

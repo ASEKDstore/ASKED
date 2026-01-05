@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
+
 import type { CreateTagDto } from './dto/create-tag.dto';
-import type { UpdateTagDto } from './dto/update-tag.dto';
 import type { TagDto } from './dto/tag.dto';
+import type { UpdateTagDto } from './dto/update-tag.dto';
 
 @Injectable()
 export class AdminTagsService {
@@ -111,7 +113,7 @@ export class AdminTagsService {
     // Check if tag has products
     if (existing.products.length > 0) {
       throw new ConflictException(
-        `Cannot delete tag with id ${id} because it has associated products`
+        `Cannot delete tag with id ${id} because it has associated products`,
       );
     }
 
@@ -120,5 +122,3 @@ export class AdminTagsService {
     });
   }
 }
-
-

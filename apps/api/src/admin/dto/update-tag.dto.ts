@@ -6,4 +6,3 @@ export const updateTagSchema = z.object({
 });
 
 export type UpdateTagDto = z.infer<typeof updateTagSchema>;
-

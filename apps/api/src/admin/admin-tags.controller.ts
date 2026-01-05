@@ -10,15 +10,19 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
+
 import { AdminGuard } from '../auth/admin.guard';
+import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
+import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
+
 import { AdminTagsService } from './admin-tags.service';
 import { createTagSchema } from './dto/create-tag.dto';
-import { updateTagSchema } from './dto/update-tag.dto';
 import type { TagDto } from './dto/tag.dto';
+import { updateTagSchema } from './dto/update-tag.dto';
 
 @Controller('admin/tags')
-@UseGuards(TelegramAuthGuard, AdminGuard)
+// TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+@UseGuards(DevAdminAuthGuard, TelegramAuthGuard, AdminGuard)
 export class AdminTagsController {
   constructor(private readonly adminTagsService: AdminTagsService) {}
 
@@ -39,10 +43,7 @@ export class AdminTagsController {
   }
 
   @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() body: any
-  ): Promise<TagDto> {
+  async update(@Param('id') id: string, @Body() body: any): Promise<TagDto> {
     const updateDto = updateTagSchema.parse(body);
     return this.adminTagsService.update(id, updateDto);
   }
@@ -53,5 +54,3 @@ export class AdminTagsController {
     return this.adminTagsService.delete(id);
   }
 }
-
-

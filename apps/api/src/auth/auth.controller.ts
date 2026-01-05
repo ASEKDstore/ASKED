@@ -4,4 +4,3 @@ import { Controller } from '@nestjs/common';
 export class AuthController {
   // Auth endpoints can be added here if needed
 }
-

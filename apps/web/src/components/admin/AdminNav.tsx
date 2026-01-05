@@ -3,8 +3,10 @@
 import { LayoutDashboard, Package, ShoppingBag, FolderTree, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { getTokenFromUrl } from '@/lib/admin-nav';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -15,8 +17,13 @@ const navItems = [
   { href: '/admin/tags', label: 'Теги', icon: Tag },
 ];
 
-export function AdminNav(): JSX.Element {
+function AdminNavContent(): JSX.Element {
   const pathname = usePathname();
+  
+  // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+  // Preserve token in navigation links
+  const token = getTokenFromUrl();
+  const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : '';
 
   return (
     <nav className="border-b bg-white">
@@ -26,8 +33,9 @@ export function AdminNav(): JSX.Element {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
+            const href = `${item.href}${tokenQuery}`;
             return (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={href}>
                 <Button
                   variant={isActive ? 'default' : 'ghost'}
                   className={cn(
@@ -44,6 +52,22 @@ export function AdminNav(): JSX.Element {
         </div>
       </div>
     </nav>
+  );
+}
+
+export function AdminNav(): JSX.Element {
+  return (
+    <Suspense fallback={
+      <nav className="border-b bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold mr-8">Админ-панель</h1>
+          </div>
+        </div>
+      </nav>
+    }>
+      <AdminNavContent />
+    </Suspense>
   );
 }
 

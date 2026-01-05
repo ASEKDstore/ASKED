@@ -49,6 +49,3 @@ export const ordersListResponseSchema = z.object({
 export type OrderDto = z.infer<typeof orderDtoSchema>;
 export type OrderListItemDto = z.infer<typeof orderListItemDtoSchema>;
 export type OrdersListResponse = z.infer<typeof ordersListResponseSchema>;
-
-
-

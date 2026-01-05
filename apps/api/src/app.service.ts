@@ -6,4 +6,3 @@ export class AppService {
     return 'ASKED Miniapp API is running!';
   }
 }
-

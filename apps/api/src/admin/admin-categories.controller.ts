@@ -10,15 +10,19 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
+
 import { AdminGuard } from '../auth/admin.guard';
+import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
+import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
+
 import { AdminCategoriesService } from './admin-categories.service';
+import type { CategoryDto } from './dto/category.dto';
 import { createCategorySchema } from './dto/create-category.dto';
 import { updateCategorySchema } from './dto/update-category.dto';
-import type { CategoryDto } from './dto/category.dto';
 
 @Controller('admin/categories')
-@UseGuards(TelegramAuthGuard, AdminGuard)
+// TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+@UseGuards(DevAdminAuthGuard, TelegramAuthGuard, AdminGuard)
 export class AdminCategoriesController {
   constructor(private readonly adminCategoriesService: AdminCategoriesService) {}
 
@@ -39,10 +43,7 @@ export class AdminCategoriesController {
   }
 
   @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() body: any
-  ): Promise<CategoryDto> {
+  async update(@Param('id') id: string, @Body() body: any): Promise<CategoryDto> {
     const updateDto = updateCategorySchema.parse(body);
     return this.adminCategoriesService.update(id, updateDto);
   }
@@ -53,5 +54,3 @@ export class AdminCategoriesController {
     return this.adminCategoriesService.delete(id);
   }
 }
-
-

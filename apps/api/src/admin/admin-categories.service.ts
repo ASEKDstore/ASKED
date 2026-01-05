@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
+
+import type { CategoryDto } from './dto/category.dto';
 import type { CreateCategoryDto } from './dto/create-category.dto';
 import type { UpdateCategoryDto } from './dto/update-category.dto';
-import type { CategoryDto } from './dto/category.dto';
 
 @Injectable()
 export class AdminCategoriesService {
@@ -116,7 +118,7 @@ export class AdminCategoriesService {
     // Check if category has products
     if (existing.products.length > 0) {
       throw new ConflictException(
-        `Cannot delete category with id ${id} because it has associated products`
+        `Cannot delete category with id ${id} because it has associated products`,
       );
     }
 
@@ -125,5 +127,3 @@ export class AdminCategoriesService {
     });
   }
 }
-
-

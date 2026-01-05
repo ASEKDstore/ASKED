@@ -7,5 +7,3 @@ export const tagDtoSchema = z.object({
 });
 
 export type TagDto = z.infer<typeof tagDtoSchema>;
-
-

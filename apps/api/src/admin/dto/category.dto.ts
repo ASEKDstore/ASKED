@@ -8,5 +8,3 @@ export const categoryDtoSchema = z.object({
 });
 
 export type CategoryDto = z.infer<typeof categoryDtoSchema>;
-
-

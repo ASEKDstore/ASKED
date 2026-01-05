@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { productImageInputSchema } from './create-admin-product.dto';
 
 export const updateAdminProductSchema = z.object({
@@ -14,5 +15,3 @@ export const updateAdminProductSchema = z.object({
 });
 
 export type UpdateAdminProductDto = z.infer<typeof updateAdminProductSchema>;
-
-

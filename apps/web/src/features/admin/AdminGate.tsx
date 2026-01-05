@@ -53,7 +53,7 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
   });
 
   useEffect(() => {
-    // TEMP DEV ACCESS (remove after Telegram WebApp enabled)
+    // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
     // TOKEN FIRST: Check dev token before any Telegram checks
     const token = searchParams.get('token') ?? '';
     const devToken = DEV_ADMIN_TOKEN;
