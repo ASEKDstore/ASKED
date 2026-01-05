@@ -33,10 +33,10 @@ export class AdminProductsService {
     // Count total
     const total = await this.prisma.product.count({ where });
 
-    // Get items (sorted by updatedAt desc)
+    // Get items (sorted by createdAt desc - newest first)
     const products = await this.prisma.product.findMany({
       where,
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {

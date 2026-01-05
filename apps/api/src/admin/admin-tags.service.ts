@@ -11,8 +11,9 @@ export class AdminTagsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(): Promise<TagDto[]> {
+    // Sort by id desc (cuid contains timestamp, newer records have larger ids)
     const tags = await this.prisma.tag.findMany({
-      orderBy: { name: 'asc' },
+      orderBy: { id: 'desc' },
     });
 
     return tags.map((tag) => ({

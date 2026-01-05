@@ -11,8 +11,9 @@ export class AdminCategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(): Promise<CategoryDto[]> {
+    // Sort by id desc (cuid contains timestamp, newer records have larger ids)
     const categories = await this.prisma.category.findMany({
-      orderBy: [{ sort: 'asc' }, { name: 'asc' }],
+      orderBy: { id: 'desc' },
     });
 
     return categories.map((cat) => ({
