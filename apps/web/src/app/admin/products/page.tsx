@@ -119,7 +119,7 @@ export default function AdminProductsPage(): JSX.Element {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Товары</h1>
-        <Button onClick={() => router.push('/admin/products/new')}>
+        <Button onClick={() => router.push(addTokenToUrl('/admin/products/new', token))}>
           <Plus className="w-4 h-4 mr-2" />
           Создать товар
         </Button>
