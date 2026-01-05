@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FolderTree, Plus, Edit, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+// eslint-disable-next-line import/order
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

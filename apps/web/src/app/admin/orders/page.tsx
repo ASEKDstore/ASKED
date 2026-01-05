@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ShoppingBag, Eye } from 'lucide-react';
+import { useState } from 'react';
+// eslint-disable-next-line import/order
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

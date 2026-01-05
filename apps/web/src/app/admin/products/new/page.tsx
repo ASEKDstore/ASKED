@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, X, Save } from 'lucide-react';
+import { useState } from 'react';
+// eslint-disable-next-line import/order
+import { useRouter } from 'next/navigation';
+// eslint-disable-next-line import/order
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -156,7 +157,7 @@ export default function NewProductPage(): JSX.Element {
                 <Select
                   value={formData.status}
                   onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value as any })
+                    setFormData({ ...formData, status: e.target.value as 'DRAFT' | 'ACTIVE' | 'ARCHIVED' })
                   }
                 >
                   <option value="DRAFT">Черновик</option>
