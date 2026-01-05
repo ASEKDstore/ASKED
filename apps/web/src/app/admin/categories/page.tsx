@@ -39,10 +39,15 @@ export default function AdminCategoriesPage(): JSX.Element {
   const [formData, setFormData] = useState({ name: '', slug: '', sort: 0 });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+  // In dev mode, initData might be null, but we still want to load data
+  const token = getTokenFromUrl();
+  const isDevMode = !!token;
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'categories', initData],
     queryFn: () => api.getAdminCategories(initData),
-    enabled: !!initData,
+    enabled: !!initData || isDevMode,
   });
 
   const createMutation = useMutation({

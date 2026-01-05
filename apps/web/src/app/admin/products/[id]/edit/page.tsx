@@ -45,14 +45,20 @@ export default function EditProductPage(): JSX.Element {
     enabled: !!initData && !!productId,
   });
 
+  // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+  // In dev mode, initData might be null, but we still want to load data
+  const isDevMode = !!token;
+
   const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => api.getCategories(),
+    queryKey: ['admin', 'categories', initData],
+    queryFn: () => api.getAdminCategories(initData),
+    enabled: !!initData || isDevMode,
   });
 
   const { data: tags } = useQuery({
-    queryKey: ['tags'],
-    queryFn: () => api.getTags(),
+    queryKey: ['admin', 'tags', initData],
+    queryFn: () => api.getAdminTags(initData),
+    enabled: !!initData || isDevMode,
   });
 
   const updateMutation = useMutation({
