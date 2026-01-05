@@ -1,25 +1,46 @@
-import { Bot, Context } from 'grammy';
 import dotenv from 'dotenv';
+import { Bot, Context, InlineKeyboard } from 'grammy';
 
 dotenv.config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
+const webappUrl = process.env.WEBAPP_URL || 'https://asked-web.onrender.com';
 
+// Protect against empty token
 if (!token || token.trim() === '') {
-  console.error('TELEGRAM_BOT_TOKEN is missing; bot is not started');
-  process.exit(0);
+  console.error('ERROR: TELEGRAM_BOT_TOKEN is missing or empty');
+  console.error('Bot cannot start without a valid token');
+  process.exit(1);
 }
 
 const bot = new Bot(token);
 
 // Handle /start command
 bot.command('start', async (ctx: Context) => {
-  await ctx.reply('👋 Привет! Я бот ASKED Miniapp.');
+  const keyboard = new InlineKeyboard().webApp('Открыть магазин', webappUrl);
+  
+  await ctx.reply('👋 Привет! Я бот ASKED Miniapp.\n\nНажмите кнопку ниже, чтобы открыть магазин:', {
+    reply_markup: keyboard,
+  });
+});
+
+// Handle /admin command
+bot.command('admin', async (ctx: Context) => {
+  const keyboard = new InlineKeyboard().webApp('Админка', `${webappUrl}/admin`);
+  
+  await ctx.reply('Открыть админ-панель:', {
+    reply_markup: keyboard,
+  });
 });
 
 // Handle /help command
 bot.command('help', async (ctx: Context) => {
-  await ctx.reply('Доступные команды:\n/start - Начать работу\n/help - Показать помощь');
+  await ctx.reply(
+    'Доступные команды:\n' +
+    '/start - Открыть магазин\n' +
+    '/admin - Открыть админ-панель\n' +
+    '/help - Показать помощь'
+  );
 });
 
 // Handle all other messages
