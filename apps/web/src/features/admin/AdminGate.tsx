@@ -1,7 +1,8 @@
 'use client';
 
 import { AlertCircle, Lock } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -27,7 +28,8 @@ interface DebugInfo {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN || 'ASKED_DEV_ADMIN';
 
-export function AdminGate({ children }: AdminGateProps): JSX.Element {
+function AdminGateContent({ children }: AdminGateProps): JSX.Element {
+  const searchParams = useSearchParams();
   const [telegramState, setTelegramState] = useState<TelegramState>({
     hasWebApp: false,
     initDataLen: 0,
@@ -45,10 +47,9 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
   });
 
   useEffect(() => {
-    // TEMP DEV ACCESS — remove after Telegram WebApp enabled
+    // TEMP DEV ACCESS (remove after Telegram WebApp enabled)
     // Check for dev token in query params if Telegram WebApp is not available
-    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-    const tokenParam = urlParams?.get('token') ?? null;
+    const tokenParam = searchParams.get('token');
     const hasValidDevToken = tokenParam === DEV_ADMIN_TOKEN;
 
     // Get Telegram WebApp
@@ -134,7 +135,7 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [searchParams]);
 
   // Show loading state
   if (isLoading) {
@@ -293,5 +294,20 @@ export function AdminGate({ children }: AdminGateProps): JSX.Element {
   }
 
   return <>{children}</>;
+}
+
+export function AdminGate({ children }: AdminGateProps): JSX.Element {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+          <p className="mt-4 text-gray-600">Загрузка...</p>
+        </div>
+      </div>
+    }>
+      <AdminGateContent>{children}</AdminGateContent>
+    </Suspense>
+  );
 }
 
