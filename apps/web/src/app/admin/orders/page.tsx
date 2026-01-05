@@ -25,7 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useTelegram } from '@/hooks/useTelegram';
-import { api, type OrderListItem, type Order } from '@/lib/api';
+import { api, type OrderListItem } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 
 const statusLabels: Record<string, string> = {
