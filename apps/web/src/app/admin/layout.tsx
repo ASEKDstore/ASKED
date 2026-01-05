@@ -1,5 +1,7 @@
-import { AdminGuard } from '@/components/admin/AdminGuard';
+'use client';
+
 import { AdminNav } from '@/components/admin/AdminNav';
+import { AdminGate } from '@/features/admin/AdminGate';
 
 export default function AdminLayout({
   children,
@@ -7,12 +9,12 @@ export default function AdminLayout({
   children: React.ReactNode;
 }): JSX.Element {
   return (
-    <AdminGuard>
+    <AdminGate>
       <div className="min-h-screen bg-gray-50">
         <AdminNav />
         <main>{children}</main>
       </div>
-    </AdminGuard>
+    </AdminGate>
   );
 }
 
