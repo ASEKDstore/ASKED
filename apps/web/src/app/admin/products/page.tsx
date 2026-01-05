@@ -1,10 +1,23 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { Package } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { Package, Plus, Edit, Archive, Search } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -30,13 +43,45 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'destructive'> = 
 };
 
 export default function AdminProductsPage(): JSX.Element {
+  const router = useRouter();
   const { initData } = useTelegram();
+  const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [productToArchive, setProductToArchive] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['admin', 'products', initData],
-    queryFn: () => api.getAdminProducts(initData),
+    queryKey: ['admin', 'products', initData, searchQuery, statusFilter],
+    queryFn: () =>
+      api.getAdminProducts(initData, {
+        q: searchQuery || undefined,
+        status: statusFilter !== 'All' ? (statusFilter as 'DRAFT' | 'ACTIVE' | 'ARCHIVED') : undefined,
+        page: 1,
+        pageSize: 50,
+      }),
     enabled: !!initData,
   });
+
+  const archiveMutation = useMutation({
+    mutationFn: (id: string) => api.deleteAdminProduct(initData, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+      setArchiveDialogOpen(false);
+      setProductToArchive(null);
+    },
+  });
+
+  const handleArchive = (id: string) => {
+    setProductToArchive(id);
+    setArchiveDialogOpen(true);
+  };
+
+  const confirmArchive = () => {
+    if (productToArchive) {
+      archiveMutation.mutate(productToArchive);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -64,79 +109,159 @@ export default function AdminProductsPage(): JSX.Element {
     );
   }
 
-  if (!data || data.items.length === 0) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Товары</h1>
+  const products = data?.items || [];
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Товары</h1>
+        <Button onClick={() => router.push('/admin/products/new')}>
+          <Plus className="w-4 h-4 mr-2" />
+          Создать товар
+        </Button>
+      </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Фильтры</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Поиск по названию..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-48"
+            >
+              <option value="All">Все статусы</option>
+              <option value="DRAFT">Черновик</option>
+              <option value="ACTIVE">Активен</option>
+              <option value="ARCHIVED">Архив</option>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {products.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Package className="w-16 h-16 text-gray-400 mb-4" />
             <p className="text-gray-600 text-lg mb-2">Товары отсутствуют</p>
-            <p className="text-gray-500 text-sm">
-              Добавьте товары через админ-панель
+            <p className="text-gray-500 text-sm mb-4">
+              {searchQuery || statusFilter !== 'All'
+                ? 'Попробуйте изменить параметры поиска'
+                : 'Добавьте товары через кнопку "Создать товар"'}
             </p>
+            {!searchQuery && statusFilter === 'All' && (
+              <Button onClick={() => router.push('/admin/products/new')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Создать товар
+              </Button>
+            )}
           </CardContent>
         </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Товары</h1>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Список товаров</CardTitle>
-          <CardDescription>
-            Всего товаров: {data.meta.total}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Название</TableHead>
-                <TableHead>Цена</TableHead>
-                <TableHead>Остаток</TableHead>
-                <TableHead>Статус</TableHead>
-                <TableHead>Категории</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.title}</TableCell>
-                  <TableCell>{formatPrice(product.price)}</TableCell>
-                  <TableCell>{product.stock} шт.</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={statusVariants[product.status] || 'default'}
-                    >
-                      {statusLabels[product.status] || product.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 flex-wrap">
-                      {product.categories.slice(0, 2).map((cat) => (
-                        <Badge key={cat.id} variant="secondary" className="text-xs">
-                          {cat.name}
-                        </Badge>
-                      ))}
-                      {product.categories.length > 2 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{product.categories.length - 2}
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Список товаров</CardTitle>
+            <CardDescription>
+              Всего товаров: {data?.total || 0}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell className="font-medium">{product.title}</TableCell>
+                    <TableCell>{formatPrice(product.price)}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={statusVariants[product.status] || 'default'}
+                      >
+                        {statusLabels[product.status] || product.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {product.updatedAt
+                        ? new Date(product.updatedAt).toLocaleDateString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                          })
+                        : '-'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/admin/products/${product.id}/edit`)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Редактировать
+                        </Button>
+                        {product.status !== 'ARCHIVED' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleArchive(product.id)}
+                          >
+                            <Archive className="w-4 h-4 mr-1" />
+                            Архивировать
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Архивировать товар?</DialogTitle>
+            <DialogDescription>
+              Товар будет перемещен в архив. Вы сможете восстановить его позже.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setArchiveDialogOpen(false)}>
+              Отмена
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmArchive}
+              disabled={archiveMutation.isPending}
+            >
+              {archiveMutation.isPending ? 'Архивирование...' : 'Архивировать'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

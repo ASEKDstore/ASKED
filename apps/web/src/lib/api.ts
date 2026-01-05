@@ -109,6 +109,49 @@ export interface ProductsListResponse {
   };
 }
 
+export interface AdminProductsListResponse {
+  items: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface CreateProductDto {
+  title: string;
+  description?: string;
+  price: number;
+  currency?: string;
+  status?: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+  stock?: number;
+  images?: Array<{ url: string; sort?: number }>;
+  categoryIds?: string[];
+  tagIds?: string[];
+}
+
+export interface UpdateProductDto {
+  title?: string;
+  description?: string | null;
+  price?: number;
+  currency?: string;
+  status?: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+  stock?: number;
+  images?: Array<{ url: string; sort?: number }>;
+  categoryIds?: string[];
+  tagIds?: string[];
+}
+
 export interface CreateOrderDto {
   customerName: string;
   customerPhone: string;
@@ -240,11 +283,75 @@ export const api = {
     });
   },
 
-  async getAdminProducts(initData: string | null): Promise<ProductsListResponse> {
-    return request<ProductsListResponse>('/admin/products', {
+  async getAdminProducts(
+    initData: string | null,
+    params?: { q?: string; status?: 'DRAFT' | 'ACTIVE' | 'ARCHIVED'; page?: number; pageSize?: number }
+  ): Promise<AdminProductsListResponse> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const query = searchParams.toString();
+    return request<AdminProductsListResponse>(`/admin/products${query ? `?${query}` : ''}`, {
       method: 'GET',
       initData,
     });
+  },
+
+  async getAdminProduct(initData: string | null, id: string): Promise<Product> {
+    return request<Product>(`/admin/products/${id}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async createAdminProduct(initData: string | null, product: CreateProductDto): Promise<Product> {
+    return request<Product>('/admin/products', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(product),
+    });
+  },
+
+  async updateAdminProduct(initData: string | null, id: string, product: UpdateProductDto): Promise<Product> {
+    return request<Product>(`/admin/products/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(product),
+    });
+  },
+
+  async deleteAdminProduct(initData: string | null, id: string): Promise<Product> {
+    return request<Product>(`/admin/products/${id}`, {
+      method: 'DELETE',
+      initData,
+    });
+  },
+
+  async getCategories(): Promise<Category[]> {
+    // Try admin endpoint first, fallback to public
+    try {
+      return request<Category[]>('/categories', {
+        method: 'GET',
+      });
+    } catch {
+      return [];
+    }
+  },
+
+  async getTags(): Promise<Tag[]> {
+    // Try admin endpoint first, fallback to public
+    try {
+      return request<Tag[]>('/tags', {
+        method: 'GET',
+      });
+    } catch {
+      return [];
+    }
   },
 };
 
