@@ -276,10 +276,41 @@ export const api = {
     });
   },
 
-  async getAdminOrders(initData: string | null): Promise<OrdersListResponse> {
-    return request<OrdersListResponse>('/admin/orders', {
+  async getAdminOrders(
+    initData: string | null,
+    params?: { status?: 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED'; search?: string; page?: number; pageSize?: number }
+  ): Promise<OrdersListResponse> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const query = searchParams.toString();
+    return request<OrdersListResponse>(`/admin/orders${query ? `?${query}` : ''}`, {
       method: 'GET',
       initData,
+    });
+  },
+
+  async getAdminOrder(initData: string | null, id: string): Promise<Order> {
+    return request<Order>(`/admin/orders/${id}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async updateAdminOrderStatus(
+    initData: string | null,
+    id: string,
+    status: 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED'
+  ): Promise<Order> {
+    return request<Order>(`/admin/orders/${id}/status`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify({ status }),
     });
   },
 
