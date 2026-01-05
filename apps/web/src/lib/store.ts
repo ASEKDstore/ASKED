@@ -12,3 +12,5 @@ export const useAppStore = create<AppState>((set) => ({
   decrement: () => set((state) => ({ count: state.count - 1 })),
 }));
 
+
+

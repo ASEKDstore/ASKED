@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FolderTree, Plus, Edit, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -86,7 +87,7 @@ export default function AdminCategoriesPage(): JSX.Element {
     setFormData({
       name: category.name,
       slug: category.slug,
-      sort: (category as any).sort || 0,
+      sort: (category as Category & { sort?: number }).sort || 0,
     });
     setDialogOpen(true);
   };
@@ -166,7 +167,7 @@ export default function AdminCategoriesPage(): JSX.Element {
             <FolderTree className="w-16 h-16 text-gray-400 mb-4" />
             <p className="text-gray-600 text-lg mb-2">Категории отсутствуют</p>
             <p className="text-gray-500 text-sm mb-4">
-              Добавьте категории через кнопку "Создать категорию"
+              Добавьте категории через кнопку &quot;Создать категорию&quot;
             </p>
             <Button onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" />
@@ -195,7 +196,7 @@ export default function AdminCategoriesPage(): JSX.Element {
                   <TableRow key={category.id}>
                     <TableCell className="font-medium">{category.name}</TableCell>
                     <TableCell className="font-mono text-sm">{category.slug}</TableCell>
-                    <TableCell>{(category as any).sort || 0}</TableCell>
+                    <TableCell>{(category as Category & { sort?: number }).sort || 0}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
@@ -303,7 +304,7 @@ export default function AdminCategoriesPage(): JSX.Element {
           <DialogHeader>
             <DialogTitle>Удалить категорию?</DialogTitle>
             <DialogDescription>
-              Вы уверены, что хотите удалить категорию "{deletingCategory?.name}"?
+              Вы уверены, что хотите удалить категорию &quot;{deletingCategory?.name}&quot;?
               {deletingCategory && (
                 <span className="block mt-2 text-red-600">
                   Внимание: Удаление невозможно, если категория используется в товарах.

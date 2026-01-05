@@ -20,3 +20,4 @@ export const createAdminProductSchema = z.object({
 export type CreateAdminProductDto = z.infer<typeof createAdminProductSchema>;
 export type ProductImageInput = z.infer<typeof productImageInputSchema>;
 
+

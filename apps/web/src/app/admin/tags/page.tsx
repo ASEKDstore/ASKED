@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tag as TagIcon, Plus, Edit, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -163,7 +164,7 @@ export default function AdminTagsPage(): JSX.Element {
             <TagIcon className="w-16 h-16 text-gray-400 mb-4" />
             <p className="text-gray-600 text-lg mb-2">Теги отсутствуют</p>
             <p className="text-gray-500 text-sm mb-4">
-              Добавьте теги через кнопку "Создать тег"
+              Добавьте теги через кнопку &quot;Создать тег&quot;
             </p>
             <Button onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" />
@@ -285,7 +286,7 @@ export default function AdminTagsPage(): JSX.Element {
           <DialogHeader>
             <DialogTitle>Удалить тег?</DialogTitle>
             <DialogDescription>
-              Вы уверены, что хотите удалить тег "{deletingTag?.name}"?
+              Вы уверены, что хотите удалить тег &quot;{deletingTag?.name}&quot;?
               {deletingTag && (
                 <span className="block mt-2 text-red-600">
                   Внимание: Удаление невозможно, если тег используется в товарах.

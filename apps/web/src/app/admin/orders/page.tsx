@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ShoppingBag, Eye } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select } from '@/components/ui/select';
 import {
   Drawer,
   DrawerContent,
@@ -16,6 +16,7 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from '@/components/ui/drawer';
+import { Select } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -55,7 +56,10 @@ export default function AdminOrdersPage(): JSX.Element {
     queryKey: ['admin', 'orders', initData, statusFilter],
     queryFn: () =>
       api.getAdminOrders(initData, {
-        status: statusFilter !== 'All' ? (statusFilter as any) : undefined,
+        status:
+          statusFilter !== 'All'
+            ? (statusFilter as 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED')
+            : undefined,
         page: 1,
         pageSize: 50,
       }),

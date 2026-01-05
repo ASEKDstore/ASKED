@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Plus, X, Save } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useTelegram } from '@/hooks/useTelegram';
 import { api, type UpdateProductDto } from '@/lib/api';
 
@@ -217,7 +218,10 @@ export default function EditProductPage(): JSX.Element {
                 <Select
                   value={formData.status}
                   onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value as any })
+                    setFormData({
+                      ...formData,
+                      status: e.target.value as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
+                    })
                   }
                 >
                   <option value="DRAFT">Черновик</option>
