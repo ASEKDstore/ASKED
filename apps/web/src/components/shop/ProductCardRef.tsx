@@ -1,13 +1,7 @@
 'use client';
 
-import { X } from 'lucide-react';
 import { useState } from 'react';
-
-import type { Product } from '@/lib/api';
-import { useCartStore } from '@/lib/cart-store';
-import { getMainImageUrl, normalizeImageUrl } from '@/lib/image-utils';
-import { formatPrice } from '@/lib/utils';
-
+import { X } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import {
@@ -17,6 +11,10 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from '../ui/drawer';
+import type { Product } from '@/lib/api';
+import { useCartStore } from '@/lib/cart-store';
+import { getMainImageUrl, normalizeImageUrl } from '@/lib/image-utils';
+import { formatPrice } from '@/lib/utils';
 
 interface ProductCardRefProps {
   product: Product;

@@ -1,9 +1,8 @@
 'use client';
 
-import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
@@ -146,6 +145,7 @@ export default function PromoPage(): JSX.Element {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {promo.media.slice(1).map((media) => {
+                if (!media) return null;
                 const normalizedUrl = normalizeImageUrl(media.mediaUrl);
                 return normalizedUrl ? (
                   <div key={media.id} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
