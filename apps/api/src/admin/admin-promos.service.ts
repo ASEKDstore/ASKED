@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 
 import { PrismaService } from '../prisma/prisma.service';
 
-import type { PromoDto, CreatePromoDto, UpdatePromoDto, PromoMediaDto } from './dto/promo.dto';
+import type { PromoDto, CreatePromoDto, UpdatePromoDto } from './dto/promo.dto';
 
 @Injectable()
 export class AdminPromosService {
