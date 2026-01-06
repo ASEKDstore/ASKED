@@ -182,6 +182,83 @@ export interface Tag {
   slug: string;
 }
 
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  mediaType: 'IMAGE' | 'VIDEO';
+  mediaUrl: string;
+  isActive: boolean;
+  sort: number;
+  promoSlug: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PromoMedia {
+  id: string;
+  promoId: string;
+  mediaType: 'IMAGE' | 'VIDEO';
+  mediaUrl: string;
+  sort: number;
+}
+
+export interface Promo {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  isActive: boolean;
+  ctaType: 'PRODUCT' | 'URL';
+  ctaText: string | null;
+  ctaUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  media?: PromoMedia[];
+}
+
+export interface CreateBannerDto {
+  title: string;
+  subtitle?: string | null;
+  mediaType: 'IMAGE' | 'VIDEO';
+  mediaUrl: string;
+  isActive?: boolean;
+  sort?: number;
+  promoSlug: string;
+}
+
+export interface UpdateBannerDto {
+  title?: string;
+  subtitle?: string | null;
+  mediaType?: 'IMAGE' | 'VIDEO';
+  mediaUrl?: string;
+  isActive?: boolean;
+  sort?: number;
+  promoSlug?: string;
+}
+
+export interface CreatePromoDto {
+  slug: string;
+  title: string;
+  description?: string | null;
+  isActive?: boolean;
+  ctaType?: 'PRODUCT' | 'URL';
+  ctaText?: string | null;
+  ctaUrl?: string | null;
+  media?: Array<{ mediaType: 'IMAGE' | 'VIDEO'; mediaUrl: string; sort?: number }>;
+}
+
+export interface UpdatePromoDto {
+  slug?: string;
+  title?: string;
+  description?: string | null;
+  isActive?: boolean;
+  ctaType?: 'PRODUCT' | 'URL';
+  ctaText?: string | null;
+  ctaUrl?: string | null;
+  media?: Array<{ mediaType: 'IMAGE' | 'VIDEO'; mediaUrl: string; sort?: number }>;
+}
+
 export interface CreateProductDto {
   title: string;
   description?: string;
@@ -474,6 +551,97 @@ export const api = {
   async getAdminTags(initData: string | null): Promise<Tag[]> {
     return request<Tag[]>('/admin/tags', {
       method: 'GET',
+      initData,
+    });
+  },
+
+  // Admin Banners
+  async getAdminBanners(
+    initData: string | null,
+    query?: { q?: string; isActive?: boolean; page?: number; pageSize?: number }
+  ): Promise<{ items: Banner[]; total: number; page: number; pageSize: number }> {
+    const searchParams = new URLSearchParams();
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<{ items: Banner[]; total: number; page: number; pageSize: number }>(
+      `/admin/banners${queryString ? `?${queryString}` : ''}`,
+      {
+        method: 'GET',
+        initData,
+      }
+    );
+  },
+
+  async getAdminBanner(initData: string | null, id: string): Promise<Banner> {
+    return request<Banner>(`/admin/banners/${id}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async createAdminBanner(initData: string | null, banner: CreateBannerDto): Promise<Banner> {
+    return request<Banner>('/admin/banners', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(banner),
+    });
+  },
+
+  async updateAdminBanner(initData: string | null, id: string, banner: UpdateBannerDto): Promise<Banner> {
+    return request<Banner>(`/admin/banners/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(banner),
+    });
+  },
+
+  async deleteAdminBanner(initData: string | null, id: string): Promise<void> {
+    return request<void>(`/admin/banners/${id}`, {
+      method: 'DELETE',
+      initData,
+    });
+  },
+
+  // Admin Promos
+  async getAdminPromos(initData: string | null): Promise<Promo[]> {
+    return request<Promo[]>('/admin/promos', {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getAdminPromo(initData: string | null, id: string): Promise<Promo> {
+    return request<Promo>(`/admin/promos/${id}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async createAdminPromo(initData: string | null, promo: CreatePromoDto): Promise<Promo> {
+    return request<Promo>('/admin/promos', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(promo),
+    });
+  },
+
+  async updateAdminPromo(initData: string | null, id: string, promo: UpdatePromoDto): Promise<Promo> {
+    return request<Promo>(`/admin/promos/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(promo),
+    });
+  },
+
+  async deleteAdminPromo(initData: string | null, id: string): Promise<void> {
+    return request<void>(`/admin/promos/${id}`, {
+      method: 'DELETE',
       initData,
     });
   },
