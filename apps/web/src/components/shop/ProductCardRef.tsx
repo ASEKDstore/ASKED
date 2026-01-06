@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, ArrowRight, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useState } from 'react';
 
 import type { Product } from '@/lib/api';
@@ -16,23 +16,22 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from '../ui/drawer';
+import { Badge } from '../ui/badge';
 
 interface ProductCardRefProps {
   product: Product;
-  showBackButton?: boolean;
 }
 
-// Default sizes for fashion items
-const DEFAULT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
-
-export function ProductCardRef({ product, showBackButton = false }: ProductCardRefProps): JSX.Element {
-  const [selectedSize, setSelectedSize] = useState<string>(DEFAULT_SIZES[1] || 'M'); // Default to 'M'
+export function ProductCardRef({ product }: ProductCardRefProps): JSX.Element {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
   const mainImage = getMainImageUrl(product.images);
   const normalizedImage = normalizeImageUrl(mainImage);
+
+  const handleBuyClick = () => {
+    setIsDrawerOpen(true);
+  };
 
   const handleAddToCart = () => {
     addItem({
@@ -41,10 +40,7 @@ export function ProductCardRef({ product, showBackButton = false }: ProductCardR
       price: product.price,
       image: mainImage || undefined,
     });
-  };
-
-  const handleDetailsClick = () => {
-    setIsDrawerOpen(true);
+    setIsDrawerOpen(false);
   };
 
   return (
@@ -78,113 +74,36 @@ export function ProductCardRef({ product, showBackButton = false }: ProductCardR
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         </div>
 
-        {/* Top Actions */}
-        <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between">
-          {showBackButton && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30"
-            >
-              <ArrowRight className="h-4 w-4 rotate-180 text-white" />
-            </Button>
-          )}
-          <div className="ml-auto">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsLiked(!isLiked)}
-              className={`h-9 w-9 rounded-full backdrop-blur-md border ${
-                isLiked
-                  ? 'bg-red-500/80 border-red-400/50 hover:bg-red-500/90'
-                  : 'bg-white/20 border-white/30 hover:bg-white/30'
-              }`}
-            >
-              <Heart className={`h-4 w-4 ${isLiked ? 'fill-white text-white' : 'text-white'}`} />
-            </Button>
-          </div>
-        </div>
-
-        {/* Content Overlay */}
-        <div className="absolute inset-0 flex flex-col justify-between p-6 z-10">
-          {/* Middle Section: Sizes and Title */}
-          <div className="flex-1 flex flex-col justify-center items-center gap-4 mt-auto">
-            {/* Size Chips */}
-            <div className="flex gap-2 flex-wrap justify-center">
-              {DEFAULT_SIZES.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all backdrop-blur-md border ${
-                    selectedSize === size
-                      ? 'bg-white/90 text-gray-900 border-white shadow-lg scale-105'
-                      : 'bg-white/20 text-white border-white/30 hover:bg-white/30'
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-
-            {/* Title */}
-            <h3 className="text-3xl font-bold text-white text-center drop-shadow-lg px-4">
-              {product.title}
-            </h3>
-
-            {/* Details Button */}
-            <Button
-              onClick={handleDetailsClick}
-              className="w-full max-w-xs rounded-full bg-white/90 backdrop-blur-md text-gray-900 hover:bg-white border border-white/50 shadow-lg font-medium"
-            >
-              Подробнее
-            </Button>
-          </div>
-
-          {/* Bottom Panel: Price, Buy, CTA */}
-          <div className="mt-auto">
-            <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-xl">
-              <div className="flex items-center justify-between gap-4">
-                {/* Price */}
-                <div className="flex-1">
-                  <p className="text-white/80 text-xs mb-1">Цена</p>
-                  <p className="text-2xl font-bold text-white">{formatPrice(product.price)}</p>
-                </div>
-
-                {/* Buy Button */}
-                <Button
-                  onClick={handleAddToCart}
-                  disabled={product.stock === 0}
-                  className="flex-1 rounded-full bg-white/90 backdrop-blur-md text-gray-900 hover:bg-white border border-white/50 shadow-lg font-medium disabled:opacity-50"
-                >
-                  {product.stock === 0 ? 'Нет в наличии' : 'Купить'}
-                </Button>
-
-                {/* CTA Arrow */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleAddToCart}
-                  disabled={product.stock === 0}
-                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30 text-white disabled:opacity-50"
-                >
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
+        {/* Bottom Panel: Price and Buy Button */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 p-6">
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-xl">
+            <div className="flex items-center justify-between gap-4">
+              {/* Price */}
+              <div className="flex-1">
+                <p className="text-white/80 text-xs mb-1">Цена</p>
+                <p className="text-2xl font-bold text-white">{formatPrice(product.price)}</p>
               </div>
+
+              {/* Buy Button */}
+              <Button
+                onClick={handleBuyClick}
+                disabled={product.stock === 0}
+                className="flex-1 rounded-full bg-white/90 backdrop-blur-md text-gray-900 hover:bg-white border border-white/50 shadow-lg font-medium disabled:opacity-50"
+              >
+                {product.stock === 0 ? 'Нет в наличии' : 'Купить'}
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Details Drawer */}
+      {/* Product Details Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerContent className="rounded-t-3xl md:rounded-none">
           <div className="flex flex-col h-full">
             {/* Header */}
             <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white border-b">
-              <div className="flex-1">
-                <DrawerTitle className="text-xl font-bold">{product.title}</DrawerTitle>
-                <p className="text-lg font-semibold text-primary mt-1">{formatPrice(product.price)}</p>
-              </div>
+              <DrawerTitle className="text-xl font-bold">{product.title}</DrawerTitle>
               <Button
                 variant="ghost"
                 size="icon"
@@ -208,41 +127,6 @@ export function ProductCardRef({ product, showBackButton = false }: ProductCardR
                 </div>
               )}
 
-              {/* Description */}
-              {product.description && (
-                <div>
-                  <h4 className="text-lg font-semibold mb-2">Описание</h4>
-                  <DrawerDescription className="text-base">{product.description}</DrawerDescription>
-                </div>
-              )}
-
-              {/* Color (Placeholder) */}
-              <div>
-                <h4 className="text-lg font-semibold mb-2">Цвет</h4>
-                <p className="text-gray-600">—</p>
-              </div>
-
-              {/* Sizes */}
-              <div>
-                <h4 className="text-lg font-semibold mb-3">Размер</h4>
-                <div className="flex gap-2 flex-wrap">
-                  {DEFAULT_SIZES.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all border ${
-                        selectedSize === size
-                          ? 'bg-gray-900 text-white border-gray-900'
-                          : 'bg-white text-gray-900 border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-sm text-gray-500 mt-2">Выберите размер</p>
-              </div>
-
               {/* Image Gallery (if multiple images) */}
               {product.images && product.images.length > 1 && (
                 <div>
@@ -264,18 +148,48 @@ export function ProductCardRef({ product, showBackButton = false }: ProductCardR
                 </div>
               )}
 
-              {/* Additional Info */}
+              {/* Description */}
+              {product.description && (
+                <div>
+                  <h4 className="text-lg font-semibold mb-2">Описание</h4>
+                  <DrawerDescription className="text-base">{product.description}</DrawerDescription>
+                </div>
+              )}
+
+              {/* Categories */}
+              {product.categories && product.categories.length > 0 && (
+                <div>
+                  <h4 className="text-lg font-semibold mb-2">Категории</h4>
+                  <div className="flex gap-2 flex-wrap">
+                    {product.categories.map((category) => (
+                      <Badge key={category.id} variant="secondary">
+                        {category.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tags */}
+              {product.tags && product.tags.length > 0 && (
+                <div>
+                  <h4 className="text-lg font-semibold mb-2">Теги</h4>
+                  <div className="flex gap-2 flex-wrap">
+                    {product.tags.map((tag) => (
+                      <Badge key={tag.id} variant="outline">
+                        {tag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Status and Stock */}
               <div>
-                <h4 className="text-lg font-semibold mb-2">Дополнительная информация</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p>Статус: {product.status === 'ACTIVE' ? 'В наличии' : 'Недоступен'}</p>
+                <h4 className="text-lg font-semibold mb-2">Информация</h4>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p>Статус: {product.status === 'ACTIVE' ? 'В наличии' : product.status === 'DRAFT' ? 'Черновик' : 'Архив'}</p>
                   {product.stock !== undefined && <p>Остаток: {product.stock} шт.</p>}
-                  {product.categories.length > 0 && (
-                    <p>
-                      Категории:{' '}
-                      {product.categories.map((c) => c.name).join(', ')}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>
@@ -288,14 +202,11 @@ export function ProductCardRef({ product, showBackButton = false }: ProductCardR
                   <p className="text-2xl font-bold">{formatPrice(product.price)}</p>
                 </div>
                 <Button
-                  onClick={() => {
-                    handleAddToCart();
-                    setIsDrawerOpen(false);
-                  }}
+                  onClick={handleAddToCart}
                   disabled={product.stock === 0}
                   className="flex-1 max-w-xs rounded-full bg-gray-900 text-white hover:bg-gray-800 font-medium disabled:opacity-50"
                 >
-                  {product.stock === 0 ? 'Нет в наличии' : 'Добавить в корзину'}
+                  {product.stock === 0 ? 'Нет в наличии' : 'Купить'}
                 </Button>
               </div>
             </DrawerFooter>
