@@ -73,8 +73,9 @@ export default function AdminProductsPage(): JSX.Element {
 
   const archiveMutation = useMutation({
     mutationFn: (id: string) => api.deleteAdminProduct(initData, id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+      await queryClient.refetchQueries({ queryKey: ['admin', 'products'] });
       setArchiveDialogOpen(false);
       setProductToArchive(null);
     },

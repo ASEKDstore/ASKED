@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Plus, X, Save } from 'lucide-react';
+import { ArrowLeft, Plus, X, Save, ChevronUp, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 // eslint-disable-next-line import/order
 import { useRouter, useParams } from 'next/navigation';
@@ -82,8 +82,10 @@ export default function EditProductPage(): JSX.Element {
       });
 
       if (product.images && product.images.length > 0) {
+        // Sort images by sort field and recalculate sort to be sequential
+        const sortedImages = [...product.images].sort((a, b) => (a.sort || 0) - (b.sort || 0));
         setImageInputs(
-          product.images.map((img) => ({ url: img.url, sort: img.sort || 0 }))
+          sortedImages.map((img, idx) => ({ url: img.url, sort: idx }))
         );
       } else {
         setImageInputs([{ url: '', sort: 0 }]);
@@ -93,10 +95,13 @@ export default function EditProductPage(): JSX.Element {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const images = imageInputs.filter((img) => img.url.trim()).map((img, idx) => ({
-      url: img.url.trim(),
-      sort: img.sort || idx,
-    }));
+    // Filter empty URLs and recalculate sort automatically (0..n-1)
+    const images = imageInputs
+      .filter((img) => img.url.trim())
+      .map((img, idx) => ({
+        url: img.url.trim(),
+        sort: idx, // Auto-calculate sort by order
+      }));
 
     updateMutation.mutate({
       ...formData,
@@ -111,13 +116,31 @@ export default function EditProductPage(): JSX.Element {
   };
 
   const removeImageInput = (index: number) => {
-    setImageInputs(imageInputs.filter((_, i) => i !== index));
+    const updated = imageInputs.filter((_, i) => i !== index);
+    // Recalculate sort after removal
+    setImageInputs(updated.map((img, idx) => ({ ...img, sort: idx })));
   };
 
-  const updateImageInput = (index: number, field: 'url' | 'sort', value: string | number) => {
+  const updateImageInput = (index: number, field: 'url', value: string) => {
     const updated = [...imageInputs];
     updated[index] = { ...updated[index], [field]: value };
     setImageInputs(updated);
+  };
+
+  const moveImageUp = (index: number) => {
+    if (index === 0) return;
+    const updated = [...imageInputs];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+    // Recalculate sort
+    setImageInputs(updated.map((img, idx) => ({ ...img, sort: idx })));
+  };
+
+  const moveImageDown = (index: number) => {
+    if (index === imageInputs.length - 1) return;
+    const updated = [...imageInputs];
+    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+    // Recalculate sort
+    setImageInputs(updated.map((img, idx) => ({ ...img, sort: idx })));
   };
 
   if (isLoadingProduct) {
@@ -302,41 +325,74 @@ export default function EditProductPage(): JSX.Element {
         {/* Images */}
         <Card>
           <CardHeader>
-            <CardTitle>Изображения</CardTitle>
-            <CardDescription>URL изображений товара</CardDescription>
+            <CardTitle>Фото</CardTitle>
+            <CardDescription>URL изображений товара (порядок определяется автоматически)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {imageInputs.map((img, index) => (
-              <div key={index} className="flex gap-2">
-                <Input
-                  type="url"
-                  placeholder="https://example.com/image.jpg"
-                  value={img.url}
-                  onChange={(e) => updateImageInput(index, 'url', e.target.value)}
-                  className="flex-1"
-                />
-                <Input
-                  type="number"
-                  placeholder="Sort"
-                  value={img.sort}
-                  onChange={(e) => updateImageInput(index, 'sort', parseInt(e.target.value) || 0)}
-                  className="w-20"
-                />
-                {imageInputs.length > 1 && (
+              <div key={index} className="flex gap-2 items-start">
+                <div className="flex-1 flex gap-2">
+                  <Input
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={img.url}
+                    onChange={(e) => updateImageInput(index, 'url', e.target.value)}
+                    className="flex-1"
+                  />
+                  {img.url.trim() && (
+                    <div className="w-20 h-20 border rounded overflow-hidden flex-shrink-0">
+                      <img
+                        src={img.url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-xs text-gray-400">Не загрузилось</div>';
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => moveImageUp(index)}
+                    disabled={index === 0}
+                    className="h-8 w-8"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => moveImageDown(index)}
+                    disabled={index === imageInputs.length - 1}
+                    className="h-8 w-8"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
                     onClick={() => removeImageInput(index)}
+                    className="h-8 w-8"
                   >
                     <X className="w-4 h-4" />
                   </Button>
-                )}
+                </div>
               </div>
             ))}
             <Button type="button" variant="outline" onClick={addImageInput}>
               <Plus className="w-4 h-4 mr-2" />
-              Добавить изображение
+              Добавить фото
             </Button>
           </CardContent>
         </Card>
