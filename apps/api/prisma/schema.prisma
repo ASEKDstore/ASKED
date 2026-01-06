@@ -33,6 +33,16 @@ enum PaymentMethod {
   MANAGER
 }
 
+enum BannerMediaType {
+  IMAGE
+  VIDEO
+}
+
+enum PromoCtaType {
+  PRODUCT
+  URL
+}
+
 model User {
   id          String   @id @default(cuid())
   telegramId  String   @unique
@@ -157,5 +167,47 @@ model OrderItem {
   product       Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@map("order_items")
+}
+
+model Banner {
+  id        String         @id @default(cuid())
+  title     String
+  subtitle  String?
+  mediaType BannerMediaType
+  mediaUrl  String
+  isActive  Boolean        @default(true)
+  sort      Int            @default(0)
+  promoSlug String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("banners")
+}
+
+model PromoPage {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  description String?
+  isActive    Boolean       @default(true)
+  ctaType     PromoCtaType  @default(URL)
+  ctaText     String?
+  ctaUrl      String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  media       PromoMedia[]
+
+  @@map("promo_pages")
+}
+
+model PromoMedia {
+  id        String         @id @default(cuid())
+  promoId   String
+  promo     PromoPage      @relation(fields: [promoId], references: [id], onDelete: Cascade)
+  mediaType BannerMediaType
+  mediaUrl  String
+  sort      Int            @default(0)
+
+  @@map("promo_media")
 }
 
