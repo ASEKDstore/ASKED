@@ -8,6 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
+import { getMainImageUrl, normalizeImageUrl } from '@/lib/image-utils';
 import { formatPrice } from '@/lib/utils';
 
 export default function ProductPage(): JSX.Element {
@@ -28,7 +29,7 @@ export default function ProductPage(): JSX.Element {
       productId: product.id,
       title: product.title,
       price: product.price,
-      image: product.images[0]?.url,
+      image: getMainImageUrl(product.images) || undefined,
     });
   };
 
@@ -56,7 +57,11 @@ export default function ProductPage(): JSX.Element {
     );
   }
 
-  const mainImage = product.images[0]?.url;
+  const mainImage = getMainImageUrl(product.images);
+  const otherImages = product.images
+    .filter((img) => img.url !== mainImage)
+    .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+    .slice(0, 4);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -80,6 +85,18 @@ export default function ProductPage(): JSX.Element {
                 fill
                 className="object-cover"
                 priority
+                onError={(e) => {
+                  // Fallback to "No image" on error
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent && !parent.querySelector('.image-fallback')) {
+                    const fallback = document.createElement('div');
+                    fallback.className = 'image-fallback w-full h-full flex items-center justify-center text-gray-400';
+                    fallback.textContent = 'No image';
+                    parent.appendChild(fallback);
+                  }
+                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -87,21 +104,42 @@ export default function ProductPage(): JSX.Element {
               </div>
             )}
           </div>
-          {product.images.length > 1 && (
+          {otherImages.length > 0 && (
             <div className="grid grid-cols-4 gap-2">
-              {product.images.slice(1, 5).map((image) => (
-                <div
-                  key={image.id}
-                  className="aspect-square relative bg-gray-100 rounded overflow-hidden"
-                >
-                  <Image
-                    src={image.url}
-                    alt={product.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              ))}
+              {otherImages.map((image) => {
+                const normalizedUrl = normalizeImageUrl(image.url);
+                return (
+                  <div
+                    key={image.id}
+                    className="aspect-square relative bg-gray-100 rounded overflow-hidden"
+                  >
+                    {normalizedUrl ? (
+                      <Image
+                        src={normalizedUrl}
+                        alt={product.title}
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          // Fallback to "No image" on error
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent && !parent.querySelector('.image-fallback')) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'image-fallback w-full h-full flex items-center justify-center text-gray-400 text-xs';
+                            fallback.textContent = 'No image';
+                            parent.appendChild(fallback);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                        No image
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

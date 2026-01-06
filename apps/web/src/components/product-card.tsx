@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import type { Product } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
+import { getMainImageUrl } from '@/lib/image-utils';
 import { formatPrice } from '@/lib/utils';
 
 import { Button } from './ui/button';
@@ -15,14 +16,14 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps): JSX.Element {
   const addItem = useCartStore((state) => state.addItem);
-  const mainImage = product.images[0]?.url;
+  const mainImage = getMainImageUrl(product.images);
 
   const handleAddToCart = () => {
     addItem({
       productId: product.id,
       title: product.title,
       price: product.price,
-      image: mainImage,
+      image: mainImage || undefined,
     });
   };
 
@@ -37,6 +38,18 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
               fill
               className="object-cover group-hover:scale-105 transition-transform"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              onError={(e) => {
+                // Fallback to "No image" on error
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent && !parent.querySelector('.image-fallback')) {
+                  const fallback = document.createElement('div');
+                  fallback.className = 'image-fallback w-full h-full flex items-center justify-center text-gray-400';
+                  fallback.textContent = 'No image';
+                  parent.appendChild(fallback);
+                }
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
