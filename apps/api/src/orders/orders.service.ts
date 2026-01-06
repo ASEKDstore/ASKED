@@ -11,7 +11,7 @@ import type { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, createOrderDto: CreateOrderDto): Promise<OrderDto> {
+  async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<OrderDto> {
     const { items, customerName, customerPhone, customerAddress, comment } = createOrderDto;
 
     // Validate products and calculate total

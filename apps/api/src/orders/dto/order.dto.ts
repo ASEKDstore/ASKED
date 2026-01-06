@@ -10,7 +10,7 @@ export const orderItemDtoSchema = z.object({
 
 export const orderDtoSchema = z.object({
   id: z.string(),
-  userId: z.string(),
+  userId: z.string().nullable(), // Nullable for guest checkout
   status: z.enum(['NEW', 'CONFIRMED', 'IN_PROGRESS', 'DONE', 'CANCELED']),
   totalAmount: z.number(),
   currency: z.string(),
@@ -26,7 +26,7 @@ export const orderDtoSchema = z.object({
 
 export const orderListItemDtoSchema = z.object({
   id: z.string(),
-  userId: z.string(),
+  userId: z.string().nullable(), // Nullable for guest checkout
   status: z.enum(['NEW', 'CONFIRMED', 'IN_PROGRESS', 'DONE', 'CANCELED']),
   totalAmount: z.number(),
   currency: z.string(),
