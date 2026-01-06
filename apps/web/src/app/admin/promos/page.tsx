@@ -35,7 +35,6 @@ import {
   type Promo,
   type CreatePromoDto,
   type UpdatePromoDto,
-  type PromoMedia,
 } from '@/lib/api';
 
 export default function AdminPromosPage(): JSX.Element {
