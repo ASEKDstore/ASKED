@@ -87,7 +87,7 @@ export default function PromoPage(): JSX.Element {
       </Button>
 
       {/* Hero Section */}
-      {heroMediaUrl && (
+      {heroMedia && heroMediaUrl ? (
         <div className="mb-8">
           <div className="w-full h-96 rounded-2xl overflow-hidden bg-gray-100">
             {heroMedia.mediaType === 'IMAGE' ? (
@@ -117,6 +117,12 @@ export default function PromoPage(): JSX.Element {
                 loop
               />
             )}
+          </div>
+        </div>
+      ) : (
+        <div className="mb-8">
+          <div className="w-full h-96 rounded-2xl bg-muted flex items-center justify-center text-sm opacity-70">
+            Нет медиа
           </div>
         </div>
       )}
