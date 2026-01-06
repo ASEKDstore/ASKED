@@ -55,6 +55,10 @@ export default function AdminProductsPage(): JSX.Element {
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [productToArchive, setProductToArchive] = useState<string | null>(null);
 
+  // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+  // In dev mode, initData might be null, but we still want to load data
+  const isDevMode = !!token;
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'products', initData, searchQuery, statusFilter],
     queryFn: () =>
@@ -64,7 +68,7 @@ export default function AdminProductsPage(): JSX.Element {
         page: 1,
         pageSize: 50,
       }),
-    enabled: !!initData,
+    enabled: !!initData || isDevMode,
   });
 
   const archiveMutation = useMutation({
@@ -99,6 +103,8 @@ export default function AdminProductsPage(): JSX.Element {
   }
 
   if (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStatus = (error as { statusCode?: number })?.statusCode;
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -108,12 +114,34 @@ export default function AdminProductsPage(): JSX.Element {
               Не удалось загрузить товары. Попробуйте обновить страницу.
             </CardDescription>
           </CardHeader>
+          {isDevMode && (
+            <CardContent>
+              <div className="text-sm text-red-600">
+                Debug: {errorStatus ? `[${errorStatus}]` : ''} {errorMessage}
+              </div>
+            </CardContent>
+          )}
         </Card>
       </div>
     );
   }
 
-  const products = data?.items || [];
+  // Parse response: support both array and object formats
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let products: any[] = [];
+  let total = 0;
+  
+  if (data) {
+    if (Array.isArray(data)) {
+      // Format A: array response
+      products = data;
+      total = data.length;
+    } else if (data.items && Array.isArray(data.items)) {
+      // Format B: object with items
+      products = data.items;
+      total = data.total ?? data.items.length;
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -124,6 +152,24 @@ export default function AdminProductsPage(): JSX.Element {
           Создать товар
         </Button>
       </div>
+
+      {/* TEMP DEBUG - remove after Telegram WebApp enabled */}
+      {isDevMode && (
+        <Card className="mb-4 bg-gray-100 border-gray-300">
+          <CardContent className="pt-4">
+            <div className="text-sm font-mono">
+              Debug: Loaded products: {products.length} / total: {total}
+              {error && (
+                <span>
+                  {' '}
+                  | Error:{' '}
+                  {String(error)}
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="mb-6">
         <CardHeader>
@@ -179,7 +225,7 @@ export default function AdminProductsPage(): JSX.Element {
           <CardHeader>
             <CardTitle>Список товаров</CardTitle>
             <CardDescription>
-              Всего товаров: {data?.total || 0}
+              Всего товаров: {total}
             </CardDescription>
           </CardHeader>
           <CardContent>
