@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { BannerCard } from '@/components/shop/BannerCard';
 import { ProductCardRef } from '@/components/shop/ProductCardRef';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
@@ -29,6 +30,11 @@ export default function CatalogPage(): JSX.Element {
         page,
         pageSize: 20,
       }),
+  });
+
+  const { data: banners } = useQuery({
+    queryKey: ['banners'],
+    queryFn: () => api.getBanners(),
   });
 
   const categories = Array.from(
@@ -133,6 +139,19 @@ export default function CatalogPage(): JSX.Element {
           </select>
         </div>
       </div>
+
+      {/* Banners Carousel */}
+      {banners && banners.length > 0 && (
+        <div className="mb-8">
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-4 pb-4">
+              {banners.map((banner) => (
+                <BannerCard key={banner.id} banner={banner} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Products grid */}
       {isLoading ? (

@@ -373,6 +373,20 @@ export const api = {
     });
   },
 
+  // Public Banners
+  async getBanners(): Promise<Banner[]> {
+    return request<Banner[]>('/banners', {
+      method: 'GET',
+    });
+  },
+
+  // Public Promos
+  async getPromoBySlug(slug: string): Promise<Promo> {
+    return request<Promo>(`/promo/${slug}`, {
+      method: 'GET',
+    });
+  },
+
   async getProduct(id: string): Promise<Product> {
     return request<Product>(`/products/${id}`, {
       method: 'GET',
