@@ -274,7 +274,7 @@ export class AdminProductsService {
     }
 
     // Soft delete: set status to ARCHIVED (updatedAt will be automatically updated by Prisma @updatedAt)
-    const updated = await this.prisma.product.update({
+    await this.prisma.product.update({
       where: { id },
       data: { status: 'ARCHIVED' },
     });
