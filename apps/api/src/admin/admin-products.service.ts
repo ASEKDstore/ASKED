@@ -273,12 +273,13 @@ export class AdminProductsService {
       throw new NotFoundException(`Product with id ${id} not found`);
     }
 
-    // Set status to ARCHIVED instead of physical deletion
-    await this.prisma.product.update({
+    // Soft delete: set status to ARCHIVED (updatedAt will be automatically updated by Prisma @updatedAt)
+    const updated = await this.prisma.product.update({
       where: { id },
       data: { status: 'ARCHIVED' },
     });
 
+    // Return full product with relations
     return this.findOne(id);
   }
 }

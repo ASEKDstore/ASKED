@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const productImageInputSchema = z.object({
-  url: z.string().url(),
+  url: z.string().min(1, 'Image URL must not be empty').trim(),
   sort: z.number().int().min(0).default(0),
 });
 
