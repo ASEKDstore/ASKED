@@ -422,16 +422,16 @@ export default function AdminPromosPage(): JSX.Element {
                   {mediaInputs.map((media, index) => (
                     <div key={index} className="flex gap-2 items-start">
                       <div className="flex-1 flex gap-2">
-                        <Select
+                        <select
                           value={media.mediaType}
                           onChange={(e) =>
                             updateMediaInput(index, 'mediaType', e.target.value)
                           }
-                          className="w-32"
+                          className="h-10 w-32 rounded-md border bg-background px-3 text-sm"
                         >
                           <option value="IMAGE">IMAGE</option>
                           <option value="VIDEO">VIDEO</option>
-                        </Select>
+                        </select>
                         <Input
                           type="url"
                           placeholder="https://example.com/media.jpg"
@@ -482,15 +482,16 @@ export default function AdminPromosPage(): JSX.Element {
 
               <div>
                 <label className="block text-sm font-medium mb-2">CTA Type</label>
-                <Select
+                <select
                   value={formData.ctaType}
                   onChange={(e) =>
                     setFormData({ ...formData, ctaType: e.target.value as 'PRODUCT' | 'URL' })
                   }
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 >
                   <option value="URL">URL</option>
                   <option value="PRODUCT">PRODUCT</option>
-                </Select>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">CTA Text</label>
@@ -515,15 +516,16 @@ export default function AdminPromosPage(): JSX.Element {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Active</label>
-                <Select
+                <select
                   value={formData.isActive ? 'true' : 'false'}
                   onChange={(e) =>
                     setFormData({ ...formData, isActive: e.target.value === 'true' })
                   }
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 >
                   <option value="true">Да</option>
                   <option value="false">Нет</option>
-                </Select>
+                </select>
               </div>
             </div>
             <DialogFooter>
