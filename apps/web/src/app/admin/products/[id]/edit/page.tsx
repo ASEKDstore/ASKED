@@ -39,15 +39,15 @@ export default function EditProductPage(): JSX.Element {
     { url: '', sort: 0 },
   ]);
 
-  const { data: product, isLoading: isLoadingProduct } = useQuery({
-    queryKey: ['admin', 'product', productId, initData],
-    queryFn: () => api.getAdminProduct(initData, productId),
-    enabled: !!initData && !!productId,
-  });
-
   // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
   // In dev mode, initData might be null, but we still want to load data
   const isDevMode = !!token;
+
+  const { data: product, isLoading: isLoadingProduct, error: productError } = useQuery({
+    queryKey: ['admin', 'product', productId, initData],
+    queryFn: () => api.getAdminProduct(initData, productId),
+    enabled: (!!initData || isDevMode) && !!productId,
+  });
 
   const { data: categories } = useQuery({
     queryKey: ['admin', 'categories', initData],
@@ -129,6 +129,51 @@ export default function EditProductPage(): JSX.Element {
         </div>
       </div>
     );
+  }
+
+  // Handle errors
+  if (productError) {
+    const statusCode = (productError as { statusCode?: number })?.statusCode;
+    
+    if (statusCode === 403) {
+      return (
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Нет доступа</CardTitle>
+              <CardDescription>
+                У вас нет прав для просмотра этого товара.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => router.push(addTokenToUrl('/admin/products', token))}>
+                Вернуться к списку
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    
+    if (statusCode === 404 || !product) {
+      return (
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Товар не найден</CardTitle>
+              <CardDescription>
+                Товар с указанным ID не найден.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => router.push(addTokenToUrl('/admin/products', token))}>
+                Вернуться к списку
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
   }
 
   if (!product) {
