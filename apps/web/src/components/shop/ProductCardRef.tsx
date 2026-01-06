@@ -8,6 +8,7 @@ import { useCartStore } from '@/lib/cart-store';
 import { getMainImageUrl, normalizeImageUrl } from '@/lib/image-utils';
 import { formatPrice } from '@/lib/utils';
 
+import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import {
   Drawer,
@@ -16,7 +17,6 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from '../ui/drawer';
-import { Badge } from '../ui/badge';
 
 interface ProductCardRefProps {
   product: Product;
