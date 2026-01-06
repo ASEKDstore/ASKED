@@ -70,7 +70,8 @@ function DrawerContent({ className, children, title, ...props }: DrawerContentPr
   return (
     <div
       className={cn(
-        'fixed right-0 top-0 h-full w-full max-w-2xl bg-white shadow-lg overflow-y-auto',
+        'fixed bottom-0 left-0 right-0 top-0 w-full bg-white shadow-2xl overflow-hidden flex flex-col',
+        'md:left-auto md:right-0 md:top-0 md:max-w-2xl md:h-full',
         className
       )}
       {...props}
@@ -87,7 +88,7 @@ function DrawerContent({ className, children, title, ...props }: DrawerContentPr
           </Button>
         </div>
       )}
-      <div className="p-6">{children}</div>
+      <div className="flex-1 overflow-y-auto">{children}</div>
     </div>
   );
 }
