@@ -247,15 +247,15 @@ export default function AdminBannersPage(): JSX.Element {
                 />
               </div>
             </div>
-            <Select
+            <select
               value={isActiveFilter}
               onChange={(e) => setIsActiveFilter(e.target.value)}
-              className="w-48"
+              className="w-48 border border-gray-300 rounded-lg px-3 py-2"
             >
               <option value="All">Все статусы</option>
               <option value="true">Активные</option>
               <option value="false">Неактивные</option>
-            </Select>
+            </select>
           </div>
         </CardContent>
       </Card>
@@ -393,15 +393,16 @@ export default function AdminBannersPage(): JSX.Element {
                 <label className="block text-sm font-medium mb-2">
                   Media Type <span className="text-red-500">*</span>
                 </label>
-                <Select
+                <select
                   value={formData.mediaType}
                   onChange={(e) =>
                     setFormData({ ...formData, mediaType: e.target.value as 'IMAGE' | 'VIDEO' })
                   }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 >
                   <option value="IMAGE">IMAGE</option>
                   <option value="VIDEO">VIDEO</option>
-                </Select>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">
@@ -420,10 +421,10 @@ export default function AdminBannersPage(): JSX.Element {
                   Promo Slug <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-2">
-                  <Select
+                  <select
                     value={formData.promoSlug}
                     onChange={(e) => setFormData({ ...formData, promoSlug: e.target.value })}
-                    className="flex-1"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
                   >
                     <option value="">Выберите промо-страницу</option>
                     {promos?.map((promo) => (
@@ -431,7 +432,7 @@ export default function AdminBannersPage(): JSX.Element {
                         {promo.title} ({promo.slug})
                       </option>
                     ))}
-                  </Select>
+                  </select>
                   <Input
                     value={formData.promoSlug}
                     onChange={(e) => setFormData({ ...formData, promoSlug: e.target.value })}
@@ -454,15 +455,16 @@ export default function AdminBannersPage(): JSX.Element {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Active</label>
-                  <Select
+                  <select
                     value={formData.isActive ? 'true' : 'false'}
                     onChange={(e) =>
                       setFormData({ ...formData, isActive: e.target.value === 'true' })
                     }
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   >
                     <option value="true">Да</option>
                     <option value="false">Нет</option>
-                  </Select>
+                  </select>
                 </div>
               </div>
             </div>
