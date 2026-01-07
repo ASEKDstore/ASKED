@@ -12,10 +12,33 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'ASKED Miniapp',
   description: 'ASKED Miniapp Application',
+  manifest: '/site.webmanifest',
   icons: {
-    icon: '/icon.png',
-    shortcut: '/icon.png',
+    icon: [
+      { url: '/icon.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    shortcut: '/favicon.ico',
     apple: '/icon.png',
+  },
+  openGraph: {
+    title: 'ASKED Miniapp',
+    description: 'ASKED Miniapp Application',
+    images: [
+      {
+        url: '/og.png',
+        width: 1200,
+        height: 1200,
+        alt: 'ASKED',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ASKED Miniapp',
+    description: 'ASKED Miniapp Application',
+    images: ['/og.png'],
   },
 };
 
