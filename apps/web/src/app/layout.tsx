@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import Script from 'next/script';
 
 import { Footer } from '@/components/Footer';
+import { Header } from '@/components/Header';
 import { SplashGate } from '@/components/SplashGate';
 import { Providers } from '@/lib/providers';
 
@@ -58,6 +59,7 @@ export default function RootLayout({
         <Providers>
           <SplashGate>
             <div className="flex flex-col min-h-screen">
+              <Header />
               <main className="flex-1">{children}</main>
               <Footer />
             </div>

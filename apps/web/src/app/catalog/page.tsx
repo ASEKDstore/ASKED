@@ -8,6 +8,7 @@ import { useState } from 'react';
 
 import { BannerCard } from '@/components/shop/BannerCard';
 import { ProductCardRef } from '@/components/shop/ProductCardRef';
+import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
@@ -44,7 +45,10 @@ export default function CatalogPage(): JSX.Element {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div
+        className="container mx-auto px-4 py-8"
+        style={{ paddingTop: `calc(${HEADER_HEIGHT_PX}px + 2rem + env(safe-area-inset-top, 0px))` }}
+      >
         <div className="text-center">
           <p className="text-red-600">Ошибка загрузки товаров</p>
         </div>
@@ -53,7 +57,10 @@ export default function CatalogPage(): JSX.Element {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div
+      className="container mx-auto px-4 py-6"
+      style={{ paddingTop: `calc(${HEADER_HEIGHT_PX}px + 1.5rem + env(safe-area-inset-top, 0px))` }}
+    >
       {/* Header with cart */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Каталог</h1>

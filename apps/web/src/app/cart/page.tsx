@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/lib/cart-store';
 import { formatPrice } from '@/lib/utils';
@@ -19,7 +20,10 @@ export default function CartPage(): JSX.Element {
 
   if (items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      <div
+        className="container mx-auto px-4 py-12"
+        style={{ paddingTop: `calc(${HEADER_HEIGHT_PX}px + 3rem + env(safe-area-inset-top, 0px))` }}
+      >
         <div className="text-center">
           <ShoppingBag className="w-24 h-24 text-gray-300 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Корзина пуста</h2>
@@ -33,7 +37,10 @@ export default function CartPage(): JSX.Element {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div
+      className="container mx-auto px-4 py-6"
+      style={{ paddingTop: `calc(${HEADER_HEIGHT_PX}px + 1.5rem + env(safe-area-inset-top, 0px))` }}
+    >
       <h1 className="text-3xl font-bold mb-6">Корзина</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
+import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { api } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
 import { getMainImageUrl, normalizeImageUrl } from '@/lib/image-utils';
@@ -64,7 +65,10 @@ export default function ProductPage(): JSX.Element {
     .slice(0, 4);
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div
+      className="container mx-auto px-4 py-6"
+      style={{ paddingTop: `calc(${HEADER_HEIGHT_PX}px + 1.5rem + env(safe-area-inset-top, 0px))` }}
+    >
       <Button
         variant="ghost"
         onClick={() => router.back()}
