@@ -15,3 +15,4 @@ export const updateAdminProductSchema = z.object({
 });
 
 export type UpdateAdminProductDto = z.infer<typeof updateAdminProductSchema>;
+

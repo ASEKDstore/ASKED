@@ -9,34 +9,42 @@ export class AdminPromosService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(): Promise<PromoDto[]> {
-    const promos = await this.prisma.promoPage.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        media: {
-          orderBy: { sort: 'asc' },
+    try {
+      const promos = await this.prisma.promoPage.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          media: {
+            orderBy: { sort: 'asc' },
+          },
         },
-      },
-    });
+      });
 
-    return promos.map((promo) => ({
-      id: promo.id,
-      slug: promo.slug,
-      title: promo.title,
-      description: promo.description,
-      isActive: promo.isActive,
-      ctaType: promo.ctaType as 'PRODUCT' | 'URL',
-      ctaText: promo.ctaText,
-      ctaUrl: promo.ctaUrl,
-      createdAt: promo.createdAt,
-      updatedAt: promo.updatedAt,
-      media: promo.media.map((m) => ({
-        id: m.id,
-        promoId: m.promoId,
-        mediaType: m.mediaType as 'IMAGE' | 'VIDEO',
-        mediaUrl: m.mediaUrl,
-        sort: m.sort,
-      })),
-    }));
+      return promos.map((promo) => ({
+        id: promo.id,
+        slug: promo.slug,
+        title: promo.title,
+        description: promo.description,
+        isActive: promo.isActive,
+        ctaType: promo.ctaType as 'PRODUCT' | 'URL',
+        ctaText: promo.ctaText,
+        ctaUrl: promo.ctaUrl,
+        createdAt: promo.createdAt,
+        updatedAt: promo.updatedAt,
+        media: promo.media.map((m) => ({
+          id: m.id,
+          promoId: m.promoId,
+          mediaType: m.mediaType as 'IMAGE' | 'VIDEO',
+          mediaUrl: m.mediaUrl,
+          sort: m.sort,
+        })),
+      }));
+    } catch (error: any) {
+      // Handle case where table doesn't exist yet (P2021 = Table does not exist)
+      if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+        return [];
+      }
+      throw error;
+    }
   }
 
   async findOne(id: string): Promise<PromoDto> {

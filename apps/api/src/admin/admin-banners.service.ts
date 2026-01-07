@@ -24,28 +24,36 @@ export class AdminBannersService {
       where.isActive = isActive;
     }
 
-    const total = await this.prisma.banner.count({ where });
-    const banners = await this.prisma.banner.findMany({
-      where,
-      orderBy: { sort: 'asc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
+    try {
+      const total = await this.prisma.banner.count({ where });
+      const banners = await this.prisma.banner.findMany({
+        where,
+        orderBy: { sort: 'asc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      });
 
-    const items = banners.map((banner) => ({
-      id: banner.id,
-      title: banner.title,
-      subtitle: banner.subtitle,
-      mediaType: banner.mediaType as 'IMAGE' | 'VIDEO',
-      mediaUrl: banner.mediaUrl,
-      isActive: banner.isActive,
-      sort: banner.sort,
-      promoSlug: banner.promoSlug,
-      createdAt: banner.createdAt,
-      updatedAt: banner.updatedAt,
-    }));
+      const items = banners.map((banner) => ({
+        id: banner.id,
+        title: banner.title,
+        subtitle: banner.subtitle,
+        mediaType: banner.mediaType as 'IMAGE' | 'VIDEO',
+        mediaUrl: banner.mediaUrl,
+        isActive: banner.isActive,
+        sort: banner.sort,
+        promoSlug: banner.promoSlug,
+        createdAt: banner.createdAt,
+        updatedAt: banner.updatedAt,
+      }));
 
-    return { items, total, page, pageSize };
+      return { items, total, page, pageSize };
+    } catch (error: any) {
+      // Handle case where table doesn't exist yet (P2021 = Table does not exist)
+      if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+        return { items: [], total: 0, page, pageSize };
+      }
+      throw error;
+    }
   }
 
   async findOne(id: string): Promise<BannerDto> {
@@ -162,4 +170,5 @@ export class AdminBannersService {
     });
   }
 }
+
 
