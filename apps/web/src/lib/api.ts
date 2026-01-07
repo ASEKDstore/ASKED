@@ -682,5 +682,118 @@ export const api = {
       initData,
     });
   },
+
+  // Analytics
+  async getAnalyticsOverview(
+    initData: string | null,
+    query?: { from?: string; to?: string; granularity?: 'hour' | 'day' | 'week' | 'month' }
+  ): Promise<any> {
+    const searchParams = new URLSearchParams();
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<any>(`/admin/analytics/overview${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getTelegramSubscribers(
+    initData: string | null,
+    query?: { from?: string; to?: string; granularity?: 'hour' | 'day' | 'week' | 'month' }
+  ): Promise<any> {
+    const searchParams = new URLSearchParams();
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<any>(`/admin/analytics/telegram/subscribers${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getTopTelegramPosts(
+    initData: string | null,
+    query?: { limit?: number; from?: string; to?: string }
+  ): Promise<any> {
+    const searchParams = new URLSearchParams();
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<any>(`/admin/analytics/telegram/posts/top${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getTopProducts(
+    initData: string | null,
+    query?: { metric?: 'orders' | 'revenue' | 'views'; limit?: number; from?: string; to?: string }
+  ): Promise<any> {
+    const searchParams = new URLSearchParams();
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<any>(`/admin/analytics/shop/products/top${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getFunnel(
+    initData: string | null,
+    query?: { from?: string; to?: string }
+  ): Promise<any> {
+    const searchParams = new URLSearchParams();
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<any>(`/admin/analytics/funnel${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  // Public Events
+  async trackEvent(event: {
+    eventType: 'PAGE_VIEW' | 'PRODUCT_VIEW' | 'ADD_TO_CART' | 'CHECKOUT_STARTED' | 'PURCHASE';
+    userId?: string;
+    sessionId?: string;
+    productId?: string;
+    source?: string;
+    campaign?: string;
+    postId?: string;
+    metadata?: Record<string, any>;
+  }): Promise<{ success: boolean }> {
+    return request<{ success: boolean }>('/public/events', {
+      method: 'POST',
+      body: JSON.stringify(event),
+    });
+  },
 };
 

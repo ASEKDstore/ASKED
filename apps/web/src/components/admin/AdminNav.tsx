@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, Package, ShoppingBag, FolderTree, Tag, Megaphone } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, FolderTree, Tag, Megaphone, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Suspense } from 'react';
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/admin/categories', label: 'Категории', icon: FolderTree },
   { href: '/admin/tags', label: 'Теги', icon: Tag },
   { href: '/admin/marketing', label: 'Маркетинг', icon: Megaphone },
+  { href: '/admin/analytics', label: 'Аналитика', icon: BarChart3 },
 ];
 
 function AdminNavContent(): JSX.Element {

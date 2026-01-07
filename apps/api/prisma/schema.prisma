@@ -43,6 +43,14 @@ enum PromoCtaType {
   URL
 }
 
+enum AppEventType {
+  PAGE_VIEW
+  PRODUCT_VIEW
+  ADD_TO_CART
+  CHECKOUT_STARTED
+  PURCHASE
+}
+
 model User {
   id          String   @id @default(cuid())
   telegramId  String   @unique
@@ -209,5 +217,70 @@ model PromoMedia {
   sort      Int            @default(0)
 
   @@map("promo_media")
+}
+
+// Analytics Models
+model TelegramChannelSnapshot {
+  id              String   @id @default(cuid())
+  channelId       String   // Telegram channel ID (numeric or @username)
+  subscriberCount Int
+  snapshotAt      DateTime @default(now())
+
+  @@unique([channelId, snapshotAt])
+  @@index([channelId, snapshotAt])
+  @@map("telegram_channel_snapshots")
+}
+
+model TelegramPost {
+  id          String                        @id @default(cuid())
+  channelId   String
+  messageId   Int                           // Telegram message ID
+  date        DateTime                      // Post date from Telegram
+  text        String?                       @db.Text
+  textExcerpt String?                       @db.VarChar(500) // First 500 chars for display
+  views       Int                           @default(0)
+  forwards    Int                           @default(0)
+  link        String?                       // Deep link to post (t.me/channel/messageId)
+  createdAt   DateTime                      @default(now())
+  updatedAt   DateTime                      @updatedAt
+  snapshots   TelegramPostMetricSnapshot[]
+
+  @@unique([channelId, messageId])
+  @@index([channelId, date])
+  @@index([views])
+  @@map("telegram_posts")
+}
+
+model TelegramPostMetricSnapshot {
+  id        String   @id @default(cuid())
+  postId    String
+  post      TelegramPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  views     Int
+  forwards  Int
+  snapshotAt DateTime @default(now())
+
+  @@unique([postId, snapshotAt])
+  @@index([postId, snapshotAt])
+  @@map("telegram_post_metric_snapshots")
+}
+
+model AppEvent {
+  id        String       @id @default(cuid())
+  eventType AppEventType
+  userId    String?      // Telegram user ID if available
+  sessionId String?      // Session identifier
+  productId String?      // Product ID if applicable
+  source    String?      // Traffic source (e.g., "telegram")
+  campaign  String?      // Campaign identifier
+  postId    String?      // Telegram post ID if from post
+  metadata  Json?        // Additional event metadata
+  createdAt DateTime     @default(now())
+
+  @@index([eventType, createdAt])
+  @@index([userId, createdAt])
+  @@index([productId, createdAt])
+  @@index([postId, createdAt])
+  @@index([sessionId, createdAt])
+  @@map("app_events")
 }
 
