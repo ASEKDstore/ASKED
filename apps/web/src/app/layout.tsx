@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import Script from 'next/script';
 
 import { Footer } from '@/components/Footer';
+import { SplashGate } from '@/components/SplashGate';
 import { Providers } from '@/lib/providers';
 
 import './globals.css';
@@ -55,10 +56,12 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />
         <Providers>
-          <div className="flex flex-col min-h-screen">
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          <SplashGate>
+            <div className="flex flex-col min-h-screen">
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+          </SplashGate>
         </Providers>
       </body>
     </html>
