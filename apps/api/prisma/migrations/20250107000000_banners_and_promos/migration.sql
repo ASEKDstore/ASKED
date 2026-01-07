@@ -53,3 +53,4 @@ CREATE UNIQUE INDEX "promo_pages_slug_key" ON "promo_pages"("slug");
 -- AddForeignKey
 ALTER TABLE "promo_media" ADD CONSTRAINT "promo_media_promoId_fkey" FOREIGN KEY ("promoId") REFERENCES "promo_pages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+
