@@ -4,6 +4,10 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { PrismaService } from '../prisma/prisma.service';
 
+type TelegramApiResponse<T> =
+  | { ok: true; result: T }
+  | { ok: false; description?: string; error_code?: number };
+
 @Injectable()
 export class TelegramSnapshotService {
   private readonly logger = new Logger(TelegramSnapshotService.name);
@@ -35,13 +39,13 @@ export class TelegramSnapshotService {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = (await response.json()) as TelegramApiResponse<never>;
         this.logger.error(`Failed to get chat member count: ${JSON.stringify(error)}`);
         return;
       }
 
-      const data = await response.json();
-      const subscriberCount = data.result || 0;
+      const data = (await response.json()) as TelegramApiResponse<number>;
+      const subscriberCount = data.ok ? data.result : 0;
 
       // Store snapshot with idempotency (one per hour)
       const now = new Date();

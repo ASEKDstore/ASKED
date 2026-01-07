@@ -285,9 +285,6 @@ export class AnalyticsService {
             ...(to ? { lte: to } : {}),
           },
         },
-        include: {
-          // Note: We'll need to join with products to get title
-        },
       });
 
       const productMap = new Map<string, number>();

@@ -18,7 +18,7 @@ export class AppEventsService {
         source: eventDto.source || null,
         campaign: eventDto.campaign || null,
         postId: eventDto.postId || null,
-        metadata: eventDto.metadata || null,
+        ...(eventDto.metadata ? { metadata: eventDto.metadata } : {}),
       },
     });
   }
