@@ -48,7 +48,7 @@ TELEGRAM_AUTH_MAX_AGE_SEC=86400
 DATABASE_URL="postgresql://asked_postgre_user:95V87ZoCCeT7ocNVq4XNWsywyjtAz3Bx@dpg-d5dcnvali9vc73dg0do0-a/asked_postgre"
 PORT=3001
 FRONTEND_URL=https://asked-web.onrender.com
-TELEGRAM_BOT_TOKEN=8502780617:AAGir8NDDJuUqm1GTXiXpcH1tQUhJj2qT3M
+TELEGRAM_BOT_TOKEN=8059531981:AAGyK0er4V4Atif1z__DawxMP0Y6VvqdLOA
 TELEGRAM_AUTH_MAX_AGE_SEC=86400
 ```
 
@@ -77,7 +77,7 @@ TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 
 **Для production на Render:**
 ```env
-TELEGRAM_BOT_TOKEN=8502780617:AAGir8NDDJuUqm1GTXiXpcH1tQUhJj2qT3M
+TELEGRAM_BOT_TOKEN=8059531981:AAGyK0er4V4Atif1z__DawxMP0Y6VvqdLOA
 ```
 
 > ⚠️ **Важно:** Если `TELEGRAM_BOT_TOKEN` отсутствует, бот корректно завершит работу с кодом 0.
