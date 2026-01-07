@@ -43,6 +43,12 @@ enum PromoCtaType {
   URL
 }
 
+enum LabCtaType {
+  NONE
+  PRODUCT
+  URL
+}
+
 enum AppEventType {
   PAGE_VIEW
   PRODUCT_VIEW
@@ -109,6 +115,7 @@ model Product {
   tags        ProductTag[]
   images      ProductImage[]
   orderItems  OrderItem[]
+  labProducts LabProduct[]
 
   @@map("products")
 }
@@ -282,5 +289,43 @@ model AppEvent {
   @@index([postId, createdAt])
   @@index([sessionId, createdAt])
   @@map("app_events")
+}
+
+// LAB Products
+model LabProduct {
+  id            String          @id @default(cuid())
+  title         String
+  subtitle      String?
+  description   String?         @db.Text
+  price         Int
+  currency      String          @default("RUB")
+  isActive      Boolean         @default(true)
+  sortOrder     Int             @default(0)
+  coverMediaType BannerMediaType
+  coverMediaUrl String
+  ctaType       LabCtaType      @default(NONE)
+  ctaProductId  String?
+  ctaUrl        String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  gallery       LabProductMedia[]
+  ctaProduct    Product?        @relation(fields: [ctaProductId], references: [id], onDelete: SetNull)
+
+  @@index([isActive, sortOrder])
+  @@index([createdAt])
+  @@map("lab_products")
+}
+
+model LabProductMedia {
+  id          String       @id @default(cuid())
+  labProductId String
+  labProduct   LabProduct  @relation(fields: [labProductId], references: [id], onDelete: Cascade)
+  type        BannerMediaType
+  url         String
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+
+  @@index([labProductId, sortOrder])
+  @@map("lab_product_media")
 }
 

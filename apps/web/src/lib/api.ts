@@ -795,5 +795,88 @@ export const api = {
       body: JSON.stringify(event),
     });
   },
+
+  // Admin Lab Products
+  async getAdminLabProducts(
+    initData: string | null,
+    query?: { q?: string; isActive?: boolean; page?: number; pageSize?: number }
+  ): Promise<{ items: any[]; total: number; page: number; pageSize: number }> {
+    const searchParams = new URLSearchParams();
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<{ items: any[]; total: number; page: number; pageSize: number }>(
+      `/admin/lab-products${queryString ? `?${queryString}` : ''}`,
+      {
+        method: 'GET',
+        initData,
+      }
+    );
+  },
+
+  async getAdminLabProduct(initData: string | null, id: string): Promise<any> {
+    return request<any>(`/admin/lab-products/${id}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async createAdminLabProduct(initData: string | null, product: any): Promise<any> {
+    return request<any>('/admin/lab-products', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(product),
+    });
+  },
+
+  async updateAdminLabProduct(initData: string | null, id: string, product: any): Promise<any> {
+    return request<any>(`/admin/lab-products/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(product),
+    });
+  },
+
+  async deleteAdminLabProduct(initData: string | null, id: string): Promise<void> {
+    return request<void>(`/admin/lab-products/${id}`, {
+      method: 'DELETE',
+      initData,
+    });
+  },
+
+  async addLabProductMedia(initData: string | null, labProductId: string, media: any): Promise<any> {
+    return request<any>(`/admin/lab-products/${labProductId}/media`, {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(media),
+    });
+  },
+
+  async updateLabProductMedia(initData: string | null, id: string, media: any): Promise<any> {
+    return request<any>(`/admin/lab-products/media/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(media),
+    });
+  },
+
+  async deleteLabProductMedia(initData: string | null, id: string): Promise<void> {
+    return request<void>(`/admin/lab-products/media/${id}`, {
+      method: 'DELETE',
+      initData,
+    });
+  },
+
+  // Public Lab Products
+  async getPublicLabProducts(): Promise<any[]> {
+    return request<any[]>('/public/lab-products', {
+      method: 'GET',
+    });
+  },
 };
 
