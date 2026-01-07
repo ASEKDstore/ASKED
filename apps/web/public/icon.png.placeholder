@@ -1,0 +1,17 @@
+# Placeholder for icon.png
+
+This file should be replaced with a 512x512 PNG image of the ASKED logo.
+
+The icon will be used as:
+- Favicon in browser tabs
+- App icon in Telegram Mini App header
+- Apple touch icon for iOS devices
+
+Requirements:
+- Format: PNG
+- Size: 512x512 pixels (square)
+- Background: Transparent or solid color
+- Content: ASKED logo/branding
+
+After adding the icon.png file, delete this placeholder file.
+
