@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 
+import { AdminGuard } from '../auth/admin.guard';
+import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
 import { PrismaModule } from '../prisma/prisma.module';
 
 import { AdminAnalyticsController } from './admin-analytics.controller';
@@ -19,6 +21,8 @@ import { TelegramWebhookService } from './telegram-webhook.service';
     AppEventsService,
     TelegramWebhookService,
     TelegramSnapshotService,
+    DevAdminAuthGuard,
+    AdminGuard,
   ],
   exports: [AnalyticsService, AppEventsService],
 })

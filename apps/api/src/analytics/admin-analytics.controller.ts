@@ -2,7 +2,6 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 
 import { AdminGuard } from '../auth/admin.guard';
 import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
-import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
 
 import { AnalyticsService } from './analytics.service';
 import type {
@@ -20,7 +19,7 @@ import {
 } from './dto/analytics-query.dto';
 
 @Controller('admin/analytics')
-@UseGuards(DevAdminAuthGuard, TelegramAuthGuard, AdminGuard)
+@UseGuards(DevAdminAuthGuard, AdminGuard)
 export class AdminAnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
