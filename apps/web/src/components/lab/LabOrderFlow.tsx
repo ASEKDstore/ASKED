@@ -6,11 +6,11 @@ import {
   Check,
   Image as ImageIcon,
   Palette,
-  Shirt,
   Sparkles,
   Upload,
   X,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 interface OrderData {
@@ -23,11 +23,10 @@ interface OrderData {
   attachment: File | null;
 }
 
-// Clothing types with icons
+// Clothing types with images
 const CLOTHING_TYPES = [
-  { id: 'hoodie', label: 'Худи', icon: Shirt },
-  { id: 'tshirt', label: 'Футболка', icon: Shirt },
-  { id: 'jacket', label: 'Куртка', icon: Shirt },
+  { id: 'hoodie', label: 'Худи', image: '/lab/hudi.png' },
+  { id: 'tshirt', label: 'Футболка', image: '/lab/t-short.png' },
   { id: 'custom', label: 'Свой вариант', icon: Sparkles },
 ];
 
@@ -59,6 +58,12 @@ const STEP_LABELS = [
 
 interface LabOrderFlowProps {
   onComplete: (data: OrderData) => void;
+  onProgressChange?: (progress: {
+    currentStep: number;
+    totalSteps: number;
+    stepLabels: string[];
+    isStepVisible: (index: number) => boolean;
+  }) => void;
 }
 
 interface StepBlockProps {
@@ -129,7 +134,7 @@ function StepBlock({ stepIndex, isVisible, isHighlighted, stepRefs, children }: 
   );
 }
 
-export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
+export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps): JSX.Element {
   const [orderData, setOrderData] = useState<OrderData>({
     clothingType: null,
     size: null,
@@ -243,6 +248,19 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
       scrollToStepWithRetry(4);
     }
   }, [isStep4Complete, orderData.description]);
+
+  // Notify parent about progress changes
+  useEffect(() => {
+    if (onProgressChange) {
+      const currentStep = orderData.placement ? 5 : orderData.colorChoice ? 4 : orderData.size ? 3 : orderData.clothingType ? 2 : 1;
+      onProgressChange({
+        currentStep,
+        totalSteps: 5,
+        stepLabels: STEP_LABELS,
+        isStepVisible,
+      });
+    }
+  }, [orderData, isStepVisible, onProgressChange]);
 
   const scrollToStep = (stepIndex: number) => {
     const element = stepRefs.current[stepIndex];
@@ -368,25 +386,6 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
 
   return (
     <div className="relative w-full">
-      {/* Progress Indicator */}
-      <div className="sticky top-0 z-20 px-4 py-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-white/70 text-sm">
-            {orderData.clothingType ? 'Шаг ' + (orderData.placement ? '5' : orderData.colorChoice ? '4' : orderData.size ? '3' : '2') + ' из 5' : 'Шаг 1 из 5'}
-          </span>
-        </div>
-        <div className="flex gap-2">
-          {[0, 1, 2, 3, 4].map((index) => (
-            <div
-              key={index}
-              className={`flex-1 h-1 rounded-full transition-all
-                        ${isStepVisible(index) && (orderData.placement || index < 4) ? 'bg-white' : 'bg-white/20'}
-                      `}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Steps Container */}
       <div className="relative">
         {/* Step 1: Clothing Type */}
@@ -417,7 +416,18 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
                                 : 'border-white/10 hover:border-white/20 hover:bg-black/35'
                               }`}
                   >
-                    <Icon className="w-8 h-8 mx-auto mb-3 text-white" />
+                    {type.image ? (
+                      <div className="w-16 h-16 mx-auto mb-3 relative">
+                        <Image
+                          src={type.image}
+                          alt={type.label}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    ) : (
+                      Icon && <Icon className="w-8 h-8 mx-auto mb-3 text-white" />
+                    )}
                     <div className="text-white font-medium text-base">{type.label}</div>
                   </motion.button>
                 );

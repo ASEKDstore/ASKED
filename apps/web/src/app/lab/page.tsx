@@ -14,9 +14,17 @@ import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 // Use local background image
 const BG_IMAGE_URL = '/home-bg.jpg';
 
+interface ProgressData {
+  currentStep: number;
+  totalSteps: number;
+  stepLabels: string[];
+  isStepVisible: (index: number) => boolean;
+}
+
 export default function LabPage(): JSX.Element {
   const [showSplash, setShowSplash] = useState(true);
   const [showOrderFlow, setShowOrderFlow] = useState(false);
+  const [progress, setProgress] = useState<ProgressData | null>(null);
 
   // Lock body scroll on LAB page
   useLockBodyScroll(true);
@@ -50,6 +58,11 @@ export default function LabPage(): JSX.Element {
 
   const handleCloseOrderFlow = () => {
     setShowOrderFlow(false);
+    setProgress(null);
+  };
+
+  const handleProgressChange = (progressData: ProgressData) => {
+    setProgress(progressData);
   };
 
   if (showOrderFlow) {
@@ -74,17 +87,42 @@ export default function LabPage(): JSX.Element {
           }}
         >
           <div className="relative">
-            {/* Close Button */}
-            <div className="sticky top-0 z-30 flex justify-end p-4 bg-black/40 backdrop-blur-xl">
-              <button
-                onClick={handleCloseOrderFlow}
-                className="flex items-center justify-center w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl 
-                         border border-white/10 text-white hover:bg-black/40 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            {/* Close Button with Progress Indicator */}
+            <div className="sticky top-0 z-30 bg-black/40 backdrop-blur-xl border-b border-white/10">
+              <div className="flex items-center justify-between p-4">
+                {/* Progress Indicator */}
+                {progress && (
+                  <div className="flex-1 mr-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-white/70 text-sm">
+                        Шаг {progress.currentStep} из {progress.totalSteps}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      {[0, 1, 2, 3, 4].map((index) => (
+                        <div
+                          key={index}
+                          className={`flex-1 h-1 rounded-full transition-all ${
+                            progress.isStepVisible(index) && (index < progress.currentStep - 1 || index === progress.currentStep - 1)
+                              ? 'bg-white'
+                              : 'bg-white/20'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Close Button */}
+                <button
+                  onClick={handleCloseOrderFlow}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl 
+                           border border-white/10 text-white hover:bg-black/40 transition-colors flex-shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <LabOrderFlow onComplete={handleOrderComplete} />
+            <LabOrderFlow onComplete={handleOrderComplete} onProgressChange={handleProgressChange} />
           </div>
         </div>
       </div>
