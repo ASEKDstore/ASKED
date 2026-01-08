@@ -54,9 +54,9 @@ export function LabPromoCard(): JSX.Element {
     >
       {/* Glass Card Container - overflow visible to allow mascot to extend outside */}
       <div className="relative overflow-visible rounded-[28px] bg-black/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/10">
-        <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6 p-6 md:p-8">
+        <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6 p-6 md:p-8 min-h-[280px] md:min-h-[320px]">
           {/* Content Section (Left) */}
-          <div className="flex-1 space-y-4 z-10">
+          <div className="flex-1 space-y-4 z-10 md:pr-[180px] lg:pr-[200px]">
             {/* Kicker */}
             <div className="text-[clamp(11px,2.5vw,12px)] font-semibold tracking-[0.15em] uppercase text-white/70">
               ASKED LAB
@@ -88,30 +88,34 @@ export function LabPromoCard(): JSX.Element {
             </div>
           </div>
 
-          {/* Mascot Section (Right) - Absolutely positioned to overflow */}
-          <div className="relative flex-shrink-0 w-[clamp(120px,30vw,200px)] h-[clamp(120px,30vw,200px)] 
-                        md:w-[clamp(160px,25vw,240px)] md:h-[clamp(160px,25vw,240px)]
-                        md:absolute md:right-[-clamp(20px,5vw,40px)] md:bottom-[-clamp(20px,5vw,40px)]
-                        self-center md:self-auto">
-            {/* Soft Glow behind mascot */}
+          {/* Mascot Section (Right/Bottom) - Large hero element that overflows */}
+          <div className="relative flex-shrink-0 
+                        w-[clamp(160px,36vw,260px)] h-[clamp(160px,36vw,260px)]
+                        md:w-[clamp(200px,32vw,280px)] md:h-[clamp(200px,32vw,280px)]
+                        md:absolute 
+                        md:right-[-clamp(12px,3vw,28px)] 
+                        md:bottom-[-clamp(18px,4vw,40px)]
+                        self-center md:self-auto
+                        pointer-events-none">
+            {/* Soft Glow behind mascot - subtle premium effect */}
             <div 
-              className="absolute inset-0 rounded-full blur-2xl opacity-40"
+              className="absolute inset-0 rounded-full blur-3xl opacity-30"
               style={{
-                background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
-                transform: 'scale(1.2)',
+                background: 'radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 75%)',
+                transform: 'scale(1.3)',
               }}
             />
 
-            {/* Levitating Shadow - synchronized with mascot */}
+            {/* Levitating Shadow - synchronized with mascot, larger for bigger mascot */}
             <motion.div
               animate={shadowAnimation}
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[60%] z-0"
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[65%] z-0"
               style={{
-                width: 'clamp(80px, 20vw, 140px)',
-                height: 'clamp(20px, 5vw, 35px)',
+                width: 'clamp(100px, 24vw, 180px)',
+                height: 'clamp(24px, 6vw, 42px)',
                 borderRadius: '50%',
                 background: 'rgba(0, 0, 0, 0.4)',
-                filter: 'blur(28px)',
+                filter: 'blur(32px)',
                 willChange: 'transform, opacity',
               }}
             />
@@ -126,7 +130,7 @@ export function LabPromoCard(): JSX.Element {
                 alt="ASKED LAB Mascot"
                 fill
                 className="object-contain drop-shadow-2xl"
-                sizes="(max-width: 768px) 120px, 240px"
+                sizes="(max-width: 768px) 160px, 280px"
                 unoptimized
                 priority
                 onError={() => setImageError(true)}
@@ -134,7 +138,7 @@ export function LabPromoCard(): JSX.Element {
               />
               {imageError && (
                 <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-white/5 rounded-full border border-white/10">
-                  <Sparkles className="w-12 h-12 text-white/40" />
+                  <Sparkles className="w-16 h-16 text-white/40" />
                 </div>
               )}
             </motion.div>
