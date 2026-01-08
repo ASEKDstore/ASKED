@@ -141,19 +141,25 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
   const containerRef = useRef<HTMLElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Robust gating booleans for step visibility
+  const isStep1Complete = Boolean(orderData.clothingType);
+  const isStep2Complete = isStep1Complete && Boolean(orderData.size);
+  const isStep3Complete = isStep2Complete && Boolean(orderData.colorChoice);
+  const isStep4Complete = isStep3Complete && Boolean(orderData.placement);
+
   // Determine which steps are visible (gated)
   const isStepVisible = (stepIndex: number): boolean => {
     switch (stepIndex) {
       case 0:
         return true; // Always show first step
       case 1:
-        return orderData.clothingType !== null;
+        return isStep1Complete; // Step 2 becomes visible after Step 1 is complete
       case 2:
-        return orderData.size !== null;
+        return isStep2Complete; // Step 3 becomes visible after Step 2 is complete
       case 3:
-        return orderData.colorChoice !== null;
+        return isStep3Complete; // Step 4 becomes visible after Step 3 is complete
       case 4:
-        return orderData.placement !== null;
+        return isStep4Complete; // Step 5 becomes visible after Step 4 is complete
       default:
         return false;
     }
@@ -212,21 +218,29 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
     // Update order data
     if (stepIndex === 0) {
       setOrderData((prev) => ({ ...prev, clothingType: value }));
+      // After Step 1 completes (clothing selected), auto-scroll to Step 2
+      if (value) {
+        setTimeout(() => scrollToStep(1), 150);
+      }
     } else if (stepIndex === 1) {
       setOrderData((prev) => ({ ...prev, size: value }));
+      // After Step 2 completes (size selected), auto-scroll to Step 3
+      if (value) {
+        setTimeout(() => scrollToStep(2), 150);
+      }
     } else if (stepIndex === 2) {
       setOrderData((prev) => ({ ...prev, colorChoice: value, customColor: value === 'custom' ? null : null }));
+      // After Step 3 completes (color selected), auto-scroll to Step 4
+      if (value) {
+        setTimeout(() => scrollToStep(3), 150);
+      }
     } else if (stepIndex === 3) {
       setOrderData((prev) => ({ ...prev, placement: value }));
-    }
-
-    // Auto-scroll to next step after a delay
-    setTimeout(() => {
-      const nextStep = stepIndex + 1;
-      if (nextStep < 5 && isStepVisible(nextStep)) {
-        scrollToStep(nextStep);
+      // After Step 4 completes (placement selected), auto-scroll to Step 5
+      if (value) {
+        setTimeout(() => scrollToStep(4), 150);
       }
-    }, 150);
+    }
   };
 
   const handleCustomColorChange = (color: string) => {
