@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface OrderData {
   clothingType: string | null;
@@ -156,26 +156,29 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
   const isStep3Complete = isStep2Complete && Boolean(orderData.colorChoice);
   const isStep4Complete = isStep3Complete && Boolean(orderData.placement);
 
-  // Determine which steps are visible (gated)
-  const isStepVisible = (stepIndex: number): boolean => {
-    switch (stepIndex) {
-      case 0:
-        return true; // Always show first step
-      case 1:
-        return isStep1Complete; // Step 2 becomes visible after Step 1 is complete
-      case 2:
-        return isStep2Complete; // Step 3 becomes visible after Step 2 is complete
-      case 3:
-        return isStep3Complete; // Step 4 becomes visible after Step 3 is complete
-      case 4:
-        return isStep4Complete; // Step 5 becomes visible after Step 4 is complete
-      default:
-        return false;
-    }
-  };
+  // Determine which steps are visible (gated) - memoized to prevent recreation on every render
+  const isStepVisible = useCallback(
+    (stepIndex: number): boolean => {
+      switch (stepIndex) {
+        case 0:
+          return true; // Always show first step
+        case 1:
+          return isStep1Complete; // Step 2 becomes visible after Step 1 is complete
+        case 2:
+          return isStep2Complete; // Step 3 becomes visible after Step 2 is complete
+        case 3:
+          return isStep3Complete; // Step 4 becomes visible after Step 3 is complete
+        case 4:
+          return isStep4Complete; // Step 5 becomes visible after Step 4 is complete
+        default:
+          return false;
+      }
+    },
+    [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete]
+  );
 
-  // Find scroll container - retry until found
-  const findScrollContainer = () => {
+  // Find scroll container - retry until found - memoized
+  const findScrollContainer = useCallback(() => {
     // Try to find scroll container from any rendered step
     for (let i = 0; i < stepRefs.current.length; i++) {
       let element: HTMLElement | null = stepRefs.current[i]?.parentElement ?? null;
@@ -190,7 +193,7 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
     }
     // Fallback: try to find any scrollable container in the component tree
     if (!containerRef.current && stepRefs.current[0]) {
-      let element: HTMLElement | null = stepRefs.current[0].closest('[class*="overflow"]') as HTMLElement | null;
+      const element: HTMLElement | null = stepRefs.current[0].closest('[class*="overflow"]') as HTMLElement | null;
       if (element) {
         const style = window.getComputedStyle(element);
         if (style.overflowY === 'auto' || style.overflowY === 'scroll' || style.overflowY === 'overlay') {
@@ -200,59 +203,65 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
       }
     }
     containerRef.current = null;
-  };
+  }, []);
 
   // Find scroll container on mount and when steps become visible
   useEffect(() => {
     findScrollContainer();
-  }, [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete]);
+  }, [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete, findScrollContainer]);
 
-  // Helper function to scroll to step with retries
-  const scrollToStepWithRetry = (stepIndex: number, maxRetries = 10, delay = 100) => {
-    let attempts = 0;
-    const tryScroll = () => {
-      const element = stepRefs.current[stepIndex];
-      if (element) {
-        scrollToStep(stepIndex);
-      } else if (attempts < maxRetries) {
-        attempts++;
-        setTimeout(tryScroll, delay);
-      }
-    };
-    requestAnimationFrame(() => {
-      requestAnimationFrame(tryScroll); // Double RAF to ensure DOM update
-    });
-  };
+  // Helper function to scroll to step with retries - memoized
+  const scrollToStepWithRetry = useCallback(
+    (stepIndex: number, maxRetries = 10, delay = 100) => {
+      let attempts = 0;
+      const tryScroll = () => {
+        const element = stepRefs.current[stepIndex];
+        if (element) {
+          scrollToStep(stepIndex);
+        } else if (attempts < maxRetries) {
+          attempts++;
+          setTimeout(tryScroll, delay);
+        }
+      };
+      requestAnimationFrame(() => {
+        requestAnimationFrame(tryScroll); // Double RAF to ensure DOM update
+      });
+    },
+    [scrollToStep]
+  );
 
   // Auto-scroll when steps become visible
   useEffect(() => {
     if (isStep1Complete && !orderData.size) {
       scrollToStepWithRetry(1);
     }
-  }, [isStep1Complete, orderData.size]);
+  }, [isStep1Complete, orderData.size, scrollToStepWithRetry]);
 
   useEffect(() => {
     if (isStep2Complete && !orderData.colorChoice) {
       scrollToStepWithRetry(2);
     }
-  }, [isStep2Complete, orderData.colorChoice]);
+  }, [isStep2Complete, orderData.colorChoice, scrollToStepWithRetry]);
 
   useEffect(() => {
     if (isStep3Complete && !orderData.placement) {
       scrollToStepWithRetry(3);
     }
-  }, [isStep3Complete, orderData.placement]);
+  }, [isStep3Complete, orderData.placement, scrollToStepWithRetry]);
 
   useEffect(() => {
     if (isStep4Complete && !orderData.description) {
       scrollToStepWithRetry(4);
     }
-  }, [isStep4Complete, orderData.description]);
+  }, [isStep4Complete, orderData.description, scrollToStepWithRetry]);
 
   // Notify parent about progress changes
+  const currentStep = useMemo(() => {
+    return orderData.placement ? 5 : orderData.colorChoice ? 4 : orderData.size ? 3 : orderData.clothingType ? 2 : 1;
+  }, [orderData.placement, orderData.colorChoice, orderData.size, orderData.clothingType]);
+
   useEffect(() => {
     if (onProgressChange) {
-      const currentStep = orderData.placement ? 5 : orderData.colorChoice ? 4 : orderData.size ? 3 : orderData.clothingType ? 2 : 1;
       onProgressChange({
         currentStep,
         totalSteps: 5,
@@ -260,9 +269,9 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
         isStepVisible,
       });
     }
-  }, [orderData, isStepVisible, onProgressChange]);
+  }, [currentStep, isStepVisible, onProgressChange]);
 
-  const scrollToStep = (stepIndex: number) => {
+  const scrollToStep = useCallback((stepIndex: number) => {
     const element = stepRefs.current[stepIndex];
     if (!element) return;
 
@@ -287,7 +296,7 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
     // Highlight the step
     setHighlightedStep(stepIndex);
     setTimeout(() => setHighlightedStep(null), 600);
-  };
+  }, []);
 
   const handleStepComplete = (stepIndex: number, value: string | null) => {
     // Haptic feedback

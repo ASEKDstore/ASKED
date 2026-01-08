@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingCart, Search } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { HEADER_HEIGHT_PX } from '@/components/Header';
@@ -15,7 +14,6 @@ import { useCartStore } from '@/lib/cart-store';
 const BG_IMAGE_URL = '/home-bg.jpg';
 
 export default function CatalogPage(): JSX.Element {
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [sort, setSort] = useState<'new' | 'price_asc' | 'price_desc'>('new');
