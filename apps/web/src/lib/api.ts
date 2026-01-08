@@ -350,6 +350,49 @@ export interface OrdersListResponse {
   };
 }
 
+export interface AnalyticsOverview {
+  subscribersNow: number;
+  subscribersGrowth: number;
+  revenue: number;
+  ordersCount: number;
+  conversion: number;
+  aov: number;
+}
+
+export interface TelegramSubscribersResponse {
+  data: Array<{
+    date: string;
+    count: number;
+    growth: number;
+  }>;
+}
+
+export interface TelegramTopPostsResponse {
+  items: Array<{
+    id: string;
+    messageId: string;
+    textExcerpt?: string;
+    views: number;
+    date: string;
+  }>;
+}
+
+export interface TopProductsResponse {
+  items: Array<{
+    productId: string;
+    productTitle: string;
+    metric: number;
+  }>;
+}
+
+export interface FunnelResponse {
+  funnel: Array<{
+    stage: string;
+    count: number;
+    percentage: number;
+  }>;
+}
+
 export const api = {
   async getMe(initData: string | null): Promise<User> {
     return request<User>('/users/me', {
@@ -702,7 +745,7 @@ export const api = {
   async getAnalyticsOverview(
     initData: string | null,
     query?: { from?: string; to?: string; granularity?: 'hour' | 'day' | 'week' | 'month' }
-  ): Promise<unknown> {
+  ): Promise<AnalyticsOverview> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -712,7 +755,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<unknown>(`/admin/analytics/overview${queryString ? `?${queryString}` : ''}`, {
+    return request<AnalyticsOverview>(`/admin/analytics/overview${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
     });
@@ -721,7 +764,7 @@ export const api = {
   async getTelegramSubscribers(
     initData: string | null,
     query?: { from?: string; to?: string; granularity?: 'hour' | 'day' | 'week' | 'month' }
-  ): Promise<unknown> {
+  ): Promise<TelegramSubscribersResponse> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -731,7 +774,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<unknown>(`/admin/analytics/telegram/subscribers${queryString ? `?${queryString}` : ''}`, {
+    return request<TelegramSubscribersResponse>(`/admin/analytics/telegram/subscribers${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
     });
@@ -740,7 +783,7 @@ export const api = {
   async getTopTelegramPosts(
     initData: string | null,
     query?: { limit?: number; from?: string; to?: string }
-  ): Promise<unknown> {
+  ): Promise<TelegramTopPostsResponse> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -750,7 +793,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<unknown>(`/admin/analytics/telegram/posts/top${queryString ? `?${queryString}` : ''}`, {
+    return request<TelegramTopPostsResponse>(`/admin/analytics/telegram/posts/top${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
     });
@@ -759,7 +802,7 @@ export const api = {
   async getTopProducts(
     initData: string | null,
     query?: { metric?: 'orders' | 'revenue' | 'views'; limit?: number; from?: string; to?: string }
-  ): Promise<unknown> {
+  ): Promise<TopProductsResponse> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -769,7 +812,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<unknown>(`/admin/analytics/shop/products/top${queryString ? `?${queryString}` : ''}`, {
+    return request<TopProductsResponse>(`/admin/analytics/shop/products/top${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
     });
@@ -778,7 +821,7 @@ export const api = {
   async getFunnel(
     initData: string | null,
     query?: { from?: string; to?: string }
-  ): Promise<unknown> {
+  ): Promise<FunnelResponse> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -788,7 +831,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<unknown>(`/admin/analytics/funnel${queryString ? `?${queryString}` : ''}`, {
+    return request<FunnelResponse>(`/admin/analytics/funnel${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
     });

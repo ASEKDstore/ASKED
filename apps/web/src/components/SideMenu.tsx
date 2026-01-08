@@ -11,7 +11,7 @@ import {
   Info,
   FileText,
   HelpCircle,
-  Handshake,
+  Users,
   X,
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -36,7 +36,7 @@ const menuItems: MenuItem[] = [
   { label: 'О нас', icon: Info, href: '/about' },
   { label: 'Доки', icon: FileText, href: '/docs' },
   { label: 'Помощь', icon: HelpCircle, href: '/help' },
-  { label: 'Сотрудничество', icon: Handshake, href: '/partners' },
+  { label: 'Сотрудничество', icon: Users, href: '/partners' },
 ];
 
 interface SideMenuProps {

@@ -176,7 +176,7 @@ export default function AdminAnalyticsPage(): JSX.Element {
           <CardContent>
             {subscribers?.data && subscribers.data.length > 0 ? (
               <div className="space-y-2">
-                {subscribers.data.slice(-10).map((point: any, idx: number) => (
+                {subscribers.data.slice(-10).map((point, idx) => (
                   <div key={idx} className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">{point.date}</span>
                     <div className="flex items-center gap-4">
@@ -206,7 +206,7 @@ export default function AdminAnalyticsPage(): JSX.Element {
           <CardContent>
             {funnel?.funnel && funnel.funnel.length > 0 ? (
               <div className="space-y-4">
-                {funnel.funnel.map((stage: any, idx: number) => (
+                {funnel.funnel.map((stage, idx) => (
                   <div key={idx}>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm font-medium">{stage.stage}</span>
@@ -249,7 +249,7 @@ export default function AdminAnalyticsPage(): JSX.Element {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topPosts.items.map((post: any) => (
+                  {topPosts.items.map((post) => (
                     <TableRow key={post.id}>
                       <TableCell className="max-w-xs truncate">
                         {post.textExcerpt || `Пост #${post.messageId}`}
@@ -287,7 +287,7 @@ export default function AdminAnalyticsPage(): JSX.Element {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topProducts.items.map((product: any) => (
+                  {topProducts.items.map((product) => (
                     <TableRow key={product.productId}>
                       <TableCell className="max-w-xs truncate">{product.productTitle}</TableCell>
                       <TableCell>{formatNumber(product.metric)}</TableCell>
