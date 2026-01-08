@@ -19,9 +19,15 @@ export function Overlay({
   className = '',
   blur = true,
   zIndex = 50,
-}: OverlayProps): JSX.Element | null {
+}: OverlayProps): JSX.Element {
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      // Delay unlocking scroll to allow exit animation to complete
+      const timer = setTimeout(() => {
+        document.body.style.overflow = '';
+      }, 450); // Slightly longer than exit animation duration
+      return () => clearTimeout(timer);
+    }
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -34,35 +40,39 @@ export function Overlay({
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
 
+  if (!isOpen && !children) {
+    return <></>;
+  }
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
+    <>
+      {/* Backdrop with its own AnimatePresence */}
+      <AnimatePresence>
+        {isOpen && (
           <motion.div
+            key="backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             onClick={onClose}
             className={`fixed inset-0 ${blur ? 'backdrop-blur-xl' : ''} bg-black/50 ${className}`}
             style={{ zIndex }}
             aria-hidden="true"
           />
-          {/* Content */}
-          <div
-            className="fixed inset-0"
-            style={{ zIndex: zIndex + 1 }}
-          >
-            {children}
-          </div>
-        </>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+      {/* Content wrapper - always rendered so children can complete exit animations */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{ zIndex: zIndex + 1 }}
+      >
+        {children}
+      </div>
+    </>
   );
 }
 

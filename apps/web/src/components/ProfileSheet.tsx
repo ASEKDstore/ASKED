@@ -28,6 +28,14 @@ const profileSpringConfig = {
 const DRAG_THRESHOLD = 0.28;
 const VELOCITY_THRESHOLD = 400; // pixels per second
 
+// Exit spring config (slightly faster for close animation)
+const exitSpringConfig = {
+  type: 'spring' as const,
+  damping: 40,
+  stiffness: 400,
+  mass: 0.8,
+};
+
 export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Element {
   const router = useRouter();
   const { user } = useTelegramUser();
@@ -52,6 +60,26 @@ export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Elemen
     if (shouldClose) {
       onClose();
     }
+    // If threshold not met, the dragConstraints and spring will automatically snap back
+  };
+
+  // Variants for the sheet animation
+  const sheetVariants = {
+    hidden: {
+      y: '100%',
+      opacity: 0,
+      transition: exitSpringConfig,
+    },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: profileSpringConfig,
+    },
+    exit: {
+      y: '100%',
+      opacity: 0,
+      transition: exitSpringConfig,
+    },
   };
 
   const displayName =
@@ -65,21 +93,22 @@ export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Elemen
 
   return (
     <Overlay isOpen={isOpen} onClose={onClose} blur zIndex={50}>
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isOpen && (
           <motion.div
+            key="profile-sheet"
             ref={sheetRef}
             data-profile-container
             tabIndex={-1}
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={profileSpringConfig}
+            variants={sheetVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.08 }}
+            dragElastic={{ top: 0, bottom: 0.1 }}
             onDragEnd={handleDragEnd}
-            className="absolute inset-x-0 bottom-0 h-[calc(100vh-env(safe-area-inset-bottom,0px))] bg-black/60 backdrop-blur-3xl overflow-hidden flex flex-col rounded-t-[28px] shadow-[0_0_60px_rgba(0,0,0,0.5)]"
+            className="absolute inset-x-0 bottom-0 h-[calc(100vh-env(safe-area-inset-bottom,0px))] bg-black/60 backdrop-blur-3xl overflow-hidden flex flex-col rounded-t-[28px] shadow-[0_0_60px_rgba(0,0,0,0.5)] pointer-events-auto"
             style={{
               paddingTop: 'env(safe-area-inset-top, 0px)',
               paddingBottom: 'env(safe-area-inset-bottom, 0px)',

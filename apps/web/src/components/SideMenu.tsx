@@ -65,6 +65,14 @@ const itemSpringConfig = {
 const DRAG_THRESHOLD = 0.28;
 const VELOCITY_THRESHOLD = 300; // pixels per second
 
+// Exit spring config (slightly faster for close animation)
+const exitSpringConfig = {
+  type: 'spring' as const,
+  damping: 40,
+  stiffness: 400,
+  mass: 0.8,
+};
+
 export function SideMenu({ isOpen, onClose }: SideMenuProps): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
@@ -86,25 +94,43 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps): JSX.Element {
     if (shouldClose) {
       onClose();
     }
+    // If threshold not met, the dragConstraints and spring will automatically snap back
+  };
+
+  // Variants for the sheet animation
+  const sheetVariants = {
+    hidden: {
+      x: '100%',
+      transition: exitSpringConfig,
+    },
+    visible: {
+      x: 0,
+      transition: menuSpringConfig,
+    },
+    exit: {
+      x: '100%',
+      transition: exitSpringConfig,
+    },
   };
 
   return (
     <Overlay isOpen={isOpen} onClose={onClose} blur zIndex={40}>
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isOpen && (
           <motion.div
+            key="side-menu"
             ref={sheetRef}
             data-menu-container
             tabIndex={-1}
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={menuSpringConfig}
+            variants={sheetVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={{ left: 0, right: 0.08 }}
+            dragElastic={{ left: 0, right: 0.1 }}
             onDragEnd={handleDragEnd}
-            className="absolute top-0 right-0 h-full w-[min(85vw,360px)] bg-black/60 backdrop-blur-3xl overflow-hidden flex flex-col rounded-tl-[28px] rounded-bl-[28px] shadow-[0_0_60px_rgba(0,0,0,0.5)]"
+            className="absolute top-0 right-0 h-full w-[min(85vw,360px)] bg-black/60 backdrop-blur-3xl overflow-hidden flex flex-col rounded-tl-[28px] rounded-bl-[28px] shadow-[0_0_60px_rgba(0,0,0,0.5)] pointer-events-auto"
             style={{
               paddingTop: 'env(safe-area-inset-top, 0px)',
               paddingBottom: 'env(safe-area-inset-bottom, 0px)',
