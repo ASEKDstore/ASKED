@@ -1,12 +1,14 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export function LabPromoCard(): JSX.Element {
   const router = useRouter();
+  const [imageError, setImageError] = useState(false);
 
   const handleLabClick = () => {
     try {
@@ -15,12 +17,6 @@ export function LabPromoCard(): JSX.Element {
     router.push('/lab');
   };
 
-  const handleCustomClick = () => {
-    try {
-      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
-    } catch { /* noop */ }
-    router.push('/lab');
-  };
 
   // Shared animation timing for mascot and shadow synchronization
   const sharedAnimationConfig = {
@@ -76,9 +72,8 @@ export function LabPromoCard(): JSX.Element {
               Экспериментальные продукты и уникальные решения для тех, кто ищет нечто особенное
             </p>
 
-            {/* Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              {/* Primary Button */}
+            {/* Button */}
+            <div className="pt-2">
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={handleLabClick}
@@ -89,18 +84,6 @@ export function LabPromoCard(): JSX.Element {
               >
                 Перейти в LAB
                 <ArrowRight className="w-4 h-4" />
-              </motion.button>
-
-              {/* Secondary Button */}
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                onClick={handleCustomClick}
-                className="flex items-center justify-center gap-2 rounded-full px-6 py-3 
-                         bg-white/8 hover:bg-white/12 text-white/90 font-medium 
-                         backdrop-blur-md border border-white/20 
-                         transition-colors duration-200 text-[clamp(14px,3.5vw,16px)]"
-              >
-                Заказать кастом
               </motion.button>
             </div>
           </div>
@@ -138,14 +121,21 @@ export function LabPromoCard(): JSX.Element {
               animate={levitationAnimation}
               className="relative w-full h-full z-10"
             >
-              <Image
-                src="/lab/mascot.png"
-                alt="ASKED LAB Mascot"
-                fill
-                className="object-contain drop-shadow-2xl"
-                sizes="(max-width: 768px) 120px, 240px"
-                unoptimized
-              />
+              {!imageError ? (
+                <Image
+                  src="/lab/mascot.png"
+                  alt="ASKED LAB Mascot"
+                  fill
+                  className="object-contain drop-shadow-2xl"
+                  sizes="(max-width: 768px) 120px, 240px"
+                  unoptimized
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-white/5 rounded-full border border-white/10">
+                  <Sparkles className="w-12 h-12 text-white/40" />
+                </div>
+              )}
             </motion.div>
           </div>
         </div>
