@@ -2,7 +2,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +15,7 @@ export default function PromoPage(): JSX.Element {
   const router = useRouter();
   const params = useParams();
   const slug = params.slug as string;
+  const [heroImageError, setHeroImageError] = useState(false);
 
   const { data: promo, isLoading, error } = useQuery({
     queryKey: ['promo', slug],
@@ -89,24 +92,21 @@ export default function PromoPage(): JSX.Element {
       {/* Hero Section */}
       {heroMedia && heroMediaUrl ? (
         <div className="mb-8">
-          <div className="w-full h-96 rounded-2xl overflow-hidden bg-gray-100">
-            {heroMedia.mediaType === 'IMAGE' ? (
-              <img
+          <div className="w-full h-96 rounded-2xl overflow-hidden bg-gray-100 relative">
+            {heroMedia.mediaType === 'IMAGE' && !heroImageError ? (
+              <Image
                 src={heroMediaUrl}
                 alt={promo.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const parent = target.parentElement;
-                  if (parent && !parent.querySelector('.hero-fallback')) {
-                    const fallback = document.createElement('div');
-                    fallback.className = 'hero-fallback w-full h-full flex items-center justify-center text-gray-400';
-                    fallback.textContent = 'No image';
-                    parent.appendChild(fallback);
-                  }
-                }}
+                fill
+                className="object-cover"
+                sizes="100vw"
+                unoptimized
+                onError={() => setHeroImageError(true)}
               />
+            ) : heroMedia.mediaType === 'IMAGE' && heroImageError ? (
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                No image
+              </div>
             ) : (
               <video
                 src={heroMediaUrl}
@@ -149,12 +149,15 @@ export default function PromoPage(): JSX.Element {
                 if (!media) return null;
                 const normalizedUrl = normalizeImageUrl(media.mediaUrl);
                 return normalizedUrl ? (
-                  <div key={media.id} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                  <div key={media.id} className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
                     {media.mediaType === 'IMAGE' ? (
-                      <img
+                      <Image
                         src={normalizedUrl}
                         alt={`${promo.title} ${media.sort + 1}`}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 50vw, 33vw"
+                        unoptimized
                       />
                     ) : (
                       <video

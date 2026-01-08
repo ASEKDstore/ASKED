@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FlaskConical, Plus, Edit, X, Search, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 
 import { Alert } from '@/components/ui/alert';
@@ -29,7 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useTelegram } from '@/hooks/useTelegram';
 import { getTokenFromUrl } from '@/lib/admin-nav';
-import { api, ApiClientError } from '@/lib/api';
+import { api, ApiClientError, type LabProduct, type CreateLabProductDto } from '@/lib/api';
 
 function formatError(error: unknown): string {
   if (error instanceof ApiClientError) {
@@ -39,39 +40,6 @@ function formatError(error: unknown): string {
     return `Ошибка: ${error.message}`;
   }
   return 'Неизвестная ошибка';
-}
-
-interface LabProduct {
-  id: string;
-  title: string;
-  subtitle: string | null;
-  description: string | null;
-  price: number;
-  currency: string;
-  isActive: boolean;
-  sortOrder: number;
-  coverMediaType: 'IMAGE' | 'VIDEO';
-  coverMediaUrl: string;
-  ctaType: 'NONE' | 'PRODUCT' | 'URL';
-  ctaProductId: string | null;
-  ctaUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface CreateLabProductDto {
-  title: string;
-  subtitle?: string;
-  description?: string;
-  price?: number;
-  currency?: string;
-  isActive?: boolean;
-  sortOrder?: number;
-  coverMediaType: 'IMAGE' | 'VIDEO';
-  coverMediaUrl: string;
-  ctaType?: 'NONE' | 'PRODUCT' | 'URL';
-  ctaProductId?: string;
-  ctaUrl?: string;
 }
 
 function LabProductsTab(): JSX.Element {
@@ -257,7 +225,7 @@ function LabProductsTab(): JSX.Element {
     );
   }
 
-  const labProducts = data?.items || [];
+  const labProducts: LabProduct[] = data?.items || [];
   const total = data?.total || 0;
 
   return (
@@ -334,15 +302,20 @@ function LabProductsTab(): JSX.Element {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {labProducts.map((product: LabProduct) => (
+                {labProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
                       {product.coverMediaType === 'IMAGE' ? (
-                        <img
-                          src={product.coverMediaUrl}
-                          alt={product.title}
-                          className="w-16 h-16 object-cover rounded"
-                        />
+                        <div className="relative w-16 h-16 rounded overflow-hidden">
+                          <Image
+                            src={product.coverMediaUrl}
+                            alt={product.title || 'Lab product cover'}
+                            fill
+                            className="object-cover"
+                            sizes="64px"
+                            unoptimized
+                          />
+                        </div>
                       ) : (
                         <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
                           <ImageIcon className="w-6 h-6 text-gray-400" />
@@ -524,7 +497,7 @@ function LabProductsTab(): JSX.Element {
                     required
                   >
                     <option value="">Выберите товар</option>
-                    {products?.items?.map((p: any) => (
+                    {products?.items?.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.title}
                       </option>

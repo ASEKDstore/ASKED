@@ -393,6 +393,46 @@ export interface FunnelResponse {
   }>;
 }
 
+export interface LabProduct {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  price: number;
+  currency: string;
+  isActive: boolean;
+  sortOrder: number;
+  coverMediaType: 'IMAGE' | 'VIDEO';
+  coverMediaUrl: string;
+  ctaType: 'NONE' | 'PRODUCT' | 'URL';
+  ctaProductId: string | null;
+  ctaUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LabProductsListResponse {
+  items: LabProduct[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface CreateLabProductDto {
+  title: string;
+  subtitle?: string | null;
+  description?: string | null;
+  price?: number;
+  currency?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+  coverMediaType: 'IMAGE' | 'VIDEO';
+  coverMediaUrl: string;
+  ctaType?: 'NONE' | 'PRODUCT' | 'URL';
+  ctaProductId?: string | null;
+  ctaUrl?: string | null;
+}
+
 export const api = {
   async getMe(initData: string | null): Promise<User> {
     return request<User>('/users/me', {
@@ -858,7 +898,7 @@ export const api = {
   async getAdminLabProducts(
     initData: string | null,
     query?: { q?: string; isActive?: boolean; page?: number; pageSize?: number }
-  ): Promise<{ items: unknown[]; total: number; page: number; pageSize: number }> {
+  ): Promise<LabProductsListResponse> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -868,7 +908,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<{ items: unknown[]; total: number; page: number; pageSize: number }>(
+    return request<LabProductsListResponse>(
       `/admin/lab-products${queryString ? `?${queryString}` : ''}`,
       {
         method: 'GET',
@@ -877,23 +917,23 @@ export const api = {
     );
   },
 
-  async getAdminLabProduct(initData: string | null, id: string): Promise<unknown> {
-    return request<unknown>(`/admin/lab-products/${id}`, {
+  async getAdminLabProduct(initData: string | null, id: string): Promise<LabProduct> {
+    return request<LabProduct>(`/admin/lab-products/${id}`, {
       method: 'GET',
       initData,
     });
   },
 
-  async createAdminLabProduct(initData: string | null, product: unknown): Promise<unknown> {
-    return request<unknown>('/admin/lab-products', {
+  async createAdminLabProduct(initData: string | null, product: CreateLabProductDto): Promise<LabProduct> {
+    return request<LabProduct>('/admin/lab-products', {
       method: 'POST',
       initData,
       body: JSON.stringify(product),
     });
   },
 
-  async updateAdminLabProduct(initData: string | null, id: string, product: unknown): Promise<unknown> {
-    return request<unknown>(`/admin/lab-products/${id}`, {
+  async updateAdminLabProduct(initData: string | null, id: string, product: Partial<CreateLabProductDto>): Promise<LabProduct> {
+    return request<LabProduct>(`/admin/lab-products/${id}`, {
       method: 'PATCH',
       initData,
       body: JSON.stringify(product),
@@ -931,8 +971,8 @@ export const api = {
   },
 
   // Public Lab Products
-  async getPublicLabProducts(): Promise<unknown[]> {
-    return request<unknown[]>('/public/lab-products', {
+  async getPublicLabProducts(): Promise<LabProduct[]> {
+    return request<LabProduct[]>('/public/lab-products', {
       method: 'GET',
     });
   },

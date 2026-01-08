@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import type { LucideIcon } from 'lucide-react';
 import {
   Home,
   ShoppingCart,
@@ -21,7 +22,7 @@ import { Overlay } from './Overlay';
 
 interface MenuItem {
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   href: string;
   divider?: boolean;
 }

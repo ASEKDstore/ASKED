@@ -10,7 +10,7 @@ export function useLockBodyScroll(lock: boolean): void {
   const scrollYRef = useRef(0);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return undefined;
 
     if (lock) {
       // Save the current scroll position
@@ -40,6 +40,8 @@ export function useLockBodyScroll(lock: boolean): void {
         window.scrollTo(0, scrollYRef.current);
       };
     }
+    
+    return undefined;
   }, [lock]);
 }
 

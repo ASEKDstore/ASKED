@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 
 function getTelegramName(): string | null {
   try {
@@ -13,9 +13,9 @@ function getTelegramName(): string | null {
 }
 
 export default function Loading() {
-  const [name, setName] = React.useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setName(getTelegramName());
   }, []);
 

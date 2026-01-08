@@ -1,6 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 
 import type { Product } from '@/lib/api';
@@ -24,6 +25,7 @@ interface ProductCardRefProps {
 
 export function ProductCardRef({ product }: ProductCardRefProps): JSX.Element {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [mainImageError, setMainImageError] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
   const mainImage = getMainImageUrl(product.images);
@@ -48,22 +50,15 @@ export function ProductCardRef({ product }: ProductCardRefProps): JSX.Element {
       <div className="relative w-full h-[580px] rounded-2xl overflow-hidden shadow-lg group">
         {/* Background Image */}
         <div className="absolute inset-0">
-          {normalizedImage ? (
-            <img
+          {normalizedImage && !mainImageError ? (
+            <Image
               src={normalizedImage}
               alt={product.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const parent = target.parentElement;
-                if (parent && !parent.querySelector('.image-fallback')) {
-                  const fallback = document.createElement('div');
-                  fallback.className = 'image-fallback w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 text-gray-500';
-                  fallback.textContent = 'No image';
-                  parent.appendChild(fallback);
-                }
-              }}
+              fill
+              className="object-cover"
+              sizes="100vw"
+              unoptimized
+              onError={() => setMainImageError(true)}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-500">
@@ -118,11 +113,14 @@ export function ProductCardRef({ product }: ProductCardRefProps): JSX.Element {
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
               {/* Main Image */}
               {normalizedImage && (
-                <div className="w-full h-80 rounded-2xl overflow-hidden bg-gray-100">
-                  <img
+                <div className="w-full h-80 rounded-2xl overflow-hidden bg-gray-100 relative">
+                  <Image
                     src={normalizedImage}
                     alt={product.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="100vw"
+                    unoptimized
                   />
                 </div>
               )}
@@ -135,11 +133,14 @@ export function ProductCardRef({ product }: ProductCardRefProps): JSX.Element {
                     {product.images.slice(0, 6).map((img, idx) => {
                       const normalizedImg = normalizeImageUrl(img.url);
                       return normalizedImg ? (
-                        <div key={img.id || idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                          <img
+                        <div key={img.id || idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
+                          <Image
                             src={normalizedImg}
                             alt={`${product.title} ${idx + 1}`}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 33vw, 200px"
+                            unoptimized
                           />
                         </div>
                       ) : null;

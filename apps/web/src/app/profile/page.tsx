@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, User as UserIcon } from 'lucide-react';
+import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
 import { useTelegram } from '@/hooks/useTelegram';
@@ -92,11 +93,16 @@ export default function ProfilePage(): JSX.Element {
         <div className="bg-white rounded-lg shadow-md p-8">
           <div className="flex flex-col items-center space-y-6">
             {user?.photoUrl ? (
-              <img
-                src={user.photoUrl}
-                alt={displayName}
-                className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
-              />
+              <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200">
+                <Image
+                  src={user.photoUrl}
+                  alt={displayName}
+                  fill
+                  className="object-cover"
+                  sizes="128px"
+                  unoptimized
+                />
+              </div>
             ) : (
               <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-gray-300">
                 <UserIcon className="w-16 h-16 text-gray-400" />

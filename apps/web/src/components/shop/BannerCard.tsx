@@ -1,7 +1,9 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 
 import type { Banner } from '@/lib/api';
@@ -16,6 +18,7 @@ interface BannerCardProps {
 export function BannerCard({ banner }: BannerCardProps): JSX.Element {
   const router = useRouter();
   const normalizedMediaUrl = normalizeImageUrl(banner.mediaUrl);
+  const [imageError, setImageError] = useState(false);
 
   const handleClick = () => {
     router.push(`/promo/${banner.promoSlug}`);
@@ -28,23 +31,20 @@ export function BannerCard({ banner }: BannerCardProps): JSX.Element {
     >
       {/* Background Media */}
       <div className="absolute inset-0">
-        {banner.mediaType === 'IMAGE' && normalizedMediaUrl ? (
-          <img
+        {banner.mediaType === 'IMAGE' && normalizedMediaUrl && !imageError ? (
+          <Image
             src={normalizedMediaUrl}
             alt={banner.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const parent = target.parentElement;
-              if (parent && !parent.querySelector('.media-fallback')) {
-                const fallback = document.createElement('div');
-                fallback.className = 'media-fallback w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 text-gray-500';
-                fallback.textContent = 'No image';
-                parent.appendChild(fallback);
-              }
-            }}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="300px"
+            unoptimized
+            onError={() => setImageError(true)}
           />
+        ) : banner.mediaType === 'IMAGE' && imageError ? (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 text-gray-500">
+            No image
+          </div>
         ) : normalizedMediaUrl ? (
           <video
             src={normalizedMediaUrl}

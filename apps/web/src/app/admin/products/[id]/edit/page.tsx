@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowLeft, Plus, X, Save, ChevronUp, ChevronDown } from 'lucide-react';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 // eslint-disable-next-line import/order
 import { useRouter, useParams } from 'next/navigation';
@@ -340,19 +341,14 @@ export default function EditProductPage(): JSX.Element {
                     className="flex-1"
                   />
                   {img.url.trim() && (
-                    <div className="w-20 h-20 border rounded overflow-hidden flex-shrink-0">
-                      <img
+                    <div className="w-20 h-20 border rounded overflow-hidden flex-shrink-0 relative bg-gray-100">
+                      <Image
                         src={img.url}
                         alt={`Preview ${index + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const parent = target.parentElement;
-                          if (parent) {
-                            parent.innerHTML = '<div class="w-full h-full flex items-center justify-center text-xs text-gray-400">Не загрузилось</div>';
-                          }
-                        }}
+                        fill
+                        className="object-cover"
+                        sizes="80px"
+                        unoptimized
                       />
                     </div>
                   )}
