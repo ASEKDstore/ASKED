@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 import { BannersCarousel } from '@/components/BannersCarousel';
 import { HEADER_HEIGHT_PX } from '@/components/Header';
+import { LabPromoCard } from '@/components/LabPromoCard';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 // Use local background image instead of external URL for better performance and reliability
@@ -94,6 +95,9 @@ export default function Home(): JSX.Element {
               Перейти в каталог →
             </motion.button>
           </div>
+
+          {/* LAB Promo Card */}
+          <LabPromoCard />
 
           {/* Bottom Spacing */}
           <div className="h-16" />
