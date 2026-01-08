@@ -6,7 +6,7 @@ const SPLASH_DURATION_MS = 5000;
 
 function getTelegramName(): string | null {
   try {
-    const tg = (window as any)?.Telegram?.WebApp;
+    const tg = window.Telegram?.WebApp;
     const name = tg?.initDataUnsafe?.user?.first_name;
     return typeof name === 'string' && name.trim().length ? name.trim() : null;
   } catch {
@@ -45,7 +45,9 @@ export function SplashGate({ children }: SplashGateProps): JSX.Element {
 
   const version =
     process.env.NEXT_PUBLIC_APP_VERSION ||
-    (typeof window !== 'undefined' ? (window as any).__ASKED_VERSION__ : null) ||
+    (typeof window !== 'undefined' && '__ASKED_VERSION__' in window
+      ? String((window as { __ASKED_VERSION__?: unknown }).__ASKED_VERSION__ || '')
+      : null) ||
     'v1.0.0';
 
   return (

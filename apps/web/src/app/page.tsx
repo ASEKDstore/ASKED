@@ -1,14 +1,14 @@
 'use client';
 
+import { ShoppingBag, Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingBag, Sparkles, ArrowRight } from 'lucide-react';
 
-import { HEADER_HEIGHT_PX } from '@/components/Header';
-import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
-import { Button } from '@/components/ui/button';
-import { useCartStore } from '@/lib/cart-store';
 import { BannersCarousel } from '@/components/BannersCarousel';
+import { HEADER_HEIGHT_PX } from '@/components/Header';
+import { Button } from '@/components/ui/button';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
+import { useCartStore } from '@/lib/cart-store';
 
 // Use local background image instead of external URL for better performance and reliability
 const BG_IMAGE_URL = '/home-bg.jpg';

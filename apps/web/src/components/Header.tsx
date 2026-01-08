@@ -4,13 +4,13 @@ import { User } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
-import { MenuToggleIcon } from './MenuToggleIcon';
-import { SideMenu } from './SideMenu';
-import { ProfileSheet } from './ProfileSheet';
 import { useTelegramUser } from '@/hooks/useTelegramUser';
 
+import { MenuToggleIcon } from './MenuToggleIcon';
+import { ProfileSheet } from './ProfileSheet';
+import { SideMenu } from './SideMenu';
+
 const HEADER_HEIGHT = 56;
-const HEADER_PADDING_X = 16;
 const HEADER_PADDING_Y = 12;
 
 export function Header(): JSX.Element {

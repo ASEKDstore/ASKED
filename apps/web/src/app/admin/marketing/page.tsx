@@ -1,21 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Image, FileText, Plus, Edit, X, Search, ChevronUp, ChevronDown } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { ImageIcon, FileText, Plus, Edit, X, Search, ChevronUp, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -24,8 +16,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Alert } from '@/components/ui/alert';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { useTelegram } from '@/hooks/useTelegram';
 import { getTokenFromUrl } from '@/lib/admin-nav';
 import { api, type Banner, type CreateBannerDto, type UpdateBannerDto, type Promo, type CreatePromoDto, type UpdatePromoDto, ApiClientError } from '@/lib/api';
@@ -249,7 +250,9 @@ function BannersTab(): JSX.Element {
       {banners.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Image className="w-16 h-16 text-gray-400 mb-4" />
+            <div className="w-16 h-16 text-gray-400 mb-4 flex items-center justify-center" aria-hidden="true">
+              <ImageIcon className="w-8 h-8" />
+            </div>
             <p className="text-gray-600 text-lg mb-2">Баннеры отсутствуют</p>
             <Button onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" />

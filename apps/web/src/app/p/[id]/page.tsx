@@ -5,8 +5,8 @@ import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 
-import { Button } from '@/components/ui/button';
 import { HEADER_HEIGHT_PX } from '@/components/Header';
+import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
 import { getMainImageUrl, normalizeImageUrl } from '@/lib/image-utils';

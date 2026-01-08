@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { BannerCard } from '@/components/shop/BannerCard';
 import { ProductCardRef } from '@/components/shop/ProductCardRef';
-import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';

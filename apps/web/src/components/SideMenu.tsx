@@ -1,8 +1,6 @@
 'use client';
 
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { useRouter, usePathname } from 'next/navigation';
-import { useRef, useEffect } from 'react';
 import {
   Home,
   ShoppingCart,
@@ -16,6 +14,8 @@ import {
   Handshake,
   X,
 } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useRef } from 'react';
 
 import { Overlay } from './Overlay';
 

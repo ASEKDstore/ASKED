@@ -1,13 +1,14 @@
 'use client';
 
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { useRef } from 'react';
 import { User as UserIcon, X, Package, Shield } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useRef } from 'react';
+
+import { useTelegramUser } from '@/hooks/useTelegramUser';
 
 import { Overlay } from './Overlay';
-import { useTelegramUser } from '@/hooks/useTelegramUser';
 import { Button } from './ui/button';
 
 interface ProfileSheetProps {

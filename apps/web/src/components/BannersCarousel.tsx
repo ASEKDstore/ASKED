@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useState, useRef, useEffect } from 'react';
 
 import { api, type Banner } from '@/lib/api';
 import { normalizeImageUrl } from '@/lib/image-utils';
@@ -171,13 +171,10 @@ interface BannerSlideProps {
 }
 
 function BannerSlide({ banner, index, onClick, isDragging }: BannerSlideProps): JSX.Element {
-  const [isTapping, setIsTapping] = useState(false);
   const normalizedMediaUrl = normalizeImageUrl(banner.mediaUrl);
 
   const handleTap = () => {
     if (isDragging) return;
-    setIsTapping(true);
-    setTimeout(() => setIsTapping(false), 150);
     onClick();
   };
 
