@@ -156,6 +156,54 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
   const isStep3Complete = isStep2Complete && Boolean(orderData.colorChoice);
   const isStep4Complete = isStep3Complete && Boolean(orderData.placement);
 
+  // Scroll to step function - declared first to be available for scrollToStepWithRetry
+  const scrollToStep = useCallback((stepIndex: number) => {
+    const element = stepRefs.current[stepIndex];
+    if (!element) return;
+
+    const container = containerRef.current;
+    if (!container) {
+      const elementRect = element.getBoundingClientRect();
+      const targetTop = window.scrollY + elementRect.top - 100;
+      window.scrollTo({ top: targetTop, behavior: 'smooth' });
+    } else {
+      const containerRect = container.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+      const scrollTop = container.scrollTop;
+      const targetTop = scrollTop + elementRect.top - containerRect.top - 100;
+
+      if (container.scrollTo) {
+        container.scrollTo({ top: targetTop, behavior: 'smooth' });
+      } else {
+        container.scrollTop = targetTop;
+      }
+    }
+
+    // Highlight the step
+    setHighlightedStep(stepIndex);
+    setTimeout(() => setHighlightedStep(null), 600);
+  }, []);
+
+  // Helper function to scroll to step with retries - declared after scrollToStep
+  const scrollToStepWithRetry = useCallback(
+    (stepIndex: number, maxRetries = 10, delay = 100) => {
+      let attempts = 0;
+      const tryScroll = () => {
+        const element = stepRefs.current[stepIndex];
+        if (element) {
+          scrollToStep(stepIndex);
+        } else if (attempts < maxRetries) {
+          attempts++;
+          setTimeout(tryScroll, delay);
+        }
+      };
+      requestAnimationFrame(() => {
+        requestAnimationFrame(tryScroll); // Double RAF to ensure DOM update
+      });
+    },
+    [scrollToStep]
+  );
+
   // Determine which steps are visible (gated) - memoized to prevent recreation on every render
   const isStepVisible = useCallback(
     (stepIndex: number): boolean => {
@@ -210,26 +258,6 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
     findScrollContainer();
   }, [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete, findScrollContainer]);
 
-  // Helper function to scroll to step with retries - memoized
-  const scrollToStepWithRetry = useCallback(
-    (stepIndex: number, maxRetries = 10, delay = 100) => {
-      let attempts = 0;
-      const tryScroll = () => {
-        const element = stepRefs.current[stepIndex];
-        if (element) {
-          scrollToStep(stepIndex);
-        } else if (attempts < maxRetries) {
-          attempts++;
-          setTimeout(tryScroll, delay);
-        }
-      };
-      requestAnimationFrame(() => {
-        requestAnimationFrame(tryScroll); // Double RAF to ensure DOM update
-      });
-    },
-    [scrollToStep]
-  );
-
   // Auto-scroll when steps become visible
   useEffect(() => {
     if (isStep1Complete && !orderData.size) {
@@ -270,33 +298,6 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
       });
     }
   }, [currentStep, isStepVisible, onProgressChange]);
-
-  const scrollToStep = useCallback((stepIndex: number) => {
-    const element = stepRefs.current[stepIndex];
-    if (!element) return;
-
-    const container = containerRef.current;
-    if (!container) {
-      const elementRect = element.getBoundingClientRect();
-      const targetTop = window.scrollY + elementRect.top - 100;
-      window.scrollTo({ top: targetTop, behavior: 'smooth' });
-    } else {
-      const containerRect = container.getBoundingClientRect();
-      const elementRect = element.getBoundingClientRect();
-      const scrollTop = container.scrollTop;
-      const targetTop = scrollTop + elementRect.top - containerRect.top - 100;
-
-      if (container.scrollTo) {
-        container.scrollTo({ top: targetTop, behavior: 'smooth' });
-      } else {
-        container.scrollTop = targetTop;
-      }
-    }
-
-    // Highlight the step
-    setHighlightedStep(stepIndex);
-    setTimeout(() => setHighlightedStep(null), 600);
-  }, []);
 
   const handleStepComplete = (stepIndex: number, value: string | null) => {
     // Haptic feedback
