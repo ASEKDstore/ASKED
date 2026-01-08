@@ -85,7 +85,7 @@ async function request<T>(
       headers['x-admin-dev-token'] = devToken;
     } else {
       // Normal mode: add Telegram initData
-      const telegramInitData = initData ?? getTelegramInitData() || getInitData();
+      const telegramInitData = initData ?? getTelegramInitData() ?? getInitData();
       const finalInitData = telegramInitData;
 
       if (finalInitData) {
@@ -95,7 +95,7 @@ async function request<T>(
   } else {
     // Non-admin endpoints: always add Telegram initData if available
     // Try provided initData first, then window.Telegram, then helper
-    const telegramInitData = initData ?? getTelegramInitData() || getInitData();
+    const telegramInitData = initData ?? getTelegramInitData() ?? getInitData();
     const finalInitData = telegramInitData;
 
     if (finalInitData) {
