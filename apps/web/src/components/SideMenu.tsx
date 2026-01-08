@@ -76,7 +76,7 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps): JSX.Element {
     }
   };
 
-  const handleDragEnd = (_: any, info: PanInfo) => {
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
     const sheetWidth = sheetRef.current?.offsetWidth || 360;
     const threshold = sheetWidth * DRAG_THRESHOLD;
     const shouldClose =

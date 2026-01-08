@@ -43,10 +43,25 @@ async function request<T>(
 ): Promise<T> {
   const { initData, ...fetchOptions } = options;
 
-  const headers: Record<string, string> = {
+  const baseHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(fetchOptions.headers as Record<string, string>),
   };
+
+  // Safely merge headers from fetchOptions
+  const headers: Record<string, string> = { ...baseHeaders };
+  if (fetchOptions.headers) {
+    if (fetchOptions.headers instanceof Headers) {
+      fetchOptions.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+    } else if (Array.isArray(fetchOptions.headers)) {
+      fetchOptions.headers.forEach(([key, value]) => {
+        headers[key] = value;
+      });
+    } else {
+      Object.assign(headers, fetchOptions.headers);
+    }
+  }
 
   // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
   // Check for dev token in URL for admin endpoints
@@ -112,7 +127,7 @@ async function request<T>(
     // Handle empty responses
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
-      return response.json();
+      return response.json() as Promise<T>;
     }
 
     return response.text() as unknown as T;
@@ -687,7 +702,7 @@ export const api = {
   async getAnalyticsOverview(
     initData: string | null,
     query?: { from?: string; to?: string; granularity?: 'hour' | 'day' | 'week' | 'month' }
-  ): Promise<any> {
+  ): Promise<unknown> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -697,7 +712,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<any>(`/admin/analytics/overview${queryString ? `?${queryString}` : ''}`, {
+    return request<unknown>(`/admin/analytics/overview${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
     });
@@ -706,7 +721,7 @@ export const api = {
   async getTelegramSubscribers(
     initData: string | null,
     query?: { from?: string; to?: string; granularity?: 'hour' | 'day' | 'week' | 'month' }
-  ): Promise<any> {
+  ): Promise<unknown> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -716,7 +731,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<any>(`/admin/analytics/telegram/subscribers${queryString ? `?${queryString}` : ''}`, {
+    return request<unknown>(`/admin/analytics/telegram/subscribers${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
     });
@@ -725,7 +740,7 @@ export const api = {
   async getTopTelegramPosts(
     initData: string | null,
     query?: { limit?: number; from?: string; to?: string }
-  ): Promise<any> {
+  ): Promise<unknown> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -735,7 +750,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<any>(`/admin/analytics/telegram/posts/top${queryString ? `?${queryString}` : ''}`, {
+    return request<unknown>(`/admin/analytics/telegram/posts/top${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
     });
@@ -744,7 +759,7 @@ export const api = {
   async getTopProducts(
     initData: string | null,
     query?: { metric?: 'orders' | 'revenue' | 'views'; limit?: number; from?: string; to?: string }
-  ): Promise<any> {
+  ): Promise<unknown> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -754,7 +769,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<any>(`/admin/analytics/shop/products/top${queryString ? `?${queryString}` : ''}`, {
+    return request<unknown>(`/admin/analytics/shop/products/top${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
     });
@@ -763,7 +778,7 @@ export const api = {
   async getFunnel(
     initData: string | null,
     query?: { from?: string; to?: string }
-  ): Promise<any> {
+  ): Promise<unknown> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -773,7 +788,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<any>(`/admin/analytics/funnel${queryString ? `?${queryString}` : ''}`, {
+    return request<unknown>(`/admin/analytics/funnel${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
     });
@@ -788,7 +803,7 @@ export const api = {
     source?: string;
     campaign?: string;
     postId?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }): Promise<{ success: boolean }> {
     return request<{ success: boolean }>('/public/events', {
       method: 'POST',
@@ -800,7 +815,7 @@ export const api = {
   async getAdminLabProducts(
     initData: string | null,
     query?: { q?: string; isActive?: boolean; page?: number; pageSize?: number }
-  ): Promise<{ items: any[]; total: number; page: number; pageSize: number }> {
+  ): Promise<{ items: unknown[]; total: number; page: number; pageSize: number }> {
     const searchParams = new URLSearchParams();
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
@@ -810,7 +825,7 @@ export const api = {
       });
     }
     const queryString = searchParams.toString();
-    return request<{ items: any[]; total: number; page: number; pageSize: number }>(
+    return request<{ items: unknown[]; total: number; page: number; pageSize: number }>(
       `/admin/lab-products${queryString ? `?${queryString}` : ''}`,
       {
         method: 'GET',
@@ -819,23 +834,23 @@ export const api = {
     );
   },
 
-  async getAdminLabProduct(initData: string | null, id: string): Promise<any> {
-    return request<any>(`/admin/lab-products/${id}`, {
+  async getAdminLabProduct(initData: string | null, id: string): Promise<unknown> {
+    return request<unknown>(`/admin/lab-products/${id}`, {
       method: 'GET',
       initData,
     });
   },
 
-  async createAdminLabProduct(initData: string | null, product: any): Promise<any> {
-    return request<any>('/admin/lab-products', {
+  async createAdminLabProduct(initData: string | null, product: unknown): Promise<unknown> {
+    return request<unknown>('/admin/lab-products', {
       method: 'POST',
       initData,
       body: JSON.stringify(product),
     });
   },
 
-  async updateAdminLabProduct(initData: string | null, id: string, product: any): Promise<any> {
-    return request<any>(`/admin/lab-products/${id}`, {
+  async updateAdminLabProduct(initData: string | null, id: string, product: unknown): Promise<unknown> {
+    return request<unknown>(`/admin/lab-products/${id}`, {
       method: 'PATCH',
       initData,
       body: JSON.stringify(product),
@@ -849,16 +864,16 @@ export const api = {
     });
   },
 
-  async addLabProductMedia(initData: string | null, labProductId: string, media: any): Promise<any> {
-    return request<any>(`/admin/lab-products/${labProductId}/media`, {
+  async addLabProductMedia(initData: string | null, labProductId: string, media: unknown): Promise<unknown> {
+    return request<unknown>(`/admin/lab-products/${labProductId}/media`, {
       method: 'POST',
       initData,
       body: JSON.stringify(media),
     });
   },
 
-  async updateLabProductMedia(initData: string | null, id: string, media: any): Promise<any> {
-    return request<any>(`/admin/lab-products/media/${id}`, {
+  async updateLabProductMedia(initData: string | null, id: string, media: unknown): Promise<unknown> {
+    return request<unknown>(`/admin/lab-products/media/${id}`, {
       method: 'PATCH',
       initData,
       body: JSON.stringify(media),
@@ -873,8 +888,8 @@ export const api = {
   },
 
   // Public Lab Products
-  async getPublicLabProducts(): Promise<any[]> {
-    return request<any[]>('/public/lab-products', {
+  async getPublicLabProducts(): Promise<unknown[]> {
+    return request<unknown[]>('/public/lab-products', {
       method: 'GET',
     });
   },

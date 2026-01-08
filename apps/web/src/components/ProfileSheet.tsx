@@ -42,7 +42,7 @@ export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Elemen
     onClose();
   };
 
-  const handleDragEnd = (_: any, info: PanInfo) => {
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
     const sheetHeight = sheetRef.current?.offsetHeight || 600;
     const threshold = sheetHeight * DRAG_THRESHOLD;
     const shouldClose =

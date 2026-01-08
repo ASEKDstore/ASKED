@@ -38,8 +38,11 @@ function getTelegramUserId(): string | undefined {
     const params = new URLSearchParams(initData);
     const userStr = params.get('user');
     if (userStr) {
-      const user = JSON.parse(decodeURIComponent(userStr));
-      return user.id?.toString();
+      const user = JSON.parse(decodeURIComponent(userStr)) as unknown;
+      if (user && typeof user === 'object' && 'id' in user) {
+        const userId = (user as { id?: unknown }).id;
+        return userId != null ? String(userId) : undefined;
+      }
     }
   } catch {
     // Ignore errors
@@ -50,7 +53,7 @@ function getTelegramUserId(): string | undefined {
 export interface TrackEventOptions {
   eventType: 'PAGE_VIEW' | 'PRODUCT_VIEW' | 'ADD_TO_CART' | 'CHECKOUT_STARTED' | 'PURCHASE';
   productId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export async function trackEvent(options: TrackEventOptions): Promise<void> {
@@ -75,21 +78,21 @@ export async function trackEvent(options: TrackEventOptions): Promise<void> {
   }
 }
 
-// Convenience functions
+  // Convenience functions
 export const analytics = {
-  trackPageView: (metadata?: Record<string, any>) =>
+  trackPageView: (metadata?: Record<string, unknown>) =>
     trackEvent({ eventType: 'PAGE_VIEW', metadata }),
 
-  trackProductView: (productId: string, metadata?: Record<string, any>) =>
+  trackProductView: (productId: string, metadata?: Record<string, unknown>) =>
     trackEvent({ eventType: 'PRODUCT_VIEW', productId, metadata }),
 
-  trackAddToCart: (productId: string, metadata?: Record<string, any>) =>
+  trackAddToCart: (productId: string, metadata?: Record<string, unknown>) =>
     trackEvent({ eventType: 'ADD_TO_CART', productId, metadata }),
 
-  trackCheckoutStarted: (metadata?: Record<string, any>) =>
+  trackCheckoutStarted: (metadata?: Record<string, unknown>) =>
     trackEvent({ eventType: 'CHECKOUT_STARTED', metadata }),
 
-  trackPurchase: (metadata?: Record<string, any>) =>
+  trackPurchase: (metadata?: Record<string, unknown>) =>
     trackEvent({ eventType: 'PURCHASE', metadata }),
 };
 

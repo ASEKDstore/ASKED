@@ -74,7 +74,7 @@ export function BannersCarousel({ className = '' }: BannersCarouselProps): JSX.E
   const handleBannerClick = (banner: Banner) => {
     // Haptic feedback (Telegram WebApp)
     if (typeof window !== 'undefined') {
-      const tg = (window as any)?.Telegram?.WebApp;
+      const tg = window.Telegram?.WebApp;
       if (tg?.HapticFeedback?.impactOccurred) {
         tg.HapticFeedback.impactOccurred('light');
       }

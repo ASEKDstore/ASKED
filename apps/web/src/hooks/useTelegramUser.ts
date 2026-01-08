@@ -24,7 +24,7 @@ export function useTelegramUser(): {
     }
 
     try {
-      const tg = (window as any)?.Telegram?.WebApp;
+      const tg = window.Telegram?.WebApp;
       const unsafeUser = tg?.initDataUnsafe?.user;
 
       if (unsafeUser && unsafeUser.id && unsafeUser.first_name) {
