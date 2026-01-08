@@ -121,18 +121,19 @@ export function LabPromoCard(): JSX.Element {
               animate={levitationAnimation}
               className="relative w-full h-full z-10"
             >
-              {!imageError ? (
-                <Image
-                  src="/lab/mascot.png"
-                  alt="ASKED LAB Mascot"
-                  fill
-                  className="object-contain drop-shadow-2xl"
-                  sizes="(max-width: 768px) 120px, 240px"
-                  unoptimized
-                  onError={() => setImageError(true)}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-white/5 rounded-full border border-white/10">
+              <Image
+                src="/lab/mascot.png"
+                alt="ASKED LAB Mascot"
+                fill
+                className="object-contain drop-shadow-2xl"
+                sizes="(max-width: 768px) 120px, 240px"
+                unoptimized
+                priority
+                onError={() => setImageError(true)}
+                style={{ display: imageError ? 'none' : 'block' }}
+              />
+              {imageError && (
+                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-white/5 rounded-full border border-white/10">
                   <Sparkles className="w-12 h-12 text-white/40" />
                 </div>
               )}
