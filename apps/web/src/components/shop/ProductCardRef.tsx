@@ -47,7 +47,10 @@ export function ProductCardRef({ product }: ProductCardRefProps): JSX.Element {
 
   return (
     <>
-      <div className="relative w-full h-[580px] rounded-2xl overflow-hidden shadow-lg group">
+      <div
+        className="relative w-full aspect-[3/4] rounded-[20px] overflow-hidden cursor-pointer group"
+        onClick={handleBuyClick}
+      >
         {/* Background Image */}
         <div className="absolute inset-0">
           {normalizedImage && !mainImageError ? (
@@ -55,38 +58,44 @@ export function ProductCardRef({ product }: ProductCardRefProps): JSX.Element {
               src={normalizedImage}
               alt={product.title}
               fill
-              className="object-cover"
-              sizes="100vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 768px) 50vw, 33vw"
               unoptimized
               onError={() => setMainImageError(true)}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-500">
-              No image
+            <div className="w-full h-full bg-gradient-to-br from-gray-800/50 to-gray-900/50 flex items-center justify-center text-white/40 text-sm">
+              Нет фото
             </div>
           )}
           {/* Gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         </div>
 
-        {/* Bottom Panel: Price and Buy Button */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 p-6">
-          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-xl">
-            <div className="flex items-center justify-between gap-4">
-              {/* Price */}
-              <div className="flex-1">
-                <p className="text-white/80 text-xs mb-1">Цена</p>
-                <p className="text-2xl font-bold text-white">{formatPrice(product.price)}</p>
+        {/* Glass Card Content */}
+        <div className="absolute inset-0 flex flex-col justify-end p-4">
+          <div className="bg-black/30 backdrop-blur-xl rounded-[16px] p-3 border border-white/10">
+            {/* Title */}
+            <h3 className="text-white font-medium text-sm mb-2 line-clamp-2">{product.title}</h3>
+            
+            {/* Price and Buy Button */}
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-white/60 text-xs mb-0.5">Цена</p>
+                <p className="text-lg font-bold text-white">{formatPrice(product.price)}</p>
               </div>
 
-              {/* Buy Button */}
-              <Button
-                onClick={handleBuyClick}
+              {/* Subtle Buy Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleBuyClick();
+                }}
                 disabled={product.stock === 0}
-                className="flex-1 rounded-full bg-white/90 backdrop-blur-md text-gray-900 hover:bg-white border border-white/50 shadow-lg font-medium disabled:opacity-50"
+                className="px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/20 text-white text-xs font-medium backdrop-blur-sm border border-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                {product.stock === 0 ? 'Нет в наличии' : 'Купить'}
-              </Button>
+                {product.stock === 0 ? 'Нет' : 'Купить'}
+              </button>
             </div>
           </div>
         </div>
