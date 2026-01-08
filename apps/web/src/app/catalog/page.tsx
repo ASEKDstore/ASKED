@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { HEADER_HEIGHT_PX } from '@/components/Header';
-import { ProductCardRef } from '@/components/shop/ProductCardRef';
+import { ProductCard } from '@/components/shop/ProductCard';
+import { ProductSheet } from '@/components/shop/ProductSheet';
+import type { Product } from '@/lib/api';
 import { api } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
 
@@ -18,6 +20,7 @@ export default function CatalogPage(): JSX.Element {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [sort, setSort] = useState<'new' | 'price_asc' | 'price_desc'>('new');
   const [page, setPage] = useState(1);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const itemCount = useCartStore((state) => state.getItemCount());
 
   const { data, isLoading, error } = useQuery({
@@ -220,8 +223,13 @@ export default function CatalogPage(): JSX.Element {
           ) : (
             <>
               <div className="w-full grid grid-cols-2 gap-[14px] md:gap-[18px]">
-                {data?.items.map((product) => (
-                  <ProductCardRef key={product.id} product={product} />
+                {data?.items.map((product, index) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onTap={setSelectedProduct}
+                    priority={index < 4}
+                  />
                 ))}
               </div>
 
@@ -251,6 +259,13 @@ export default function CatalogPage(): JSX.Element {
           )}
         </div>
       </div>
+
+      {/* Product Sheet */}
+      <ProductSheet
+        product={selectedProduct}
+        isOpen={selectedProduct !== null}
+        onClose={() => setSelectedProduct(null)}
+      />
     </div>
   );
 }
