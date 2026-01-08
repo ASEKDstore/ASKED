@@ -1,5 +1,15 @@
 import { getInitData } from './telegram';
 
+// Helper to safely get Telegram initData
+function getTelegramInitData(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return window.Telegram?.WebApp?.initData || '';
+  } catch {
+    return '';
+  }
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN ?? '';
 
@@ -75,8 +85,8 @@ async function request<T>(
       headers['x-admin-dev-token'] = devToken;
     } else {
       // Normal mode: add Telegram initData
-      const telegramInitData = getInitData();
-      const finalInitData = initData ?? telegramInitData;
+      const telegramInitData = initData ?? getTelegramInitData() || getInitData();
+      const finalInitData = telegramInitData;
 
       if (finalInitData) {
         headers['x-telegram-init-data'] = finalInitData;
@@ -84,8 +94,9 @@ async function request<T>(
     }
   } else {
     // Non-admin endpoints: always add Telegram initData if available
-    const telegramInitData = getInitData();
-    const finalInitData = initData ?? telegramInitData;
+    // Try provided initData first, then window.Telegram, then helper
+    const telegramInitData = initData ?? getTelegramInitData() || getInitData();
+    const finalInitData = telegramInitData;
 
     if (finalInitData) {
       headers['x-telegram-init-data'] = finalInitData;
@@ -499,6 +510,13 @@ export const api = {
       method: 'POST',
       initData,
       body: JSON.stringify(order),
+    });
+  },
+
+  async getMyOrders(initData: string | null): Promise<OrdersListResponse> {
+    return request<OrdersListResponse>('/orders/my', {
+      method: 'GET',
+      initData,
     });
   },
 

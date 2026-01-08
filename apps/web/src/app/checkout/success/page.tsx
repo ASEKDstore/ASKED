@@ -95,17 +95,29 @@ function CheckoutSuccessContent(): JSX.Element {
                 Мы свяжемся с вами в Telegram для подтверждения и оплаты.
               </p>
 
-              {/* CTA Button */}
-              <motion.div whileTap={{ scale: 0.97 }}>
-                <Link href="/catalog">
-                  <button
-                    onClick={handleHaptic}
-                    className="w-full rounded-full px-6 py-4 bg-white text-black font-semibold text-base transition-opacity hover:opacity-90"
-                  >
-                    Вернуться в каталог
-                  </button>
-                </Link>
-              </motion.div>
+              {/* CTA Buttons */}
+              <div className="space-y-3">
+                <motion.div whileTap={{ scale: 0.97 }}>
+                  <Link href="/profile">
+                    <button
+                      onClick={handleHaptic}
+                      className="w-full rounded-full px-6 py-4 bg-white text-black font-semibold text-base transition-opacity hover:opacity-90"
+                    >
+                      Перейти в мои заказы
+                    </button>
+                  </Link>
+                </motion.div>
+                <motion.div whileTap={{ scale: 0.97 }}>
+                  <Link href="/catalog">
+                    <button
+                      onClick={handleHaptic}
+                      className="w-full rounded-full px-6 py-3 bg-white/12 hover:bg-white/16 text-white font-medium backdrop-blur-xl border border-white/10 transition-colors"
+                    >
+                      Вернуться в каталог
+                    </button>
+                  </Link>
+                </motion.div>
+              </div>
             </div>
           </motion.div>
         </div>

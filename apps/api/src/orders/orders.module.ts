@@ -6,13 +6,15 @@ import { UsersModule } from '../users/users.module';
 
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
+import { TelegramBotService } from './telegram-bot.service';
 
 @Module({
   imports: [PrismaModule, AuthModule, UsersModule],
   controllers: [OrdersController],
-  providers: [OrdersService],
+  providers: [OrdersService, TelegramBotService],
   exports: [OrdersService],
 })
 export class OrdersModule {}
+
 
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { ShoppingBag, Eye } from 'lucide-react';
+import { ShoppingBag, Eye, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 // eslint-disable-next-line import/order
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -78,6 +79,7 @@ export default function AdminOrdersPage(): JSX.Element {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'order'] });
+      setDrawerOpen(false);
     },
   });
 
@@ -127,6 +129,14 @@ export default function AdminOrdersPage(): JSX.Element {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="mb-4">
+        <Link href="/admin">
+          <Button variant="ghost" size="sm" className="text-gray-600">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Назад в админку
+          </Button>
+        </Link>
+      </div>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Заказы</h1>
       </div>

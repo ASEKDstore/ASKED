@@ -123,6 +123,48 @@ export class OrdersService {
     };
   }
 
+  async findByUserId(userId: string, query: { page: number; pageSize: number }): Promise<OrdersListResponse> {
+    const { page, pageSize } = query;
+
+    const where = {
+      userId,
+    };
+
+    const total = await this.prisma.order.count({ where });
+
+    const orders = await this.prisma.order.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        items: true,
+      },
+    });
+
+    const items = orders.map((order) => ({
+      id: order.id,
+      userId: order.userId,
+      status: order.status as 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED',
+      totalAmount: order.totalAmount,
+      currency: order.currency,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    }));
+
+    return {
+      items,
+      meta: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    };
+  }
+
   async findOne(id: string): Promise<OrderDto> {
     const order = await this.prisma.order.findUnique({
       where: { id },

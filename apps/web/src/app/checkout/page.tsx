@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 
 import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { useTelegram } from '@/hooks/useTelegram';
-import { api } from '@/lib/api';
+import { api, type ApiClientError } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
 import { formatPrice } from '@/lib/utils';
 
@@ -44,14 +44,17 @@ export default function CheckoutPage(): JSX.Element {
       customerPhone: string;
       customerAddress?: string;
       comment?: string;
-    }) =>
-      api.createOrder(initData, {
+    }) => {
+      // Ensure we have initData
+      const finalInitData = initData || (typeof window !== 'undefined' ? window.Telegram?.WebApp?.initData : null) || '';
+      return api.createOrder(finalInitData, {
         ...data,
         items: items.map((item) => ({
           productId: item.productId,
           qty: item.qty,
         })),
-      }),
+      });
+    },
     onSuccess: (order) => {
       clearCart();
       router.push(`/checkout/success?id=${order.id}`);
@@ -287,16 +290,34 @@ export default function CheckoutPage(): JSX.Element {
 
             {/* Error Message */}
             {createOrderMutation.isError && (
-              <div className="rounded-[20px] bg-red-500/10 backdrop-blur-xl border border-red-500/20 p-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-red-300">
-                  <p className="font-semibold mb-1">Ошибка оформления заказа</p>
-                  <p className="text-red-300/80">
-                    {createOrderMutation.error instanceof Error
-                      ? createOrderMutation.error.message
-                      : 'Попробуйте позже'}
-                  </p>
-                </div>
+              <div className="rounded-[20px] bg-red-500/10 backdrop-blur-xl border border-red-500/20 p-4">
+                <AlertCircle className="w-5 h-5 text-red-400 mb-3" />
+                {createOrderMutation.error instanceof Error &&
+                'statusCode' in createOrderMutation.error &&
+                (createOrderMutation.error as ApiClientError).statusCode === 401 ? (
+                  <div className="text-sm">
+                    <p className="font-semibold text-white mb-2">Нужен Telegram</p>
+                    <p className="text-white/70 leading-relaxed mb-4">
+                      Открой приложение из Telegram, чтобы оформить заказ.
+                    </p>
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => createOrderMutation.reset()}
+                      className="rounded-full px-4 py-2 bg-white/10 hover:bg-white/15 text-white text-sm backdrop-blur-xl border border-white/10 transition-colors"
+                    >
+                      Ок
+                    </motion.button>
+                  </div>
+                ) : (
+                  <div className="text-sm text-red-300">
+                    <p className="font-semibold mb-1">Ошибка оформления заказа</p>
+                    <p className="text-red-300/80">
+                      {createOrderMutation.error instanceof Error
+                        ? createOrderMutation.error.message
+                        : 'Попробуйте позже'}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </form>
