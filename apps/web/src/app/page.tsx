@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
 import { BannersCarousel } from '@/components/BannersCarousel';
+import { CustomSteps } from '@/components/CustomSteps';
 import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { LabPromoCard } from '@/components/LabPromoCard';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
@@ -98,6 +99,9 @@ export default function Home(): JSX.Element {
 
           {/* LAB Promo Card */}
           <LabPromoCard />
+
+          {/* Custom Steps Section */}
+          <CustomSteps />
 
           {/* Bottom Spacing */}
           <div className="h-16" />
