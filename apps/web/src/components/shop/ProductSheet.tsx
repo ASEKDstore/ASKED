@@ -18,7 +18,7 @@ interface ProductSheetProps {
   onClose: () => void;
 }
 
-export function ProductSheet({ product, isOpen, onClose }: ProductSheetProps): JSX.Element {
+export function ProductSheet({ product, isOpen, onClose }: ProductSheetProps): JSX.Element | null {
   const [imageError, setImageError] = useState(false);
   const [dragY, setDragY] = useState(0);
   const addItem = useCartStore((state) => state.addItem);
