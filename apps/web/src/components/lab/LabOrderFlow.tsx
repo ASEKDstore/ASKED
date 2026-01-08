@@ -105,7 +105,7 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
   const [highlightedStep, setHighlightedStep] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLElement | null>(null);
 
   const steps = [
     { id: 'clothing', label: 'Тип одежды', icon: Shirt },
@@ -118,14 +118,14 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
   // Find scroll container (parent with overflow-y-auto)
   useEffect(() => {
     const findScrollContainer = () => {
-      let element = stepRefs.current[0]?.parentElement;
+      let element: HTMLElement | null = stepRefs.current[0]?.parentElement ?? null;
       while (element) {
         const style = window.getComputedStyle(element);
         if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
           containerRef.current = element;
           return;
         }
-        element = element.parentElement;
+        element = element.parentElement ?? null;
       }
       // Fallback to window
       containerRef.current = null;
@@ -137,22 +137,24 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
     const element = stepRefs.current[stepIndex];
     if (!element) return;
 
-    const container = containerRef.current || window;
-    const containerRect = container === window 
-      ? { top: 0, scrollTop: window.scrollY }
-      : (container as HTMLElement).getBoundingClientRect();
-    
-    const elementRect = element.getBoundingClientRect();
-    const scrollTop = container === window 
-      ? window.scrollY 
-      : (container as HTMLElement).scrollTop;
-    
-    const targetTop = scrollTop + elementRect.top - (container === window ? 0 : containerRect.top) - 100; // 100px offset
-
-    if (container === window) {
+    const container = containerRef.current;
+    if (!container) {
+      // Fallback to window scroll
+      const elementRect = element.getBoundingClientRect();
+      const targetTop = window.scrollY + elementRect.top - 100;
       window.scrollTo({ top: targetTop, behavior: 'smooth' });
     } else {
-      (container as HTMLElement).scrollTo({ top: targetTop, behavior: 'smooth' });
+      const containerRect = container.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+      const scrollTop = container.scrollTop;
+      const targetTop = scrollTop + elementRect.top - containerRect.top - 100; // 100px offset
+      
+      if (container.scrollTo) {
+        container.scrollTo({ top: targetTop, behavior: 'smooth' });
+      } else {
+        // Fallback for older browsers
+        container.scrollTop = targetTop;
+      }
     }
 
     // Highlight the step
@@ -204,9 +206,7 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
 
   // Scroll to current step on mount/change
   useEffect(() => {
-    if (containerRef.current || typeof window !== 'undefined') {
-      scrollToStep(currentStep);
-    }
+    scrollToStep(currentStep);
   }, [currentStep]);
 
   // Success screen
@@ -433,7 +433,7 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
   };
 
   return (
-    <div className="relative w-full" ref={containerRef}>
+    <div className="relative w-full">
       {/* Progress Indicator */}
       <div className="sticky top-0 z-20 px-4 py-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center justify-between mb-2">
