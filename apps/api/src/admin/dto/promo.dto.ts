@@ -69,3 +69,4 @@ export const updatePromoSchema = z.object({
 export type UpdatePromoDto = z.infer<typeof updatePromoSchema>;
 
 
+

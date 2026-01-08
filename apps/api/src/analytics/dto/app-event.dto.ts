@@ -13,3 +13,4 @@ export const appEventSchema = z.object({
 
 export type AppEventDto = z.infer<typeof appEventSchema>;
 
+

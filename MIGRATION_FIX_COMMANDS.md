@@ -264,3 +264,4 @@ pnpm prisma migrate resolve --rolled-back 20250107000000_banners_and_promos
 **Total time:** ~2-5 minutes
 **Risk level:** Low (all operations are additive, no data deletion)
 
+

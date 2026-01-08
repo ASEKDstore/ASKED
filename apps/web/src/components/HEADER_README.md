@@ -103,3 +103,4 @@ import { HEADER_HEIGHT_PX } from '@/components/Header';
 - ProfileSheet shows admin button only if `?token` is in URL or in development mode
 - All overlays close on backdrop click or ESC key press
 
+

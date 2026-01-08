@@ -247,3 +247,4 @@ async findAll(): Promise<PromoDto[]> {
 3. `apps/api/prisma/migrations/20250107000000_banners_and_promos/migration.sql` - Banners/promos migration
 4. `apps/api/prisma/schema.prisma` - Prisma schema (should match migrations)
 
+

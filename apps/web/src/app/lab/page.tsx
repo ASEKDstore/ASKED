@@ -35,9 +35,11 @@ export default function LabPage(): JSX.Element {
   const handleOrderComplete = (data: {
     clothingType: string | null;
     size: string | null;
-    color: string | null;
+    colorChoice: string | null;
+    customColor: string | null;
     placement: string | null;
     description: string;
+    attachment: File | null;
   }) => {
     // TODO: Send order to backend API
     console.log('Order submitted:', data);

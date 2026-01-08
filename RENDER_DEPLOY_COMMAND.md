@@ -85,3 +85,4 @@ pnpm prisma generate
 - ✅ Pre-Deploy Command выполняется автоматически при каждом деплое
 - ✅ Безопасно для production (не удаляет данные)
 
+

@@ -27,3 +27,4 @@ export const promoDtoSchema = z.object({
 export type PromoDto = z.infer<typeof promoDtoSchema>;
 
 
+

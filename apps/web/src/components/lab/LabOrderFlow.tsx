@@ -1,58 +1,79 @@
 'use client';
 
 import { motion, useInView } from 'framer-motion';
-import { ArrowRight, Check, ChevronUp, Palette, Shirt, Type } from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  Image as ImageIcon,
+  Palette,
+  Shirt,
+  Sparkles,
+  Upload,
+  X,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface OrderData {
   clothingType: string | null;
   size: string | null;
-  color: string | null;
+  colorChoice: string | null;
+  customColor: string | null;
   placement: string | null;
   description: string;
+  attachment: File | null;
 }
 
+// Clothing types with icons
 const CLOTHING_TYPES = [
-  { id: 'hoodie', label: 'Худи', icon: '👕' },
-  { id: 'tshirt', label: 'Футболка', icon: '👔' },
-  { id: 'jacket', label: 'Куртка', icon: '🧥' },
-  { id: 'custom', label: 'Свой вариант', icon: '✨' },
+  { id: 'hoodie', label: 'Худи', icon: Shirt },
+  { id: 'tshirt', label: 'Футболка', icon: Shirt },
+  { id: 'jacket', label: 'Куртка', icon: Shirt },
+  { id: 'custom', label: 'Свой вариант', icon: Sparkles },
 ];
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
+// Limited colors: black, white, gray, custom
 const COLORS = [
-  { id: 'black', label: 'Чёрный', value: '#000000' },
+  { id: 'black', label: 'Черный', value: '#000000' },
   { id: 'white', label: 'Белый', value: '#FFFFFF' },
   { id: 'gray', label: 'Серый', value: '#808080' },
-  { id: 'navy', label: 'Тёмно-синий', value: '#000080' },
-  { id: 'red', label: 'Красный', value: '#FF0000' },
-  { id: 'blue', label: 'Синий', value: '#0000FF' },
-  { id: 'green', label: 'Зелёный', value: '#008000' },
-  { id: 'yellow', label: 'Жёлтый', value: '#FFFF00' },
+  { id: 'custom', label: 'Свой цвет', value: null },
 ];
 
+// Placement options with icons
 const PLACEMENTS = [
   { id: 'front', label: 'Фронт', icon: '⬆️' },
   { id: 'back', label: 'Спина', icon: '⬇️' },
   { id: 'sleeve', label: 'Рукав', icon: '↔️' },
-  { id: 'custom', label: 'Произвольно', icon: '📍' },
+  { id: 'individual', label: 'Индивидуально', icon: '📍' },
+];
+
+const STEP_LABELS = [
+  'Выбор одежды',
+  'Размер',
+  'Цвет базы',
+  'Место кастома',
+  'Описание и файл',
 ];
 
 interface LabOrderFlowProps {
   onComplete: (data: OrderData) => void;
 }
 
-interface StepWrapperProps {
+interface StepBlockProps {
   stepIndex: number;
+  isVisible: boolean;
   isHighlighted: boolean;
   stepRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
-  renderStep: (index: number) => JSX.Element;
+  children: React.ReactNode;
 }
 
-function StepWrapper({ stepIndex, isHighlighted, stepRefs, renderStep }: StepWrapperProps): JSX.Element {
+function StepBlock({ stepIndex, isVisible, isHighlighted, stepRefs, children }: StepBlockProps): JSX.Element | null {
   const stepRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(stepRef, { once: true, margin: '-100px' });
+
+  if (!isVisible) return null;
 
   return (
     <div
@@ -79,43 +100,66 @@ function StepWrapper({ stepIndex, isHighlighted, stepRefs, renderStep }: StepWra
 
       <motion.div
         ref={stepRef}
-        initial={{ opacity: 0, y: 30 }}
-        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 16, scale: 0.985, filter: 'blur(2px)' }}
+        animate={
+          isInView
+            ? { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }
+            : { opacity: 0, y: 16, scale: 0.985, filter: 'blur(2px)' }
+        }
         transition={{
-          duration: 0.5,
+          duration: 0.6,
           ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
         }}
         className="w-full max-w-[600px] relative z-10"
       >
-        {renderStep(stepIndex)}
+        {/* Step Header */}
+        <div className="mb-6 text-center">
+          <p className="text-[clamp(11px,2.5vw,12px)] font-semibold tracking-[0.1em] uppercase text-white/60 mb-2">
+            Шаг {stepIndex + 1} из 5 · {STEP_LABELS[stepIndex]}
+          </p>
+        </div>
+
+        {children}
       </motion.div>
     </div>
   );
 }
 
 export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
-  const [currentStep, setCurrentStep] = useState(0);
   const [orderData, setOrderData] = useState<OrderData>({
     clothingType: null,
     size: null,
-    color: null,
+    colorChoice: null,
+    customColor: null,
     placement: null,
     description: '',
+    attachment: null,
   });
   const [highlightedStep, setHighlightedStep] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const steps = [
-    { id: 'clothing', label: 'Тип одежды', icon: Shirt },
-    { id: 'size', label: 'Размер', icon: Type },
-    { id: 'color', label: 'Цвет', icon: Palette },
-    { id: 'placement', label: 'Размещение', icon: Check },
-    { id: 'description', label: 'Описание', icon: Type },
-  ];
+  // Determine which steps are visible (gated)
+  const isStepVisible = (stepIndex: number): boolean => {
+    switch (stepIndex) {
+      case 0:
+        return true; // Always show first step
+      case 1:
+        return orderData.clothingType !== null;
+      case 2:
+        return orderData.size !== null;
+      case 3:
+        return orderData.colorChoice !== null;
+      case 4:
+        return orderData.placement !== null;
+      default:
+        return false;
+    }
+  };
 
-  // Find scroll container (parent with overflow-y-auto)
+  // Find scroll container
   useEffect(() => {
     const findScrollContainer = () => {
       let element: HTMLElement | null = stepRefs.current[0]?.parentElement ?? null;
@@ -127,7 +171,6 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
         }
         element = element.parentElement ?? null;
       }
-      // Fallback to window
       containerRef.current = null;
     };
     findScrollContainer();
@@ -139,7 +182,6 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
 
     const container = containerRef.current;
     if (!container) {
-      // Fallback to window scroll
       const elementRect = element.getBoundingClientRect();
       const targetTop = window.scrollY + elementRect.top - 100;
       window.scrollTo({ top: targetTop, behavior: 'smooth' });
@@ -147,12 +189,11 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
       const containerRect = container.getBoundingClientRect();
       const elementRect = element.getBoundingClientRect();
       const scrollTop = container.scrollTop;
-      const targetTop = scrollTop + elementRect.top - containerRect.top - 100; // 100px offset
-      
+      const targetTop = scrollTop + elementRect.top - containerRect.top - 100;
+
       if (container.scrollTo) {
         container.scrollTo({ top: targetTop, behavior: 'smooth' });
       } else {
-        // Fallback for older browsers
         container.scrollTop = targetTop;
       }
     }
@@ -168,24 +209,45 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
     } catch { /* noop */ }
 
-    const stepId = steps[stepIndex].id;
-    setOrderData((prev) => ({ ...prev, [stepId]: value }));
+    // Update order data
+    if (stepIndex === 0) {
+      setOrderData((prev) => ({ ...prev, clothingType: value }));
+    } else if (stepIndex === 1) {
+      setOrderData((prev) => ({ ...prev, size: value }));
+    } else if (stepIndex === 2) {
+      setOrderData((prev) => ({ ...prev, colorChoice: value, customColor: value === 'custom' ? null : null }));
+    } else if (stepIndex === 3) {
+      setOrderData((prev) => ({ ...prev, placement: value }));
+    }
 
-    // Auto-scroll to next step
-    if (stepIndex < steps.length - 1) {
-      setTimeout(() => {
-        const nextStep = stepIndex + 1;
-        setCurrentStep(nextStep);
+    // Auto-scroll to next step after a delay
+    setTimeout(() => {
+      const nextStep = stepIndex + 1;
+      if (nextStep < 5 && isStepVisible(nextStep)) {
         scrollToStep(nextStep);
-      }, 100); // 80-120ms delay
+      }
+    }, 150);
+  };
+
+  const handleCustomColorChange = (color: string) => {
+    setOrderData((prev) => ({ ...prev, customColor: color }));
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'];
+      if (validTypes.includes(file.type)) {
+        setOrderData((prev) => ({ ...prev, attachment: file }));
+      }
     }
   };
 
-  const handleBack = () => {
-    if (currentStep > 0) {
-      const newStep = currentStep - 1;
-      setCurrentStep(newStep);
-      scrollToStep(newStep);
+  const handleRemoveFile = () => {
+    setOrderData((prev) => ({ ...prev, attachment: null }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -194,7 +256,6 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('medium');
     } catch { /* noop */ }
     setIsSubmitted(true);
-    // Delay to show success screen before calling onComplete
     setTimeout(() => {
       onComplete(orderData);
     }, 2000);
@@ -203,11 +264,6 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
   const handleBackToLab = () => {
     onComplete(orderData);
   };
-
-  // Scroll to current step on mount/change
-  useEffect(() => {
-    scrollToStep(currentStep);
-  }, [currentStep]);
 
   // Success screen
   if (isSubmitted) {
@@ -228,11 +284,9 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
           >
             <Check className="w-10 h-10 text-white" />
           </motion.div>
-          
+
           <div>
-            <h2 className="text-[clamp(28px,7vw,40px)] font-bold text-white mb-4">
-              Принято.
-            </h2>
+            <h2 className="text-[clamp(28px,7vw,40px)] font-bold text-white mb-4">Принято.</h2>
             <p className="text-[clamp(16px,4vw,18px)] text-white/75 leading-relaxed">
               Мы посмотрим заявку и напишем тебе с уточнениями.
             </p>
@@ -252,51 +306,77 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
     );
   }
 
-  const renderStep = (stepIndex: number): JSX.Element => {
-    const step = steps[stepIndex];
+  return (
+    <div className="relative w-full">
+      {/* Progress Indicator */}
+      <div className="sticky top-0 z-20 px-4 py-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-white/70 text-sm">
+            {orderData.clothingType ? 'Шаг ' + (orderData.placement ? '5' : orderData.colorChoice ? '4' : orderData.size ? '3' : '2') + ' из 5' : 'Шаг 1 из 5'}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          {[0, 1, 2, 3, 4].map((index) => (
+            <div
+              key={index}
+              className={`flex-1 h-1 rounded-full transition-all
+                        ${isStepVisible(index) && (orderData.placement || index < 4) ? 'bg-white' : 'bg-white/20'}
+                      `}
+            />
+          ))}
+        </div>
+      </div>
 
-    switch (step.id) {
-      case 'clothing':
-        return (
+      {/* Steps Container */}
+      <div className="relative">
+        {/* Step 1: Clothing Type */}
+        <StepBlock
+          stepIndex={0}
+          isVisible={isStepVisible(0)}
+          isHighlighted={highlightedStep === 0}
+          stepRefs={stepRefs}
+        >
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">
-                Что кастомим?
-              </h3>
+              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">Что кастомим?</h3>
               <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
                 Выбери базу — остальное мы доведём до идеала.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              {CLOTHING_TYPES.map((type) => (
-                <motion.button
-                  key={type.id}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => handleStepComplete(0, type.id)}
-                  className={`rounded-[20px] p-6 bg-black/30 backdrop-blur-xl border transition-all
-                            ${orderData.clothingType === type.id
-                              ? 'border-white/30 bg-white/10 shadow-[0_8px_24px_rgba(255,255,255,0.1)]'
-                              : 'border-white/10 hover:border-white/20 hover:bg-black/35'
-                            }`}
-                >
-                  <div className="text-4xl mb-3">{type.icon}</div>
-                  <div className="text-white font-medium text-base">{type.label}</div>
-                </motion.button>
-              ))}
+              {CLOTHING_TYPES.map((type) => {
+                const Icon = type.icon;
+                return (
+                  <motion.button
+                    key={type.id}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleStepComplete(0, type.id)}
+                    className={`rounded-[20px] p-6 bg-black/30 backdrop-blur-xl border transition-all
+                              ${orderData.clothingType === type.id
+                                ? 'border-white/30 bg-white/10 shadow-[0_8px_24px_rgba(255,255,255,0.1)]'
+                                : 'border-white/10 hover:border-white/20 hover:bg-black/35'
+                              }`}
+                  >
+                    <Icon className="w-8 h-8 mx-auto mb-3 text-white" />
+                    <div className="text-white font-medium text-base">{type.label}</div>
+                  </motion.button>
+                );
+              })}
             </div>
           </div>
-        );
+        </StepBlock>
 
-      case 'size':
-        return (
+        {/* Step 2: Size */}
+        <StepBlock
+          stepIndex={1}
+          isVisible={isStepVisible(1)}
+          isHighlighted={highlightedStep === 1}
+          stepRefs={stepRefs}
+        >
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">
-                Размер
-              </h3>
-              <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
-                Чтобы посадка была в точку.
-              </p>
+              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">Размер</h3>
+              <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">Чтобы посадка была в точку.</p>
             </div>
             <div className="flex flex-wrap gap-3 justify-center">
               {SIZES.map((size) => (
@@ -315,55 +395,87 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
               ))}
             </div>
           </div>
-        );
+        </StepBlock>
 
-      case 'color':
-        return (
+        {/* Step 3: Color */}
+        <StepBlock
+          stepIndex={2}
+          isVisible={isStepVisible(2)}
+          isHighlighted={highlightedStep === 2}
+          stepRefs={stepRefs}
+        >
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">
-                Цвет базы
-              </h3>
-              <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
-                Подберём под стиль и идею.
-              </p>
+              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">Цвет базы</h3>
+              <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">Подберём под стиль и идею.</p>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="flex flex-wrap gap-4 justify-center">
               {COLORS.map((color) => (
-                <motion.button
-                  key={color.id}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleStepComplete(2, color.id)}
-                  className={`relative rounded-[16px] aspect-square flex items-center justify-center
-                            transition-all border-2
-                            ${orderData.color === color.id
-                              ? 'border-white shadow-[0_0_0_4px_rgba(255,255,255,0.2)] scale-105'
-                              : 'border-white/20 hover:border-white/40'
-                            }`}
-                  style={{ backgroundColor: color.value }}
-                >
-                  {orderData.color === color.id && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute inset-0 flex items-center justify-center"
-                    >
-                      <Check className="w-6 h-6 text-white drop-shadow-lg" />
-                    </motion.div>
-                  )}
-                </motion.button>
+                <div key={color.id} className="flex flex-col items-center gap-2">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleStepComplete(2, color.id)}
+                    className={`relative rounded-full w-16 h-16 flex items-center justify-center
+                              transition-all border-2
+                              ${orderData.colorChoice === color.id
+                                ? 'border-white shadow-[0_0_0_4px_rgba(255,255,255,0.2)] scale-105'
+                                : 'border-white/20 hover:border-white/40'
+                              }`}
+                    style={
+                      color.value
+                        ? { backgroundColor: color.value }
+                        : {
+                            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+                          }
+                    }
+                  >
+                    {color.id === 'custom' && (
+                      <Palette className="w-6 h-6 text-white" />
+                    )}
+                    {orderData.colorChoice === color.id && color.id !== 'custom' && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute inset-0 flex items-center justify-center"
+                      >
+                        <Check className="w-6 h-6 text-white drop-shadow-lg" />
+                      </motion.div>
+                    )}
+                  </motion.button>
+                  <span className="text-white/70 text-sm">{color.label}</span>
+                </div>
               ))}
             </div>
+            {orderData.colorChoice === 'custom' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6"
+              >
+                <input
+                  type="color"
+                  value={orderData.customColor || '#000000'}
+                  onChange={(e) => handleCustomColorChange(e.target.value)}
+                  className="w-full h-12 rounded-[16px] bg-black/30 backdrop-blur-xl border border-white/10 cursor-pointer"
+                />
+                <p className="text-white/50 text-sm text-center mt-2">
+                  Или введите код цвета: {orderData.customColor || '#000000'}
+                </p>
+              </motion.div>
+            )}
           </div>
-        );
+        </StepBlock>
 
-      case 'placement':
-        return (
+        {/* Step 4: Placement */}
+        <StepBlock
+          stepIndex={3}
+          isVisible={isStepVisible(3)}
+          isHighlighted={highlightedStep === 3}
+          stepRefs={stepRefs}
+        >
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">
-                Где будет кастом?
-              </h3>
+              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">Где будет кастом?</h3>
               <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
                 Фронт, спина, рукав — или по твоей схеме.
               </p>
@@ -386,15 +498,18 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
               ))}
             </div>
           </div>
-        );
+        </StepBlock>
 
-      case 'description':
-        return (
+        {/* Step 5: Description + File Upload */}
+        <StepBlock
+          stepIndex={4}
+          isVisible={isStepVisible(4)}
+          isHighlighted={highlightedStep === 4}
+          stepRefs={stepRefs}
+        >
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">
-                Коротко про идею
-              </h3>
+              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">Коротко про идею</h3>
             </div>
             <textarea
               value={orderData.description}
@@ -408,6 +523,62 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
             <p className="text-white/50 text-sm text-center">
               Если есть фото/ссылка — добавь в конце текста.
             </p>
+
+            {/* File Upload */}
+            <div className="space-y-3">
+              {!orderData.attachment ? (
+                <label className="block">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <motion.div
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full rounded-[20px] p-6 bg-black/30 backdrop-blur-xl
+                             border border-white/10 border-dashed cursor-pointer
+                             hover:border-white/20 hover:bg-black/35 transition-all
+                             flex items-center justify-center gap-3"
+                  >
+                    <Upload className="w-5 h-5 text-white/70" />
+                    <span className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
+                      Добавить файл (фото/видео)
+                    </span>
+                  </motion.div>
+                </label>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-[20px] p-4 bg-black/30 backdrop-blur-xl border border-white/10
+                           flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {orderData.attachment.type.startsWith('image/') ? (
+                      <ImageIcon className="w-5 h-5 text-white/70 flex-shrink-0" />
+                    ) : (
+                      <Upload className="w-5 h-5 text-white/70 flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm truncate">{orderData.attachment.name}</p>
+                      <p className="text-white/50 text-xs">
+                        {(orderData.attachment.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRemoveFile}
+                    className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20
+                             flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                </motion.div>
+              )}
+            </div>
+
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={handleSubmit}
@@ -421,62 +592,9 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
               Отправить заявку
               <ArrowRight className="w-5 h-5" />
             </motion.button>
-            <p className="text-white/50 text-sm text-center">
-              Ответим в Telegram. Обычно быстро.
-            </p>
+            <p className="text-white/50 text-sm text-center">Ответим в Telegram. Обычно быстро.</p>
           </div>
-        );
-
-      default:
-        return <div />;
-    }
-  };
-
-  return (
-    <div className="relative w-full">
-      {/* Progress Indicator */}
-      <div className="sticky top-0 z-20 px-4 py-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-white/70 text-sm">
-            Шаг {currentStep + 1} из {steps.length}
-          </span>
-          {currentStep > 0 && (
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors"
-            >
-              <ChevronUp className="w-4 h-4" />
-              Назад
-            </button>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {steps.map((step, index) => (
-            <div
-              key={step.id}
-              className={`flex-1 h-1 rounded-full transition-all
-                        ${index <= currentStep ? 'bg-white' : 'bg-white/20'}
-                      `}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Steps Container */}
-      <div className="relative">
-        {steps.map((step, index) => {
-          const isHighlighted = highlightedStep === index;
-
-          return (
-            <StepWrapper
-              key={step.id}
-              stepIndex={index}
-              isHighlighted={isHighlighted}
-              stepRefs={stepRefs}
-              renderStep={renderStep}
-            />
-          );
-        })}
+        </StepBlock>
       </div>
     </div>
   );
