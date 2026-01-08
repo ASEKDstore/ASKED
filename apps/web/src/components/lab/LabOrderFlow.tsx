@@ -1,7 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Check, ChevronUp, Palette, Shirt, Type } from 'lucide-react';
+import { motion, useInView } from 'framer-motion';
+import { ArrowRight, Check, ChevronUp, Palette, Shirt, Type } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface OrderData {
@@ -15,10 +15,8 @@ interface OrderData {
 const CLOTHING_TYPES = [
   { id: 'hoodie', label: 'Худи', icon: '👕' },
   { id: 'tshirt', label: 'Футболка', icon: '👔' },
-  { id: 'sweatshirt', label: 'Свитшот', icon: '🧥' },
   { id: 'jacket', label: 'Куртка', icon: '🧥' },
-  { id: 'pants', label: 'Штаны', icon: '👖' },
-  { id: 'cap', label: 'Кепка', icon: '🧢' },
+  { id: 'custom', label: 'Свой вариант', icon: '✨' },
 ];
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -35,14 +33,64 @@ const COLORS = [
 ];
 
 const PLACEMENTS = [
-  { id: 'front', label: 'Спереди', icon: '⬆️' },
-  { id: 'back', label: 'Сзади', icon: '⬇️' },
-  { id: 'sleeve', label: 'На рукаве', icon: '↔️' },
-  { id: 'custom', label: 'Своё место', icon: '📍' },
+  { id: 'front', label: 'Фронт', icon: '⬆️' },
+  { id: 'back', label: 'Спина', icon: '⬇️' },
+  { id: 'sleeve', label: 'Рукав', icon: '↔️' },
+  { id: 'custom', label: 'Произвольно', icon: '📍' },
 ];
 
 interface LabOrderFlowProps {
   onComplete: (data: OrderData) => void;
+}
+
+interface StepWrapperProps {
+  stepIndex: number;
+  isHighlighted: boolean;
+  stepRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
+  renderStep: (index: number) => JSX.Element;
+}
+
+function StepWrapper({ stepIndex, isHighlighted, stepRefs, renderStep }: StepWrapperProps): JSX.Element {
+  const stepRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(stepRef, { once: true, margin: '-100px' });
+
+  return (
+    <div
+      ref={(el) => {
+        stepRefs.current[stepIndex] = el;
+      }}
+      id={`step-${stepIndex}`}
+      className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-12 relative"
+    >
+      {/* Highlight glow effect */}
+      {isHighlighted && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.3 }}
+          className="absolute inset-0 rounded-[28px] pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%)',
+            filter: 'blur(20px)',
+          }}
+        />
+      )}
+
+      <motion.div
+        ref={stepRef}
+        initial={{ opacity: 0, y: 30 }}
+        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+        transition={{
+          duration: 0.5,
+          ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+        }}
+        className="w-full max-w-[600px] relative z-10"
+      >
+        {renderStep(stepIndex)}
+      </motion.div>
+    </div>
+  );
 }
 
 export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
@@ -54,7 +102,10 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
     placement: null,
     description: '',
   });
+  const [highlightedStep, setHighlightedStep] = useState<number | null>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const steps = [
     { id: 'clothing', label: 'Тип одежды', icon: Shirt },
@@ -64,23 +115,67 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
     { id: 'description', label: 'Описание', icon: Type },
   ];
 
+  // Find scroll container (parent with overflow-y-auto)
+  useEffect(() => {
+    const findScrollContainer = () => {
+      let element = stepRefs.current[0]?.parentElement;
+      while (element) {
+        const style = window.getComputedStyle(element);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+          containerRef.current = element;
+          return;
+        }
+        element = element.parentElement;
+      }
+      // Fallback to window
+      containerRef.current = null;
+    };
+    findScrollContainer();
+  }, []);
+
   const scrollToStep = (stepIndex: number) => {
     const element = stepRefs.current[stepIndex];
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!element) return;
+
+    const container = containerRef.current || window;
+    const containerRect = container === window 
+      ? { top: 0, scrollTop: window.scrollY }
+      : (container as HTMLElement).getBoundingClientRect();
+    
+    const elementRect = element.getBoundingClientRect();
+    const scrollTop = container === window 
+      ? window.scrollY 
+      : (container as HTMLElement).scrollTop;
+    
+    const targetTop = scrollTop + elementRect.top - (container === window ? 0 : containerRect.top) - 100; // 100px offset
+
+    if (container === window) {
+      window.scrollTo({ top: targetTop, behavior: 'smooth' });
+    } else {
+      (container as HTMLElement).scrollTo({ top: targetTop, behavior: 'smooth' });
     }
+
+    // Highlight the step
+    setHighlightedStep(stepIndex);
+    setTimeout(() => setHighlightedStep(null), 600);
   };
 
   const handleStepComplete = (stepIndex: number, value: string | null) => {
+    // Haptic feedback
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
+    } catch { /* noop */ }
+
     const stepId = steps[stepIndex].id;
     setOrderData((prev) => ({ ...prev, [stepId]: value }));
 
     // Auto-scroll to next step
     if (stepIndex < steps.length - 1) {
       setTimeout(() => {
-        setCurrentStep(stepIndex + 1);
-        scrollToStep(stepIndex + 1);
-      }, 300);
+        const nextStep = stepIndex + 1;
+        setCurrentStep(nextStep);
+        scrollToStep(nextStep);
+      }, 100); // 80-120ms delay
     }
   };
 
@@ -96,13 +191,66 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
     try {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('medium');
     } catch { /* noop */ }
+    setIsSubmitted(true);
+    // Delay to show success screen before calling onComplete
+    setTimeout(() => {
+      onComplete(orderData);
+    }, 2000);
+  };
+
+  const handleBackToLab = () => {
     onComplete(orderData);
   };
 
   // Scroll to current step on mount/change
   useEffect(() => {
-    scrollToStep(currentStep);
+    if (containerRef.current || typeof window !== 'undefined') {
+      scrollToStep(currentStep);
+    }
   }, [currentStep]);
+
+  // Success screen
+  if (isSubmitted) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-12"
+      >
+        <div className="w-full max-w-[600px] text-center space-y-8">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200, damping: 15 }}
+            className="w-20 h-20 mx-auto rounded-full bg-white/10 backdrop-blur-xl 
+                     border border-white/20 flex items-center justify-center"
+          >
+            <Check className="w-10 h-10 text-white" />
+          </motion.div>
+          
+          <div>
+            <h2 className="text-[clamp(28px,7vw,40px)] font-bold text-white mb-4">
+              Принято.
+            </h2>
+            <p className="text-[clamp(16px,4vw,18px)] text-white/75 leading-relaxed">
+              Мы посмотрим заявку и напишем тебе с уточнениями.
+            </p>
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={handleBackToLab}
+            className="w-full rounded-full px-6 py-4 text-base font-medium
+                     bg-white text-black shadow-[0_4px_16px_rgba(255,255,255,0.3)] 
+                     hover:bg-white/90 transition-colors"
+          >
+            Вернуться в LAB
+          </motion.button>
+        </div>
+      </motion.div>
+    );
+  }
 
   const renderStep = (stepIndex: number): JSX.Element => {
     const step = steps[stepIndex];
@@ -113,10 +261,10 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">
-                Выбери тип одежды
+                Что кастомим?
               </h3>
               <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
-                Что будем кастомизировать?
+                Выбери базу — остальное мы доведём до идеала.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -144,10 +292,10 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">
-                Выбери размер
+                Размер
               </h3>
               <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
-                Какой размер тебе нужен?
+                Чтобы посадка была в точку.
               </p>
             </div>
             <div className="flex flex-wrap gap-3 justify-center">
@@ -174,10 +322,10 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">
-                Выбери цвет
+                Цвет базы
               </h3>
               <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
-                Какой цвет основы?
+                Подберём под стиль и идею.
               </p>
             </div>
             <div className="grid grid-cols-4 gap-4">
@@ -206,11 +354,6 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
                 </motion.button>
               ))}
             </div>
-            <div className="text-center mt-4">
-              <p className="text-white/60 text-sm">
-                {COLORS.find((c) => c.id === orderData.color)?.label || 'Выбери цвет'}
-              </p>
-            </div>
           </div>
         );
 
@@ -219,10 +362,10 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">
-                Где разместить дизайн?
+                Где будет кастом?
               </h3>
               <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
-                Выбери место для кастома
+                Фронт, спина, рукав — или по твоей схеме.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -250,33 +393,37 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">
-                Опиши идею
+                Коротко про идею
               </h3>
-              <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
-                Расскажи, что хочешь видеть на кастоме
-              </p>
             </div>
             <textarea
               value={orderData.description}
               onChange={(e) => setOrderData((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Например: хочу логотип бренда спереди, минималистичный стиль..."
+              placeholder="Настроение, символы, цвета, референсы… Можно одним предложением."
               className="w-full min-h-[200px] rounded-[20px] p-6 bg-black/30 backdrop-blur-xl
                        border border-white/10 text-white placeholder-white/40
                        focus:outline-none focus:border-white/30 focus:bg-black/35
                        resize-none text-[clamp(14px,3.5vw,16px)]"
             />
+            <p className="text-white/50 text-sm text-center">
+              Если есть фото/ссылка — добавь в конце текста.
+            </p>
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={handleSubmit}
               disabled={!orderData.description.trim()}
-              className={`w-full rounded-full px-6 py-4 text-base font-medium transition-all
+              className={`w-full rounded-full px-6 py-4 text-base font-medium transition-all flex items-center justify-center gap-2
                         ${orderData.description.trim()
                           ? 'bg-white text-black shadow-[0_4px_16px_rgba(255,255,255,0.3)] hover:bg-white/90'
                           : 'bg-white/10 text-white/40 cursor-not-allowed'
                         }`}
             >
               Отправить заявку
+              <ArrowRight className="w-5 h-5" />
             </motion.button>
+            <p className="text-white/50 text-sm text-center">
+              Ответим в Telegram. Обычно быстро.
+            </p>
           </div>
         );
 
@@ -286,7 +433,7 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
   };
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" ref={containerRef}>
       {/* Progress Indicator */}
       <div className="sticky top-0 z-20 px-4 py-4 bg-black/40 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center justify-between mb-2">
@@ -317,30 +464,20 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
 
       {/* Steps Container */}
       <div className="relative">
-        {steps.map((step, index) => (
-          <div
-            key={step.id}
-            ref={(el) => {
-              stepRefs.current[index] = el;
-            }}
-            className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-12"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -30 }}
-              transition={{
-                duration: 0.5,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-              className="w-full max-w-[600px]"
-            >
-              {renderStep(index)}
-            </motion.div>
-          </div>
-        ))}
+        {steps.map((step, index) => {
+          const isHighlighted = highlightedStep === index;
+
+          return (
+            <StepWrapper
+              key={step.id}
+              stepIndex={index}
+              isHighlighted={isHighlighted}
+              stepRefs={stepRefs}
+              renderStep={renderStep}
+            />
+          );
+        })}
       </div>
     </div>
   );
 }
-
