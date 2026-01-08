@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
 import { BannersCarousel } from '@/components/BannersCarousel';
@@ -69,7 +70,15 @@ export default function Home(): JSX.Element {
 
           {/* Minimal CTA below hero/banner */}
           <div className="w-full flex items-center justify-center px-4" style={{ paddingBottom: 'clamp(24px, 6vw, 36px)' }}>
-            <button
+            <motion.button
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.45,
+                ease: [0.22, 1, 0.36, 1],
+                delay: 0.12,
+              }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => {
                 try {
                   window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
@@ -79,11 +88,11 @@ export default function Home(): JSX.Element {
               className="pointer-events-auto select-none rounded-full px-[clamp(18px,5.5vw,24px)] py-[clamp(10px,3.2vw,12px)] 
                          bg-white/12 hover:bg-white/16 text-white font-medium tracking-tight
                          backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.25)] 
-                         active:scale-[0.97] transition-transform duration-200"
+                         transition-colors duration-200"
               aria-label="Перейти в каталог"
             >
               Перейти в каталог →
-            </button>
+            </motion.button>
           </div>
 
           {/* Bottom Spacing */}
