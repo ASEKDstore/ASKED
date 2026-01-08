@@ -69,19 +69,23 @@ interface StepBlockProps {
   children: React.ReactNode;
 }
 
-function StepBlock({ stepIndex, isVisible, isHighlighted, stepRefs, children }: StepBlockProps): JSX.Element | null {
+function StepBlock({ stepIndex, isVisible, isHighlighted, stepRefs, children }: StepBlockProps): JSX.Element {
   const stepRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(stepRef, { once: true, margin: '-100px' });
 
-  if (!isVisible) return null;
-
+  // Always render to ensure ref is set and element exists in DOM for scrolling
+  // Non-visible steps are hidden with opacity but maintain height for proper scrolling
   return (
     <div
       ref={(el) => {
-        stepRefs.current[stepIndex] = el;
+        if (el) {
+          stepRefs.current[stepIndex] = el;
+        }
       }}
       id={`step-${stepIndex}`}
-      className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-12 relative"
+      className={`min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-12 relative transition-opacity duration-300 ${
+        isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}
     >
       {/* Highlight glow effect */}
       {isHighlighted && (
@@ -165,22 +169,80 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
     }
   };
 
-  // Find scroll container
-  useEffect(() => {
-    const findScrollContainer = () => {
-      let element: HTMLElement | null = stepRefs.current[0]?.parentElement ?? null;
+  // Find scroll container - retry until found
+  const findScrollContainer = () => {
+    // Try to find scroll container from any rendered step
+    for (let i = 0; i < stepRefs.current.length; i++) {
+      let element: HTMLElement | null = stepRefs.current[i]?.parentElement ?? null;
       while (element) {
         const style = window.getComputedStyle(element);
-        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll' || style.overflowY === 'overlay') {
           containerRef.current = element;
           return;
         }
         element = element.parentElement ?? null;
       }
-      containerRef.current = null;
-    };
+    }
+    // Fallback: try to find any scrollable container in the component tree
+    if (!containerRef.current && stepRefs.current[0]) {
+      let element: HTMLElement | null = stepRefs.current[0].closest('[class*="overflow"]') as HTMLElement | null;
+      if (element) {
+        const style = window.getComputedStyle(element);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll' || style.overflowY === 'overlay') {
+          containerRef.current = element;
+          return;
+        }
+      }
+    }
+    containerRef.current = null;
+  };
+
+  // Find scroll container on mount and when steps become visible
+  useEffect(() => {
     findScrollContainer();
-  }, []);
+  }, [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete]);
+
+  // Helper function to scroll to step with retries
+  const scrollToStepWithRetry = (stepIndex: number, maxRetries = 10, delay = 100) => {
+    let attempts = 0;
+    const tryScroll = () => {
+      const element = stepRefs.current[stepIndex];
+      if (element) {
+        scrollToStep(stepIndex);
+      } else if (attempts < maxRetries) {
+        attempts++;
+        setTimeout(tryScroll, delay);
+      }
+    };
+    requestAnimationFrame(() => {
+      requestAnimationFrame(tryScroll); // Double RAF to ensure DOM update
+    });
+  };
+
+  // Auto-scroll when steps become visible
+  useEffect(() => {
+    if (isStep1Complete && !orderData.size) {
+      scrollToStepWithRetry(1);
+    }
+  }, [isStep1Complete, orderData.size]);
+
+  useEffect(() => {
+    if (isStep2Complete && !orderData.colorChoice) {
+      scrollToStepWithRetry(2);
+    }
+  }, [isStep2Complete, orderData.colorChoice]);
+
+  useEffect(() => {
+    if (isStep3Complete && !orderData.placement) {
+      scrollToStepWithRetry(3);
+    }
+  }, [isStep3Complete, orderData.placement]);
+
+  useEffect(() => {
+    if (isStep4Complete && !orderData.description) {
+      scrollToStepWithRetry(4);
+    }
+  }, [isStep4Complete, orderData.description]);
 
   const scrollToStep = (stepIndex: number) => {
     const element = stepRefs.current[stepIndex];
@@ -215,31 +277,15 @@ export function LabOrderFlow({ onComplete }: LabOrderFlowProps): JSX.Element {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
     } catch { /* noop */ }
 
-    // Update order data
+    // Update order data - auto-scroll is handled by useEffect hooks
     if (stepIndex === 0) {
       setOrderData((prev) => ({ ...prev, clothingType: value }));
-      // After Step 1 completes (clothing selected), auto-scroll to Step 2
-      if (value) {
-        setTimeout(() => scrollToStep(1), 150);
-      }
     } else if (stepIndex === 1) {
       setOrderData((prev) => ({ ...prev, size: value }));
-      // After Step 2 completes (size selected), auto-scroll to Step 3
-      if (value) {
-        setTimeout(() => scrollToStep(2), 150);
-      }
     } else if (stepIndex === 2) {
       setOrderData((prev) => ({ ...prev, colorChoice: value, customColor: value === 'custom' ? null : null }));
-      // After Step 3 completes (color selected), auto-scroll to Step 4
-      if (value) {
-        setTimeout(() => scrollToStep(3), 150);
-      }
     } else if (stepIndex === 3) {
       setOrderData((prev) => ({ ...prev, placement: value }));
-      // After Step 4 completes (placement selected), auto-scroll to Step 5
-      if (value) {
-        setTimeout(() => scrollToStep(4), 150);
-      }
     }
   };
 
