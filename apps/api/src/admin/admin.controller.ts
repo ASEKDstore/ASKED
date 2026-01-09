@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards, Req } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { AdminGuard } from '../auth/admin.guard';
@@ -8,6 +8,7 @@ import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
 import type { TelegramUser } from '../auth/types/telegram-user.interface';
 import type { OrdersListResponse } from '../orders/dto/order.dto';
 import { OrdersService } from '../orders/orders.service';
+import { TelegramBotService } from '../orders/telegram-bot.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ProductsListResponse } from '../products/dto/product.dto';
 import { ProductsService } from '../products/products.service';
@@ -32,6 +33,7 @@ export class AdminController {
     private readonly prisma: PrismaService,
     private readonly ordersService: OrdersService,
     private readonly productsService: ProductsService,
+    private readonly telegramBotService: TelegramBotService,
   ) {}
 
   @Get('me')
@@ -96,5 +98,10 @@ export class AdminController {
       pageSize: 50,
       sort: 'new',
     });
+  }
+
+  @Post('telegram/test')
+  async testTelegramNotification(): Promise<{ success: boolean; message?: string; error?: string }> {
+    return this.telegramBotService.sendTestNotification();
   }
 }

@@ -13,7 +13,7 @@ import { TelegramBotService } from './telegram-bot.service';
   imports: [PrismaModule, AuthModule, UsersModule],
   controllers: [OrdersController, PublicOrdersController],
   providers: [OrdersService, TelegramBotService],
-  exports: [OrdersService],
+  exports: [OrdersService, TelegramBotService],
 })
 export class OrdersModule {}
 

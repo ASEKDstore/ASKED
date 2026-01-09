@@ -21,24 +21,10 @@ export default function ProfilePage(): JSX.Element {
   // Calculate header height with safe area
   const headerTotalHeight = `calc(${HEADER_HEIGHT_PX}px + env(safe-area-inset-top, 0px))`;
 
-  // Check for dev token or admin access
+  // Check for dev token (for preserving in admin link)
   const devToken = typeof window !== 'undefined' ? getTokenFromUrl() : null;
   const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN ?? '';
   const hasDevToken = devToken && DEV_ADMIN_TOKEN !== '' && devToken === DEV_ADMIN_TOKEN;
-
-  // Check admin access (if not in dev mode)
-  const { data: adminData } = useQuery({
-    queryKey: ['admin', 'me', initData],
-    queryFn: () => api.getAdminMe(initData),
-    enabled: !!initData && isTelegram && !hasDevToken,
-    retry: false,
-  });
-
-  // Show admin button if:
-  // 1. Has dev token (dev mode), OR
-  // 2. Admin data is loaded successfully (user is admin)
-  // Note: If admin query fails (403/401), adminData will be undefined
-  const hasAdminAccess = hasDevToken || adminData !== undefined;
 
   const {
     data: user,
@@ -236,35 +222,33 @@ export default function ProfilePage(): JSX.Element {
             </div>
           </div>
 
-          {/* Admin Panel Button */}
-          {hasAdminAccess && (
-            <div className="w-full mb-6">
-              <Link href={hasDevToken && devToken ? `/admin?token=${encodeURIComponent(devToken)}` : '/admin'}>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => {
-                    try {
-                      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
-                    } catch {
-                      // Ignore if not in Telegram
-                    }
-                  }}
-                  className="w-full rounded-[20px] bg-black/30 backdrop-blur-xl border border-white/10 p-4 flex items-center justify-between hover:bg-black/40 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-white/80" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-white font-medium text-sm">Войти в админку</p>
-                      <p className="text-white/60 text-xs">Панель управления</p>
-                    </div>
+          {/* Admin Panel Button - Show always (access is protected by admin routes) */}
+          <div className="w-full mb-6">
+            <Link href={hasDevToken && devToken ? `/admin?token=${encodeURIComponent(devToken)}` : '/admin'}>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => {
+                  try {
+                    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
+                  } catch {
+                    // Ignore if not in Telegram
+                  }
+                }}
+                className="w-full rounded-[20px] bg-black/30 backdrop-blur-xl border border-white/10 p-4 flex items-center justify-between hover:bg-black/40 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-white/80" />
                   </div>
-                  <ArrowRight className="w-5 h-5 text-white/60" />
-                </motion.button>
-              </Link>
-            </div>
-          )}
+                  <div className="text-left">
+                    <p className="text-white font-medium text-sm">Войти в админку</p>
+                    <p className="text-white/60 text-xs">Панель управления</p>
+                  </div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-white/60" />
+              </motion.button>
+            </Link>
+          </div>
 
           {/* Мои заказы Section */}
           <div className="w-full">
