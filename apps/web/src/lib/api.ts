@@ -222,7 +222,7 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
-  sort?: number;
+  sort: number; // Always present, defaults to 0 in Prisma schema
 }
 
 export interface Tag {

@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/table';
 import { useTelegram } from '@/hooks/useTelegram';
 import { getTokenFromUrl } from '@/lib/admin-nav';
-import { api } from '@/lib/api';
+import { api, type Category } from '@/lib/api';
 
 export default function AdminCategoriesPage(): JSX.Element {
   const { initData } = useTelegram();
@@ -83,9 +83,14 @@ export default function AdminCategoriesPage(): JSX.Element {
     createMutation.mutate(formData);
   };
 
-  const handleEdit = (category: { id: string; name: string; slug: string; sort: number }) => {
-    setSelectedCategory(category);
-    setFormData({ name: category.name, slug: category.slug, sort: category.sort });
+  const handleEdit = (category: Category) => {
+    setSelectedCategory({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      sort: category.sort ?? 0, // Normalize to 0 if undefined (defensive programming)
+    });
+    setFormData({ name: category.name, slug: category.slug, sort: category.sort ?? 0 });
     setEditDialogOpen(true);
   };
 
@@ -95,8 +100,13 @@ export default function AdminCategoriesPage(): JSX.Element {
     }
   };
 
-  const handleDelete = (category: { id: string; name: string; slug: string; sort: number }) => {
-    setSelectedCategory(category);
+  const handleDelete = (category: Category) => {
+    setSelectedCategory({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      sort: category.sort ?? 0,
+    });
     setDeleteDialogOpen(true);
   };
 
