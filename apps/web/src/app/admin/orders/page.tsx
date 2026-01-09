@@ -2,7 +2,6 @@
 
 import { ShoppingBag, Eye, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 // eslint-disable-next-line import/order
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -50,7 +49,6 @@ const statusVariants: Record<string, 'default' | 'secondary' | 'success' | 'dest
 export default function AdminOrdersPage(): JSX.Element {
   const { initData } = useTelegram();
   const queryClient = useQueryClient();
-  const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
