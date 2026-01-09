@@ -29,6 +29,11 @@ enum OrderStatus {
   CANCELED
 }
 
+enum OrderChannel {
+  AS
+  LAB
+}
+
 enum PaymentMethod {
   MANAGER
 }
@@ -156,6 +161,9 @@ model Order {
   id             String        @id @default(cuid())
   userId         String?       // Nullable for guest checkout
   status         OrderStatus   @default(NEW)
+  channel        OrderChannel  @default(AS)
+  seq            Int?
+  number         String?       @unique
   totalAmount    Int
   currency       String        @default("RUB")
   customerName   String
@@ -168,7 +176,17 @@ model Order {
   user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   items          OrderItem[]
 
+  @@index([channel, seq])
+  @@index([number])
   @@map("orders")
+}
+
+model OrderCounter {
+  channel   OrderChannel @id
+  value     Int          @default(0)
+  updatedAt DateTime     @updatedAt
+
+  @@map("order_counters")
 }
 
 model OrderItem {

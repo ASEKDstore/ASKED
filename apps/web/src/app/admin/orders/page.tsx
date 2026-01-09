@@ -201,7 +201,7 @@ export default function AdminOrdersPage(): JSX.Element {
                 {orders.map((order: OrderListItem) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-mono text-xs">
-                      {order.id.slice(0, 8)}...
+                      {order.number || order.id.slice(0, 8)}
                     </TableCell>
                     <TableCell>{order.customerName}</TableCell>
                     <TableCell>{order.customerPhone}</TableCell>
@@ -245,7 +245,7 @@ export default function AdminOrdersPage(): JSX.Element {
           ) : selectedOrder ? (
             <div className="space-y-6">
               <DrawerHeader>
-                <DrawerTitle>Заказ #{selectedOrder.id.slice(0, 8)}</DrawerTitle>
+                <DrawerTitle>Заказ {selectedOrder.number || `#${selectedOrder.id.slice(0, 8)}`}</DrawerTitle>
                 <DrawerDescription>
                   Создан: {new Date(selectedOrder.createdAt).toLocaleString('ru-RU')}
                 </DrawerDescription>

@@ -28,6 +28,7 @@
     "db:generate": "prisma generate",
     "db:migrate:status": "prisma migrate status",
     "db:seed": "prisma db seed",
+    "backfill:order-numbers": "ts-node scripts/backfill-order-numbers.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

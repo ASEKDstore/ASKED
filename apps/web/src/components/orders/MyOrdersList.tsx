@@ -89,7 +89,7 @@ export function MyOrdersList(): JSX.Element {
           >
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="text-white/60 text-xs mb-1">Заказ №{order.id.slice(0, 8)}</p>
+                <p className="text-white/60 text-xs mb-1">Заказ {order.number || `№${order.id.slice(0, 8)}`}</p>
                 <p className="text-white font-medium text-sm">
                   {new Date(order.createdAt).toLocaleDateString('ru-RU', {
                     day: 'numeric',

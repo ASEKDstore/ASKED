@@ -15,8 +15,35 @@ export class OrdersService {
     private readonly telegramBotService: TelegramBotService,
   ) {}
 
+  /**
+   * Generate next order number atomically for a given channel
+   */
+  private async generateOrderNumber(channel: 'AS' | 'LAB'): Promise<{ seq: number; number: string }> {
+    // Use transaction to atomically increment counter
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Upsert counter (create if doesn't exist, otherwise get existing)
+      const counter = await tx.orderCounter.upsert({
+        where: { channel },
+        update: {
+          value: { increment: 1 },
+        },
+        create: {
+          channel,
+          value: 1,
+        },
+      });
+
+      const seq = counter.value;
+      const number = `№${seq.toString().padStart(5, '0')}/${channel}`;
+
+      return { seq, number };
+    });
+
+    return result;
+  }
+
   async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<OrderDto> {
-    const { items, customerName, customerPhone, customerAddress, comment } = createOrderDto;
+    const { items, customerName, customerPhone, customerAddress, comment, channel = 'AS' } = createOrderDto;
 
     // Validate products and calculate total
     let totalAmount = 0;
@@ -52,11 +79,17 @@ export class OrdersService {
       });
     }
 
+    // Generate order number atomically
+    const { seq, number } = await this.generateOrderNumber(channel);
+
     // Create order
     const order = await this.prisma.order.create({
       data: {
         userId,
         status: 'NEW',
+        channel,
+        seq,
+        number,
         totalAmount,
         currency: 'RUB',
         customerName,
@@ -108,6 +141,9 @@ export class OrdersService {
       id: order.id,
       userId: order.userId,
       status: order.status as 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED',
+      channel: order.channel as 'AS' | 'LAB',
+      seq: order.seq,
+      number: order.number,
       totalAmount: order.totalAmount,
       currency: order.currency,
       customerName: order.customerName,
@@ -150,6 +186,9 @@ export class OrdersService {
       id: order.id,
       userId: order.userId,
       status: order.status as 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED',
+      channel: order.channel as 'AS' | 'LAB',
+      seq: order.seq,
+      number: order.number,
       totalAmount: order.totalAmount,
       currency: order.currency,
       customerName: order.customerName,
@@ -210,8 +249,9 @@ export class OrdersService {
     // Send notification to buyer if order has a user with telegramId
     if (updated.userId && updated.user?.telegramId) {
       try {
+        const orderNumber = updated.number || updated.id.slice(0, 8);
         await this.telegramBotService.notifyBuyerStatusChange(
-          updated.id,
+          orderNumber,
           updated.user.telegramId,
           updateDto.status,
         );
@@ -229,6 +269,9 @@ export class OrdersService {
       id: order.id,
       userId: order.userId,
       status: order.status as 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED',
+      channel: order.channel as 'AS' | 'LAB',
+      seq: order.seq,
+      number: order.number,
       totalAmount: order.totalAmount,
       currency: order.currency,
       customerName: order.customerName,

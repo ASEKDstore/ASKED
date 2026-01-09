@@ -11,10 +11,12 @@ export const createOrderSchema = z.object({
   customerAddress: z.string().optional(),
   comment: z.string().optional(),
   items: z.array(createOrderItemSchema).min(1),
+  channel: z.enum(['AS', 'LAB']).optional().default('AS'),
 });
 
 export type CreateOrderDto = z.infer<typeof createOrderSchema>;
 export type CreateOrderItemDto = z.infer<typeof createOrderItemSchema>;
+
 
 
 

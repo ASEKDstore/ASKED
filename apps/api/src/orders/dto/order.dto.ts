@@ -12,6 +12,9 @@ export const orderDtoSchema = z.object({
   id: z.string(),
   userId: z.string().nullable(), // Nullable for guest checkout
   status: z.enum(['NEW', 'CONFIRMED', 'IN_PROGRESS', 'DONE', 'CANCELED']),
+  channel: z.enum(['AS', 'LAB']).optional(),
+  seq: z.number().nullable().optional(),
+  number: z.string().nullable().optional(),
   totalAmount: z.number(),
   currency: z.string(),
   customerName: z.string(),
@@ -28,6 +31,9 @@ export const orderListItemDtoSchema = z.object({
   id: z.string(),
   userId: z.string().nullable(), // Nullable for guest checkout
   status: z.enum(['NEW', 'CONFIRMED', 'IN_PROGRESS', 'DONE', 'CANCELED']),
+  channel: z.enum(['AS', 'LAB']).optional(),
+  seq: z.number().nullable().optional(),
+  number: z.string().nullable().optional(),
   totalAmount: z.number(),
   currency: z.string(),
   customerName: z.string(),

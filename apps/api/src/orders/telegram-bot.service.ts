@@ -44,11 +44,12 @@ export class TelegramBotService {
         .join('\n');
 
       // Build message according to specification:
-      // - "Новый заказ №{orderId}"
+      // - "Новый заказ №{orderNumber}"
       // - Buyer: name + @username + telegramId
       // - Items list: "• title ×qty — lineTotal ₽"
       // - Total
-      const message = `🆕 *Новый заказ №${order.id}*
+      const orderNumber = order.number || order.id.slice(0, 8);
+      const message = `🆕 *Новый заказ ${orderNumber}*
 
 👤 *Покупатель:*
 ${buyerName}${buyerUsername ? ` ${buyerUsername}` : ''}${buyerTelegramId}
@@ -185,21 +186,21 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
 
   /**
    * Send order status change notification to buyer
-   * @param orderId Order ID
+   * @param orderNumber Order number (e.g., "№00001/AS") or order ID fallback
    * @param buyerTelegramId Buyer's Telegram ID (chat_id)
    * @param newStatus New order status
    */
-  async notifyBuyerStatusChange(orderId: string, buyerTelegramId: string, newStatus: string): Promise<void> {
+  async notifyBuyerStatusChange(orderNumber: string, buyerTelegramId: string, newStatus: string): Promise<void> {
     // Log before send
-    this.logger.log(`📤 Preparing to send status change notification: orderId=${orderId}, chatId=${buyerTelegramId}, newStatus=${newStatus}, hasToken=${!!this.botToken}`);
+    this.logger.log(`📤 Preparing to send status change notification: orderNumber=${orderNumber}, chatId=${buyerTelegramId}, newStatus=${newStatus}, hasToken=${!!this.botToken}`);
 
     if (!this.botToken) {
-      this.logger.warn(`⚠️ TELEGRAM_BOT_TOKEN not configured - skipping buyer notification for order ${orderId}`);
+      this.logger.warn(`⚠️ TELEGRAM_BOT_TOKEN not configured - skipping buyer notification for order ${orderNumber}`);
       return;
     }
 
     if (!buyerTelegramId) {
-      this.logger.warn(`⚠️ Buyer telegramId not available - skipping notification for order ${orderId}`);
+      this.logger.warn(`⚠️ Buyer telegramId not available - skipping notification for order ${orderNumber}`);
       return;
     }
 
@@ -216,7 +217,7 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
       const humanReadableStatus = statusTexts[newStatus] || `Статус изменен на: ${newStatus}`;
 
       // Build message
-      const message = `Статус вашего заказа №${orderId.slice(0, 8)} изменен.\n${humanReadableStatus}`;
+      const message = `Статус вашего заказа ${orderNumber} изменен.\n${humanReadableStatus}`;
 
       // Send message via Telegram Bot API
       const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
@@ -225,7 +226,7 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
         text: message,
       };
 
-      this.logger.log(`📡 Sending Telegram status notification to chat ${buyerTelegramId} for order ${orderId}`);
+      this.logger.log(`📡 Sending Telegram status notification to chat ${buyerTelegramId} for order ${orderNumber}`);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -239,15 +240,15 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
 
       if (!response.ok) {
         // Log error but don't throw - status update should succeed even if notification fails
-        this.logger.error(`❌ Buyer notification failed for order ${orderId}: status=${response.status}, response=${responseText}`);
+        this.logger.error(`❌ Buyer notification failed for order ${orderNumber}: status=${response.status}, response=${responseText}`);
         return;
       }
 
       // Log success
-      this.logger.log(`✅ Buyer notification sent successfully for order ${orderId} to chat ${buyerTelegramId}`);
+      this.logger.log(`✅ Buyer notification sent successfully for order ${orderNumber} to chat ${buyerTelegramId}`);
     } catch (error) {
       // Log failure but don't throw - status update should succeed even if notification fails
-      this.logger.error(`❌ Failed to send buyer notification for order ${orderId}:`, error);
+      this.logger.error(`❌ Failed to send buyer notification for order ${orderNumber}:`, error);
     }
   }
 

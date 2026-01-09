@@ -222,6 +222,7 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
+  sort?: number;
 }
 
 export interface Tag {
@@ -343,6 +344,9 @@ export interface Order {
   id: string;
   userId: string;
   status: 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED';
+  channel?: 'AS' | 'LAB';
+  seq?: number | null;
+  number?: string | null;
   totalAmount: number;
   currency: string;
   customerName: string;
@@ -365,6 +369,9 @@ export interface OrderListItem {
   id: string;
   userId: string;
   status: 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED';
+  channel?: 'AS' | 'LAB';
+  seq?: number | null;
+  number?: string | null;
   totalAmount: number;
   currency: string;
   customerName: string;
@@ -554,6 +561,17 @@ export const api = {
     role: 'OWNER' | 'MANAGER';
   }> {
     return request('/admin/me', {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getAdminDashboardSummary(initData: string | null): Promise<{
+    todayOrders: number;
+    todayRevenue: number;
+    totalOrders: number;
+  }> {
+    return request('/admin/dashboard/summary', {
       method: 'GET',
       initData,
     });

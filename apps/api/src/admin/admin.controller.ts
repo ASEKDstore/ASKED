@@ -104,4 +104,50 @@ export class AdminController {
   async testTelegramNotification(): Promise<{ success: boolean; message?: string; error?: string }> {
     return this.telegramBotService.sendTestNotification();
   }
+
+  @Get('dashboard/summary')
+  async getDashboardSummary(): Promise<{
+    todayOrders: number;
+    todayRevenue: number;
+    totalOrders: number;
+  }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Orders today (created today)
+    const todayOrdersCount = await this.prisma.order.count({
+      where: {
+        createdAt: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+    });
+
+    // Revenue today (sum of totalAmount for orders created today)
+    const todayOrders = await this.prisma.order.findMany({
+      where: {
+        createdAt: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+      select: {
+        totalAmount: true,
+      },
+    });
+
+    const todayRevenue = todayOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+
+    // Total orders count
+    const totalOrders = await this.prisma.order.count();
+
+    return {
+      todayOrders: todayOrdersCount,
+      todayRevenue,
+      totalOrders,
+    };
+  }
 }
