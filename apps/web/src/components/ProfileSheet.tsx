@@ -95,6 +95,9 @@ export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Elemen
       ? `${user.first_name} ${user.last_name}`
       : user?.first_name || 'Гость';
 
+  // Check if user is admin (telegramId 930749603)
+  const isAdminUser = user?.id === 930749603;
+
   return (
     <Overlay isOpen={isOpen} onClose={onClose} blur zIndex={50}>
       <AnimatePresence mode="wait">
@@ -192,16 +195,18 @@ export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Elemen
                   <span className="text-base font-medium">Мои заказы</span>
                 </motion.button>
 
-                <motion.button
-                  onClick={handleAdminClick}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ duration: 0.18 }}
-                  className="w-full h-14 rounded-full bg-white/10 hover:bg-white/15 active:bg-white/20 text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-all flex items-center justify-center px-6"
-                >
-                  <Shield className="w-5 h-5 mr-3" />
-                  <span className="text-base font-medium">Войти в админку</span>
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </motion.button>
+                {isAdminUser && (
+                  <motion.button
+                    onClick={handleAdminClick}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ duration: 0.18 }}
+                    className="w-full h-14 rounded-full bg-white/10 hover:bg-white/15 active:bg-white/20 text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-all flex items-center justify-center px-6"
+                  >
+                    <Shield className="w-5 h-5 mr-3" />
+                    <span className="text-base font-medium">Войти в админку</span>
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </motion.button>
+                )}
               </motion.div>
             </div>
           </motion.div>

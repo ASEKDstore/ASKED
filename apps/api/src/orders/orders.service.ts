@@ -6,10 +6,14 @@ import type { CreateOrderDto } from './dto/create-order.dto';
 import type { OrderQueryDto } from './dto/order-query.dto';
 import type { OrderDto, OrdersListResponse } from './dto/order.dto';
 import type { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { TelegramBotService } from './telegram-bot.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly telegramBotService: TelegramBotService,
+  ) {}
 
   async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<OrderDto> {
     const { items, customerName, customerPhone, customerAddress, comment } = createOrderDto;
@@ -183,6 +187,9 @@ export class OrdersService {
   async updateStatus(id: string, updateDto: UpdateOrderStatusDto): Promise<OrderDto> {
     const order = await this.prisma.order.findUnique({
       where: { id },
+      include: {
+        user: true, // Include user to get telegramId
+      },
     });
 
     if (!order) {
@@ -196,8 +203,23 @@ export class OrdersService {
       },
       include: {
         items: true,
+        user: true,
       },
     });
+
+    // Send notification to buyer if order has a user with telegramId
+    if (updated.userId && updated.user?.telegramId) {
+      try {
+        await this.telegramBotService.notifyBuyerStatusChange(
+          updated.id,
+          updated.user.telegramId,
+          updateDto.status,
+        );
+      } catch (error) {
+        // Log error but don't fail the status update
+        console.error('Failed to send status change notification:', error);
+      }
+    }
 
     return this.mapToDto(updated);
   }

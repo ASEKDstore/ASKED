@@ -14,16 +14,38 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN ?? '';
 
 // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
+// Storage key for admin dev token
+const ADMIN_TOKEN_STORAGE_KEY = 'admin_dev_token';
+
+/**
+ * Get admin dev token from localStorage or URL
+ * If token is in URL, store it in localStorage for future use
+ */
 function getDevAdminToken(): string {
   if (typeof window === 'undefined') return '';
+  
   try {
+    // First, try to get from localStorage
+    const storedToken = localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
+    if (storedToken && DEV_ADMIN_TOKEN !== '' && storedToken === DEV_ADMIN_TOKEN) {
+      return storedToken;
+    }
+
+    // If not in storage, try to get from URL
     const url = new URL(window.location.href);
-    const token = url.searchParams.get('token');
-    if (token && DEV_ADMIN_TOKEN !== '' && token === DEV_ADMIN_TOKEN) {
-      return token;
+    const urlToken = url.searchParams.get('token');
+    if (urlToken && DEV_ADMIN_TOKEN !== '' && urlToken === DEV_ADMIN_TOKEN) {
+      // Store in localStorage for future requests
+      localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, urlToken);
+      // Optionally clean up URL (remove token from query string)
+      if (url.searchParams.has('token')) {
+        url.searchParams.delete('token');
+        window.history.replaceState({}, '', url.toString());
+      }
+      return urlToken;
     }
   } catch {
-    // Ignore URL parsing errors
+    // Ignore errors
   }
   return '';
 }

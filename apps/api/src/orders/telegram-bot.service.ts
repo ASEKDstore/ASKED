@@ -183,6 +183,74 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
     }
   }
 
+  /**
+   * Send order status change notification to buyer
+   * @param orderId Order ID
+   * @param buyerTelegramId Buyer's Telegram ID (chat_id)
+   * @param newStatus New order status
+   */
+  async notifyBuyerStatusChange(orderId: string, buyerTelegramId: string, newStatus: string): Promise<void> {
+    // Log before send
+    this.logger.log(`📤 Preparing to send status change notification: orderId=${orderId}, chatId=${buyerTelegramId}, newStatus=${newStatus}, hasToken=${!!this.botToken}`);
+
+    if (!this.botToken) {
+      this.logger.warn(`⚠️ TELEGRAM_BOT_TOKEN not configured - skipping buyer notification for order ${orderId}`);
+      return;
+    }
+
+    if (!buyerTelegramId) {
+      this.logger.warn(`⚠️ Buyer telegramId not available - skipping notification for order ${orderId}`);
+      return;
+    }
+
+    try {
+      // Map status to human-readable text
+      const statusTexts: Record<string, string> = {
+        NEW: 'Заказ принят.',
+        CONFIRMED: 'Заказ подтвержден.',
+        IN_PROGRESS: 'Заказ находится в работе.',
+        DONE: 'Заказ выполнен.',
+        CANCELED: 'Заказ отменен.',
+      };
+
+      const humanReadableStatus = statusTexts[newStatus] || `Статус изменен на: ${newStatus}`;
+
+      // Build message
+      const message = `Статус вашего заказа №${orderId.slice(0, 8)} изменен.\n${humanReadableStatus}`;
+
+      // Send message via Telegram Bot API
+      const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
+      const payload = {
+        chat_id: buyerTelegramId,
+        text: message,
+      };
+
+      this.logger.log(`📡 Sending Telegram status notification to chat ${buyerTelegramId} for order ${orderId}`);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        // Log error but don't throw - status update should succeed even if notification fails
+        this.logger.error(`❌ Buyer notification failed for order ${orderId}: status=${response.status}, response=${responseText}`);
+        return;
+      }
+
+      // Log success
+      this.logger.log(`✅ Buyer notification sent successfully for order ${orderId} to chat ${buyerTelegramId}`);
+    } catch (error) {
+      // Log failure but don't throw - status update should succeed even if notification fails
+      this.logger.error(`❌ Failed to send buyer notification for order ${orderId}:`, error);
+    }
+  }
+
   private formatPrice(price: number): string {
     return new Intl.NumberFormat('ru-RU').format(price);
   }

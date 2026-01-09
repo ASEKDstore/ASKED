@@ -79,11 +79,12 @@ export default function AdminOrdersPage(): JSX.Element {
     mutationFn: ({ id, status }: { id: string; status: 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED' }) =>
       api.updateAdminOrderStatus(initData, id, status),
     onSuccess: () => {
+      // Invalidate queries to refetch updated data
       queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'order'] });
+      // Keep drawer open to show updated status, or close it
       setDrawerOpen(false);
-      // Redirect to admin dashboard after successful order update
-      router.push('/admin');
+      // DO NOT redirect - stay on the same page to see the updated status
     },
   });
 
