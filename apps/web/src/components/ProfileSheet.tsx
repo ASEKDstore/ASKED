@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
 
 import { useTelegramUser } from '@/hooks/useTelegramUser';
-import { getTokenFromUrl } from '@/lib/admin-nav';
 
 import { Overlay } from './Overlay';
 
@@ -53,8 +52,8 @@ export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Elemen
     } catch {
       // Ignore if not in Telegram
     }
-    // Preserve dev token if present
-    const devToken = typeof window !== 'undefined' ? getTokenFromUrl() : null;
+    // Always pass dev token from environment variable
+    const devToken = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN || '';
     const adminUrl = devToken ? `/admin?token=${encodeURIComponent(devToken)}` : '/admin';
     router.push(adminUrl);
     onClose();

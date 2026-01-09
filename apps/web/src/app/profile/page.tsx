@@ -10,7 +10,6 @@ import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { MyOrdersList } from '@/components/orders/MyOrdersList';
 import { useTelegram } from '@/hooks/useTelegram';
 import { api } from '@/lib/api';
-import { getTokenFromUrl } from '@/lib/admin-nav';
 
 // Use same background image as Home page
 const BG_IMAGE_URL = '/home-bg.jpg';
@@ -21,10 +20,8 @@ export default function ProfilePage(): JSX.Element {
   // Calculate header height with safe area
   const headerTotalHeight = `calc(${HEADER_HEIGHT_PX}px + env(safe-area-inset-top, 0px))`;
 
-  // Check for dev token (for preserving in admin link)
-  const devToken = typeof window !== 'undefined' ? getTokenFromUrl() : null;
+  // Get dev token from environment variable for admin link
   const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN ?? '';
-  const hasDevToken = devToken && DEV_ADMIN_TOKEN !== '' && devToken === DEV_ADMIN_TOKEN;
 
   const {
     data: user,
@@ -224,7 +221,7 @@ export default function ProfilePage(): JSX.Element {
 
           {/* Admin Panel Button - Show always (access is protected by admin routes) */}
           <div className="w-full mb-6">
-            <Link href={hasDevToken && devToken ? `/admin?token=${encodeURIComponent(devToken)}` : '/admin'}>
+            <Link href={DEV_ADMIN_TOKEN ? `/admin?token=${encodeURIComponent(DEV_ADMIN_TOKEN)}` : '/admin'}>
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => {
@@ -256,7 +253,7 @@ export default function ProfilePage(): JSX.Element {
 
             {/* Admin Panel Button */}
             <div className="mt-4">
-              <Link href={hasDevToken && devToken ? `/admin?token=${encodeURIComponent(devToken)}` : '/admin'}>
+              <Link href={DEV_ADMIN_TOKEN ? `/admin?token=${encodeURIComponent(DEV_ADMIN_TOKEN)}` : '/admin'}>
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   transition={{ duration: 0.18 }}

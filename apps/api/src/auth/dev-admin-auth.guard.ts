@@ -6,25 +6,38 @@ import type { AuthenticatedRequest } from './telegram-auth.guard';
 @Injectable()
 export class DevAdminAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest & { url?: string }>();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest & { url?: string; query?: Record<string, string | string[]> }>();
 
-    const devTokenHeader = request.headers['x-admin-dev-token'];
     const expectedToken = process.env.ADMIN_DEV_TOKEN;
 
-    // Handle header as string or array
-    const devToken =
-      typeof devTokenHeader === 'string'
-        ? devTokenHeader
-        : Array.isArray(devTokenHeader)
-          ? devTokenHeader[0]
-          : null;
+    // Check token from header first
+    const devTokenHeader = request.headers['x-admin-dev-token'];
+    let devToken: string | null = null;
 
-    const hasHeader = !!devToken;
+    // Handle header as string or array
+    if (devTokenHeader) {
+      devToken =
+        typeof devTokenHeader === 'string'
+          ? devTokenHeader
+          : Array.isArray(devTokenHeader)
+            ? devTokenHeader[0]
+            : null;
+    }
+
+    // If not found in header, check query params (Express automatically parses query string)
+    if (!devToken && request.query?.token) {
+      const queryToken = request.query.token;
+      devToken = typeof queryToken === 'string' ? queryToken : Array.isArray(queryToken) ? queryToken[0] : null;
+    }
+
+    const hasToken = !!devToken;
     const tokenMatches = devToken && expectedToken && devToken === expectedToken;
 
     // TEMP: Log for debugging
     console.log('DevAdminGuard:', {
-      hasHeader,
+      hasToken,
+      fromHeader: !!devTokenHeader,
+      fromQuery: !!request.query?.token,
       ok: tokenMatches,
       path: request.url,
     });
