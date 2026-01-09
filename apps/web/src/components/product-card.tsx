@@ -36,7 +36,7 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
               src={mainImage}
               alt={product.title}
               fill
-              className="object-cover group-hover:scale-105 transition-transform"
+              className="object-contain bg-gray-50 group-hover:scale-105 transition-transform"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               onError={(e) => {
                 // Fallback to "No image" on error
@@ -84,7 +84,12 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-xl font-bold">{formatPrice(product.price)}</span>
+          <div>
+            <span className="text-xl font-bold">{formatPrice(product.price)}</span>
+            {product.stock === 0 && (
+              <div className="text-xs text-red-600 font-medium mt-1">Нет в наличии</div>
+            )}
+          </div>
           <Button
             onClick={handleAddToCart}
             disabled={product.stock === 0}

@@ -190,6 +190,7 @@ export interface Product {
   id: string;
   title: string;
   description: string | null;
+  sku: string | null;
   price: number;
   currency: string;
   status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
@@ -311,6 +312,7 @@ export interface UpdatePromoDto {
 export interface CreateProductDto {
   title: string;
   description?: string;
+  sku?: string | null;
   price: number;
   currency?: string;
   status?: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
@@ -323,6 +325,7 @@ export interface CreateProductDto {
 export interface UpdateProductDto {
   title?: string;
   description?: string | null;
+  sku?: string | null;
   price?: number;
   currency?: string;
   status?: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
@@ -527,6 +530,12 @@ export const api = {
 
   async getProduct(id: string): Promise<Product> {
     return request<Product>(`/products/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  async getSimilarProducts(id: string, limit: number = 8): Promise<Product[]> {
+    return request<Product[]>(`/products/${id}/similar?limit=${limit}`, {
       method: 'GET',
     });
   },

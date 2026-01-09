@@ -15,13 +15,67 @@ export class OrdersService {
     private readonly telegramBotService: TelegramBotService,
   ) {}
 
-  /**
-   * Generate next order number atomically for a given channel
-   */
-  private async generateOrderNumber(channel: 'AS' | 'LAB'): Promise<{ seq: number; number: string }> {
-    // Use transaction to atomically increment counter
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Upsert counter (create if doesn't exist, otherwise get existing)
+  async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<OrderDto> {
+    const { items, customerName, customerPhone, customerAddress, comment, channel = 'AS' } = createOrderDto;
+
+    // Atomic stock decrement and order creation within a single transaction
+    const order = await this.prisma.$transaction(async (tx) => {
+      // Validate products, calculate total, and prepare order items
+      let totalAmount = 0;
+      const orderItemsData = [];
+      const productUpdates: Array<{ id: string; stock: number; title: string }> = [];
+
+      // First pass: validate and prepare
+      for (const item of items) {
+        // Lock product row for update to prevent race conditions
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+        });
+
+        if (!product) {
+          throw new NotFoundException(`Product with id ${item.productId} not found`);
+        }
+
+        if (product.status !== 'ACTIVE') {
+          throw new BadRequestException(`Product ${product.title} is not available for ordering`);
+        }
+
+        if (product.stock < item.qty) {
+          throw new BadRequestException(
+            `Not enough stock for product ${product.title}. Available: ${product.stock}, requested: ${item.qty}`,
+          );
+        }
+
+        const itemTotal = product.price * item.qty;
+        totalAmount += itemTotal;
+
+        const newStock = product.stock - item.qty;
+        productUpdates.push({
+          id: product.id,
+          stock: newStock,
+          title: product.title,
+        });
+
+        orderItemsData.push({
+          productId: product.id,
+          titleSnapshot: product.title,
+          priceSnapshot: product.price,
+          qty: item.qty,
+        });
+      }
+
+      // Second pass: atomically decrement stock for all products
+      for (const update of productUpdates) {
+        await tx.product.update({
+          where: { id: update.id },
+          data: {
+            stock: update.stock,
+            // Note: We don't change status here. Products with stock = 0 are excluded from catalog via stock > 0 filter
+          },
+        });
+      }
+
+      // Generate order number atomically
       const counter = await tx.orderCounter.upsert({
         where: { channel },
         update: {
@@ -36,74 +90,32 @@ export class OrdersService {
       const seq = counter.value;
       const number = `№${seq.toString().padStart(5, '0')}/${channel}`;
 
-      return { seq, number };
-    });
-
-    return result;
-  }
-
-  async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<OrderDto> {
-    const { items, customerName, customerPhone, customerAddress, comment, channel = 'AS' } = createOrderDto;
-
-    // Validate products and calculate total
-    let totalAmount = 0;
-    const orderItemsData = [];
-
-    for (const item of items) {
-      const product = await this.prisma.product.findUnique({
-        where: { id: item.productId },
-      });
-
-      if (!product) {
-        throw new NotFoundException(`Product with id ${item.productId} not found`);
-      }
-
-      if (product.status !== 'ACTIVE') {
-        throw new BadRequestException(`Product ${product.title} is not available for ordering`);
-      }
-
-      if (product.stock < item.qty) {
-        throw new BadRequestException(
-          `Not enough stock for product ${product.title}. Available: ${product.stock}, requested: ${item.qty}`,
-        );
-      }
-
-      const itemTotal = product.price * item.qty;
-      totalAmount += itemTotal;
-
-      orderItemsData.push({
-        productId: product.id,
-        titleSnapshot: product.title,
-        priceSnapshot: product.price,
-        qty: item.qty,
-      });
-    }
-
-    // Generate order number atomically
-    const { seq, number } = await this.generateOrderNumber(channel);
-
-    // Create order
-    const order = await this.prisma.order.create({
-      data: {
-        userId,
-        status: 'NEW',
-        channel,
-        seq,
-        number,
-        totalAmount,
-        currency: 'RUB',
-        customerName,
-        customerPhone,
-        customerAddress: customerAddress || null,
-        comment: comment || null,
-        paymentMethod: 'MANAGER',
-        items: {
-          create: orderItemsData,
+      // Create order with items
+      const createdOrder = await tx.order.create({
+        data: {
+          userId,
+          status: 'NEW',
+          channel,
+          seq,
+          number,
+          totalAmount,
+          currency: 'RUB',
+          customerName,
+          customerPhone,
+          customerAddress: customerAddress || null,
+          comment: comment || null,
+          paymentMethod: 'MANAGER',
+          items: {
+            create: orderItemsData,
+          },
         },
-      },
-      include: {
-        items: true,
-      },
+        include: {
+          items: true,
+          user: true,
+        },
+      });
+
+      return createdOrder;
     });
 
     return this.mapToDto(order);

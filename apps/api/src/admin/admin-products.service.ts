@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import type { ProductDto } from '../products/dto/product.dto';
@@ -71,6 +71,7 @@ export class AdminProductsService {
         url: img.url,
         sort: img.sort,
       })),
+      sku: product.sku,
       categories: product.categories.map((pc) => ({
         id: pc.category.id,
         name: pc.category.name,
@@ -119,6 +120,7 @@ export class AdminProductsService {
       id: product.id,
       title: product.title,
       description: product.description,
+      sku: product.sku,
       price: product.price,
       currency: product.currency,
       status: product.status as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
@@ -144,12 +146,30 @@ export class AdminProductsService {
   }
 
   async create(createDto: CreateAdminProductDto): Promise<ProductDto> {
-    const { images, categoryIds, tagIds, ...productData } = createDto;
+    const { images, categoryIds, tagIds, sku, ...productData } = createDto;
+
+    // Prepare product data with SKU validation
+    let finalSku: string | null = null;
+    if (sku) {
+      const trimmedSku = sku.trim();
+      if (trimmedSku.length > 0) {
+        const existing = await this.prisma.product.findUnique({
+          where: { sku: trimmedSku },
+        });
+        if (existing) {
+          throw new ConflictException(`Product with SKU "${trimmedSku}" already exists`);
+        }
+        finalSku = trimmedSku;
+      }
+    }
 
     const product = await this.prisma.$transaction(async (tx) => {
       // Create product
       const product = await tx.product.create({
-        data: productData,
+        data: {
+          ...productData,
+          sku: finalSku,
+        },
       });
 
       // Create images
@@ -200,13 +220,34 @@ export class AdminProductsService {
       throw new NotFoundException(`Product with id ${id} not found`);
     }
 
-    const { images, categoryIds, tagIds, ...productData } = updateDto;
+    const { images, categoryIds, tagIds, sku, ...productData } = updateDto;
+
+    // Prepare SKU update if provided
+    let finalSku: string | null | undefined = undefined;
+    if (sku !== undefined) {
+      if (sku && sku.trim().length > 0) {
+        const trimmedSku = sku.trim();
+        const existingWithSku = await this.prisma.product.findUnique({
+          where: { sku: trimmedSku },
+        });
+        if (existingWithSku && existingWithSku.id !== id) {
+          throw new ConflictException(`Product with SKU "${trimmedSku}" already exists`);
+        }
+        finalSku = trimmedSku;
+      } else {
+        finalSku = null;
+      }
+    }
 
     await this.prisma.$transaction(async (tx) => {
       // Update product
+      const updateData: any = { ...productData };
+      if (finalSku !== undefined) {
+        updateData.sku = finalSku;
+      }
       await tx.product.update({
         where: { id },
-        data: productData,
+        data: updateData,
       });
 
       // Replace images (delete old, create new)

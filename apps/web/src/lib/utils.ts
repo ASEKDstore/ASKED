@@ -6,15 +6,10 @@ export function cn(...inputs: ClassValue[]): string {
 }
 
 export function formatPrice(price: number, currency = 'RUB'): string {
-  const rubles = Math.floor(price / 100);
-  const kopecks = price % 100;
-  
+  // Price is already in rubles (Int from backend), format with grouping
   if (currency === 'RUB') {
-    if (kopecks === 0) {
-      return `${rubles.toLocaleString('ru-RU')} ₽`;
-    }
-    return `${rubles.toLocaleString('ru-RU')},${kopecks.toString().padStart(2, '0')} ₽`;
+    return `${price.toLocaleString('ru-RU', { useGrouping: true })} ₽`;
   }
   
-  return `${(price / 100).toLocaleString('ru-RU')} ${currency}`;
+  return `${price.toLocaleString('ru-RU', { useGrouping: true })} ${currency}`;
 }

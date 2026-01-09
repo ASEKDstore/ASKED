@@ -43,7 +43,7 @@ export function ProductCard({ product, onTap, priority = false }: ProductCardPro
       transition={{ duration: 0.15, ease: 'easeOut' }}
     >
       {/* Background Image */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 bg-gray-900/50">
         {normalizedImage && !imageError ? (
           <>
             {isLoading && (
@@ -53,7 +53,7 @@ export function ProductCard({ product, onTap, priority = false }: ProductCardPro
               src={normalizedImage}
               alt={product.title}
               fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className="object-contain transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 768px) 50vw, 33vw"
               priority={priority}
               unoptimized
@@ -75,6 +75,15 @@ export function ProductCard({ product, onTap, priority = false }: ProductCardPro
         <div className="absolute top-3 right-3 z-10">
           <div className="px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-[10px] font-medium uppercase tracking-wider">
             {badge.name}
+          </div>
+        </div>
+      )}
+
+      {/* Out of stock badge */}
+      {product.stock === 0 && (
+        <div className="absolute top-3 left-3 z-10">
+          <div className="px-2.5 py-1 rounded-full bg-red-500/90 backdrop-blur-md border border-red-600/50 text-white text-[10px] font-medium">
+            Нет в наличии
           </div>
         </div>
       )}

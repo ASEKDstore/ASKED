@@ -5,6 +5,7 @@ import { productImageInputSchema } from './create-admin-product.dto';
 export const updateAdminProductSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional().nullable(),
+  sku: z.string().trim().min(1).optional().nullable(),
   price: z.number().int().min(0).optional(),
   currency: z.string().optional(),
   status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']).optional(),
@@ -15,6 +16,7 @@ export const updateAdminProductSchema = z.object({
 });
 
 export type UpdateAdminProductDto = z.infer<typeof updateAdminProductSchema>;
+
 
 
 

@@ -110,6 +110,7 @@ model Product {
   id          String          @id @default(cuid())
   title       String
   description String?
+  sku         String?         @unique
   price       Int
   currency    String          @default("RUB")
   status      ProductStatus   @default(DRAFT)
@@ -122,6 +123,7 @@ model Product {
   orderItems  OrderItem[]
   labProducts LabProduct[]
 
+  @@index([sku])
   @@map("products")
 }
 

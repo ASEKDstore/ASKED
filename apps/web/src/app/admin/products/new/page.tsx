@@ -29,6 +29,7 @@ export default function NewProductPage(): JSX.Element {
   const [formData, setFormData] = useState<CreateProductDto>({
     title: '',
     description: '',
+    sku: null,
     price: 0,
     currency: 'RUB',
     status: 'DRAFT',
@@ -184,6 +185,18 @@ export default function NewProductPage(): JSX.Element {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Артикул (SKU)
+              </label>
+              <Input
+                value={formData.sku || ''}
+                onChange={(e) => setFormData({ ...formData, sku: e.target.value.trim() || null })}
+                placeholder="Введите артикул (необязательно)"
+              />
+              <p className="text-xs text-gray-500 mt-1">Рекомендуется указать уникальный артикул</p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
@@ -315,25 +328,31 @@ export default function NewProductPage(): JSX.Element {
         <Card>
           <CardHeader>
             <CardTitle>Категории</CardTitle>
-            <CardDescription>Выберите категории товара</CardDescription>
+            <CardDescription>Выберите категории товара (можно выбрать несколько)</CardDescription>
           </CardHeader>
           <CardContent>
-            <Select
-              multiple
-              value={formData.categoryIds}
-              onChange={(e) => {
-                const selected = Array.from(e.target.selectedOptions, (option) => option.value);
-                setFormData({ ...formData, categoryIds: selected });
-              }}
-              className="min-h-[100px]"
-            >
-              {categories?.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </Select>
-            {(!categories || categories.length === 0) && (
+            {categories && categories.length > 0 ? (
+              <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-4">
+                {categories.map((cat) => (
+                  <label key={cat.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={formData.categoryIds?.includes(cat.id) || false}
+                      onChange={(e) => {
+                        const current = formData.categoryIds || [];
+                        if (e.target.checked) {
+                          setFormData({ ...formData, categoryIds: [...current, cat.id] });
+                        } else {
+                          setFormData({ ...formData, categoryIds: current.filter((id) => id !== cat.id) });
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">{cat.name}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
               <p className="text-sm text-gray-500 mt-2">Категории не найдены</p>
             )}
           </CardContent>
@@ -343,25 +362,31 @@ export default function NewProductPage(): JSX.Element {
         <Card>
           <CardHeader>
             <CardTitle>Теги</CardTitle>
-            <CardDescription>Выберите теги товара</CardDescription>
+            <CardDescription>Выберите теги товара (можно выбрать несколько)</CardDescription>
           </CardHeader>
           <CardContent>
-            <Select
-              multiple
-              value={formData.tagIds}
-              onChange={(e) => {
-                const selected = Array.from(e.target.selectedOptions, (option) => option.value);
-                setFormData({ ...formData, tagIds: selected });
-              }}
-              className="min-h-[100px]"
-            >
-              {tags?.map((tag) => (
-                <option key={tag.id} value={tag.id}>
-                  {tag.name}
-                </option>
-              ))}
-            </Select>
-            {(!tags || tags.length === 0) && (
+            {tags && tags.length > 0 ? (
+              <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-4">
+                {tags.map((tag) => (
+                  <label key={tag.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={formData.tagIds?.includes(tag.id) || false}
+                      onChange={(e) => {
+                        const current = formData.tagIds || [];
+                        if (e.target.checked) {
+                          setFormData({ ...formData, tagIds: [...current, tag.id] });
+                        } else {
+                          setFormData({ ...formData, tagIds: current.filter((id) => id !== tag.id) });
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">{tag.name}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
               <p className="text-sm text-gray-500 mt-2">Теги не найдены</p>
             )}
           </CardContent>

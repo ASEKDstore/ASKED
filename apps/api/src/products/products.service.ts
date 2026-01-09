@@ -14,6 +14,7 @@ export class ProductsService {
 
     const where: any = {
       status: 'ACTIVE',
+      stock: { gt: 0 }, // Exclude out-of-stock products from public catalog
     };
 
     // Search
@@ -103,6 +104,7 @@ export class ProductsService {
       id: product.id,
       title: product.title,
       description: product.description,
+      sku: product.sku,
       price: product.price,
       currency: product.currency,
       status: product.status as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
@@ -163,6 +165,7 @@ export class ProductsService {
       id: product.id,
       title: product.title,
       description: product.description,
+      sku: product.sku,
       price: product.price,
       currency: product.currency,
       status: product.status as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
@@ -185,5 +188,119 @@ export class ProductsService {
         slug: pt.tag.slug,
       })),
     };
+  }
+
+  async findSimilar(id: string, limit: number = 8): Promise<ProductListItemDto[]> {
+    // Get the product to find similar ones for
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        categories: true,
+        tags: true,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with id ${id} not found`);
+    }
+
+    // Extract category and tag IDs
+    const categoryIds = product.categories.map((pc) => pc.categoryId);
+    const tagIds = product.tags.map((pt) => pt.tagId);
+
+    // If product has no categories or tags, return empty array
+    if (categoryIds.length === 0 && tagIds.length === 0) {
+      return [];
+    }
+
+    // Build OR conditions for categories and tags
+    const orConditions: any[] = [];
+    if (categoryIds.length > 0) {
+      orConditions.push({
+        categories: {
+          some: {
+            categoryId: { in: categoryIds },
+          },
+        },
+      });
+    }
+    if (tagIds.length > 0) {
+      orConditions.push({
+        tags: {
+          some: {
+            tagId: { in: tagIds },
+          },
+        },
+      });
+    }
+
+    // Find products that share at least one category OR tag
+    const candidateProducts = await this.prisma.product.findMany({
+      where: {
+        AND: [
+          { id: { not: id } }, // Exclude current product
+          { status: 'ACTIVE' }, // Only active products
+          { stock: { gt: 0 } }, // Only in-stock products
+          { OR: orConditions },
+        ],
+      },
+      include: {
+        images: {
+          orderBy: { sort: 'asc' },
+          take: 1, // Only first image for card
+        },
+        categories: {
+          include: {
+            category: true,
+          },
+        },
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
+    });
+
+    // Calculate relevance score (number of overlapping categories + tags)
+    const scored = candidateProducts.map((p) => {
+      const overlapCategories = p.categories.filter((pc) =>
+        categoryIds.includes(pc.categoryId),
+      ).length;
+      const overlapTags = p.tags.filter((pt) => tagIds.includes(pt.tagId)).length;
+      const score = overlapCategories + overlapTags;
+
+      return { product: p, score };
+    });
+
+    // Sort by score (descending) and take top N
+    const sorted = scored.sort((a, b) => b.score - a.score).slice(0, limit);
+
+    // Map to DTO format
+    return sorted.map(({ product: p }) => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      sku: p.sku,
+      price: p.price,
+      currency: p.currency,
+      status: p.status as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
+      stock: p.stock,
+      images: p.images.map((img) => ({
+        id: img.id,
+        url: img.url,
+        sort: img.sort,
+      })),
+      categories: p.categories.map((pc) => ({
+        id: pc.category.id,
+        name: pc.category.name,
+        slug: pc.category.slug,
+      })),
+      tags: p.tags.map((pt) => ({
+        id: pt.tag.id,
+        name: pt.tag.name,
+        slug: pt.tag.slug,
+      })),
+    }));
   }
 }

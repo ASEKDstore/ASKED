@@ -8,6 +8,7 @@ export const productImageInputSchema = z.object({
 export const createAdminProductSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
+  sku: z.string().trim().min(1).optional().nullable(),
   price: z.number().int().min(0),
   currency: z.string().default('RUB'),
   status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']).default('DRAFT'),

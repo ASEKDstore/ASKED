@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { HEADER_HEIGHT_PX } from '@/components/Header';
@@ -22,6 +23,12 @@ export default function ProductPage(): JSX.Element {
     queryKey: ['product', productId],
     queryFn: () => api.getProduct(productId),
     enabled: !!productId,
+  });
+
+  const { data: similarProducts, isLoading: isLoadingSimilar } = useQuery({
+    queryKey: ['product', productId, 'similar'],
+    queryFn: () => api.getSimilarProducts(productId, 8),
+    enabled: !!productId && !!product,
   });
 
   const handleAddToCart = () => {
@@ -87,7 +94,7 @@ export default function ProductPage(): JSX.Element {
                 src={mainImage}
                 alt={product.title}
                 fill
-                className="object-cover"
+                className="object-contain bg-gray-50"
                 priority
                 onError={(e) => {
                   // Fallback to "No image" on error
@@ -122,7 +129,7 @@ export default function ProductPage(): JSX.Element {
                         src={normalizedUrl}
                         alt={product.title}
                         fill
-                        className="object-cover"
+                        className="object-contain bg-gray-50"
                         onError={(e) => {
                           // Fallback to "No image" on error
                           const target = e.target as HTMLImageElement;
@@ -203,6 +210,57 @@ export default function ProductPage(): JSX.Element {
           </div>
         </div>
       </div>
+
+      {/* Similar Products Section */}
+      {similarProducts && similarProducts.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold mb-6">Похожие товары</h2>
+          {isLoadingSimilar ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="aspect-square bg-gray-200 animate-pulse rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {similarProducts.map((similarProduct) => (
+                <Link key={similarProduct.id} href={`/p/${similarProduct.id}`}>
+                  <div className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="aspect-square relative bg-gray-100">
+                      {getMainImageUrl(similarProduct.images) ? (
+                        <Image
+                          src={getMainImageUrl(similarProduct.images)!}
+                          alt={similarProduct.title}
+                          fill
+                          className="object-contain bg-gray-50 group-hover:scale-105 transition-transform"
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+                          No image
+                        </div>
+                      )}
+                      {similarProduct.stock === 0 && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <div className="px-2 py-1 rounded-full bg-red-500/90 text-white text-[10px] font-medium">
+                            Нет в наличии
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-semibold text-sm mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                        {similarProduct.title}
+                      </h3>
+                      <div className="text-lg font-bold">{formatPrice(similarProduct.price)}</div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
