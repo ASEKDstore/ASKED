@@ -1,15 +1,15 @@
 'use client';
 
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { User as UserIcon, X, Package, Shield } from 'lucide-react';
+import { User as UserIcon, X, Package, Shield, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
 
 import { useTelegramUser } from '@/hooks/useTelegramUser';
+import { getTokenFromUrl } from '@/lib/admin-nav';
 
 import { Overlay } from './Overlay';
-import { Button } from './ui/button';
 
 interface ProfileSheetProps {
   isOpen: boolean;
@@ -47,7 +47,16 @@ export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Elemen
   };
 
   const handleAdminClick = () => {
-    router.push('/admin');
+    // Haptic feedback
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
+    } catch {
+      // Ignore if not in Telegram
+    }
+    // Preserve dev token if present
+    const devToken = typeof window !== 'undefined' ? getTokenFromUrl() : null;
+    const adminUrl = devToken ? `/admin?token=${encodeURIComponent(devToken)}` : '/admin';
+    router.push(adminUrl);
     onClose();
   };
 
@@ -86,10 +95,6 @@ export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Elemen
     user?.first_name && user?.last_name
       ? `${user.first_name} ${user.last_name}`
       : user?.first_name || 'Гость';
-
-  const hasAdminAccess = typeof window !== 'undefined' && 
-    (window.location.search.includes('token') || 
-     process.env.NODE_ENV === 'development');
 
   return (
     <Overlay isOpen={isOpen} onClose={onClose} blur zIndex={50}>
@@ -178,23 +183,26 @@ export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Elemen
                 transition={{ delay: 0.15, duration: 0.3 }}
                 className="space-y-3 px-2"
               >
-                <Button
+                <motion.button
                   onClick={handleOrdersClick}
-                  className="w-full h-14 rounded-2xl bg-white/10 hover:bg-white/15 active:bg-white/20 text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)] active:scale-[0.98] transition-all"
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.18 }}
+                  className="w-full h-14 rounded-full bg-white/10 hover:bg-white/15 active:bg-white/20 text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-all flex items-center justify-center px-6"
                 >
                   <Package className="w-5 h-5 mr-3" />
                   <span className="text-base font-medium">Мои заказы</span>
-                </Button>
+                </motion.button>
 
-                {hasAdminAccess && (
-                  <Button
-                    onClick={handleAdminClick}
-                    className="w-full h-14 rounded-2xl bg-white/10 hover:bg-white/15 active:bg-white/20 text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)] active:scale-[0.98] transition-all"
-                  >
-                    <Shield className="w-5 h-5 mr-3" />
-                    <span className="text-base font-medium">Войти в админку</span>
-                  </Button>
-                )}
+                <motion.button
+                  onClick={handleAdminClick}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.18 }}
+                  className="w-full h-14 rounded-full bg-white/10 hover:bg-white/15 active:bg-white/20 text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-all flex items-center justify-center px-6"
+                >
+                  <Shield className="w-5 h-5 mr-3" />
+                  <span className="text-base font-medium">Войти в админку</span>
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </motion.button>
               </motion.div>
             </div>
           </motion.div>
