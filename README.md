@@ -40,6 +40,8 @@ DATABASE_URL="postgresql://user:password@localhost:5432/asked_db?schema=public"
 PORT=3001
 FRONTEND_URL=http://localhost:3000
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+TELEGRAM_ADMIN_CHAT_ID=930749603
+ADMIN_PANEL_URL=http://localhost:3000
 TELEGRAM_AUTH_MAX_AGE_SEC=86400
 ```
 
@@ -49,6 +51,8 @@ DATABASE_URL="postgresql://asked_postgre_user:95V87ZoCCeT7ocNVq4XNWsywyjtAz3Bx@d
 PORT=3001
 FRONTEND_URL=https://asked-web.onrender.com
 TELEGRAM_BOT_TOKEN=8059531981:AAGyK0er4V4Atif1z__DawxMP0Y6VvqdLOA
+TELEGRAM_ADMIN_CHAT_ID=930749603
+ADMIN_PANEL_URL=https://asked-web.onrender.com
 TELEGRAM_AUTH_MAX_AGE_SEC=86400
 ```
 

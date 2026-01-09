@@ -19,6 +19,8 @@ FRONTEND_URL=https://asked-web.onrender.com
 
 # Telegram
 TELEGRAM_BOT_TOKEN=8059531981:AAGyK0er4V4Atif1z__DawxMP0Y6VvqdLOA
+TELEGRAM_ADMIN_CHAT_ID=930749603
+ADMIN_PANEL_URL=https://asked-web.onrender.com
 TELEGRAM_AUTH_MAX_AGE_SEC=86400
 ```
 
@@ -66,6 +68,8 @@ TELEGRAM_BOT_TOKEN=8059531981:AAGyK0er4V4Atif1z__DawxMP0Y6VvqdLOA
    - `PORT=3001` (обычно Render автоматически устанавливает PORT)
    - `FRONTEND_URL=https://asked-web.onrender.com`
    - `TELEGRAM_BOT_TOKEN=8059531981:AAGyK0er4V4Atif1z__DawxMP0Y6VvqdLOA`
+   - `TELEGRAM_ADMIN_CHAT_ID=930749603`
+   - `ADMIN_PANEL_URL=https://asked-web.onrender.com`
    - `TELEGRAM_AUTH_MAX_AGE_SEC=86400`
 
 ### Для Bot Service:

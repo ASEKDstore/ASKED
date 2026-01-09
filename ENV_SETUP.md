@@ -24,6 +24,14 @@ FRONTEND_URL=http://localhost:3000
 # Получить можно у @BotFather в Telegram
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 
+# ID чата администратора для уведомлений о новых заказах (обязательно!)
+# Можно получить отправив боту /start, затем скопировать chat_id из логов бота
+# Или использовать @userinfobot для получения своего chat_id
+TELEGRAM_ADMIN_CHAT_ID=your_admin_chat_id_here
+
+# URL админ-панели для кнопок в уведомлениях (по умолчанию http://localhost:3000)
+ADMIN_PANEL_URL=http://localhost:3000
+
 # Максимальный возраст auth_date в секундах (по умолчанию 86400 = 24 часа)
 TELEGRAM_AUTH_MAX_AGE_SEC=86400
 ```
@@ -34,6 +42,22 @@ TELEGRAM_AUTH_MAX_AGE_SEC=86400
 3. Отправьте команду `/newbot`
 4. Следуйте инструкциям
 5. Скопируйте полученный токен
+
+### Как получить TELEGRAM_ADMIN_CHAT_ID:
+1. **Способ 1 (простой)**: Откройте Telegram и найдите бота [@userinfobot](https://t.me/userinfobot)
+2. Отправьте боту `/start`
+3. Бот вернет ваш Telegram ID (это и есть ваш chat_id)
+4. Скопируйте это число
+
+   **Или:**
+
+1. **Способ 2**: Откройте Telegram Web (https://web.telegram.org)
+2. Перейдите в настройки профиля
+3. Найдите свой Telegram ID в настройках
+
+   **Для production:**
+   - Укажите Telegram ID администратора, который будет получать уведомления о новых заказах
+   - Можно указать как личный chat_id пользователя, так и chat_id группы/канала
 
 ---
 
@@ -154,6 +178,8 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/asked_db_dev?schema=
 PORT=3001
 FRONTEND_URL=http://localhost:3000
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
+TELEGRAM_ADMIN_CHAT_ID=930749603
+ADMIN_PANEL_URL=http://localhost:3000
 TELEGRAM_AUTH_MAX_AGE_SEC=86400
 ```
 
@@ -164,6 +190,8 @@ DATABASE_URL="postgresql://user:strong_password@prod-db.example.com:5432/asked_d
 PORT=3001
 FRONTEND_URL=https://your-frontend-domain.com
 TELEGRAM_BOT_TOKEN=9876543210:XYZabcDEFghiJKLmnoPQRstu
+TELEGRAM_ADMIN_CHAT_ID=930749603
+ADMIN_PANEL_URL=https://your-frontend-domain.com
 TELEGRAM_AUTH_MAX_AGE_SEC=3600
 ```
 
