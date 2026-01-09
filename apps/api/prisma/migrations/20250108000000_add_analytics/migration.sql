@@ -95,3 +95,5 @@ CREATE INDEX "app_events_sessionId_createdAt_idx" ON "app_events"("sessionId", "
 ALTER TABLE "telegram_post_metric_snapshots" ADD CONSTRAINT "telegram_post_metric_snapshots_postId_fkey" FOREIGN KEY ("postId") REFERENCES "telegram_posts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
+
+

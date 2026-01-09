@@ -20,11 +20,25 @@ export class TelegramInitDataService {
   }
 
   /**
-   * Verify Telegram WebApp initData signature
+   * Verify Telegram WebApp initData signature using OFFICIAL algorithm
+   * https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
+   * 
+   * IMPORTANT: Follows the exact specification:
+   * - DO NOT use botToken directly as HMAC key
+   * - DO NOT verify initDataUnsafe
+   * - DO NOT skip sorting params
+   * - 'WebAppData' string is mandatory
    */
   verifyInitData(initData: string): boolean {
+    return this.verifyTelegramInitData(initData, this.botToken);
+  }
+
+  /**
+   * Standalone verification function matching exact official Telegram algorithm
+   */
+  verifyTelegramInitData(initData: string, botToken: string): boolean {
     try {
-      // 1. Parse initData as querystring
+      // 1. Parse initData as URLSearchParams
       const params = new URLSearchParams(initData);
 
       // 2. Extract hash and remove it from the set
@@ -35,26 +49,26 @@ export class TelegramInitDataService {
       params.delete('hash');
 
       // 3. Build data_check_string: sorted key=value pairs, joined by \n
-      const dataCheckString = Array.from(params.entries())
+      const dataCheckString = [...params.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, value]) => `${key}=${value}`)
         .join('\n');
 
-      // 4. Compute secret_key = HMAC_SHA256(key="WebAppData", msg=TELEGRAM_BOT_TOKEN)
-      const secretKey = crypto.createHmac('sha256', 'WebAppData').update(this.botToken).digest();
+      // 4. Compute secret_key = HMAC_SHA256(key="WebAppData", msg=botToken)
+      // IMPORTANT: 'WebAppData' is the key, botToken is the message
+      const secretKey = crypto
+        .createHmac('sha256', 'WebAppData')
+        .update(botToken)
+        .digest();
 
-      // 5. Compute computed_hash = HMAC_SHA256(key=secret_key, msg=data_check_string) in hex
-      const computedHash = crypto
+      // 5. Compute calculated_hash = HMAC_SHA256(key=secret_key, msg=data_check_string) in hex
+      const calculatedHash = crypto
         .createHmac('sha256', secretKey)
         .update(dataCheckString)
         .digest('hex');
 
-      // 6. Constant-time compare with hash (lengths must match)
-      if (computedHash.length !== hash.length) {
-        return false;
-      }
-
-      return crypto.timingSafeEqual(Buffer.from(computedHash, 'hex'), Buffer.from(hash, 'hex'));
+      // 6. Compare calculated_hash with hash from initData
+      return calculatedHash === hash;
     } catch (error) {
       return false;
     }
@@ -94,17 +108,30 @@ export class TelegramInitDataService {
     try {
       const params = new URLSearchParams(initData);
 
-      // Parse user JSON string
+      // Parse user JSON string (URLSearchParams already decodes)
       const userStr = params.get('user');
       if (!userStr) {
         return null;
       }
 
-      const user = JSON.parse(decodeURIComponent(userStr)) as TelegramUser;
+      // Parse user JSON (may need to decode if still encoded)
+      let user: TelegramUser;
+      try {
+        user = JSON.parse(userStr) as TelegramUser;
+      } catch {
+        // Try decoding if parsing fails
+        user = JSON.parse(decodeURIComponent(userStr)) as TelegramUser;
+      }
 
       // Ensure required fields
-      if (!user.id || !user.first_name || !user.auth_date) {
+      if (!user.id || !user.first_name) {
         return null;
+      }
+
+      // Get auth_date from params (not from user object)
+      const authDateStr = params.get('auth_date');
+      if (authDateStr) {
+        user.auth_date = parseInt(authDateStr, 10);
       }
 
       // Get hash from params
@@ -124,16 +151,16 @@ export class TelegramInitDataService {
    */
   validateAndParse(initData: string): TelegramUser {
     if (!this.verifyInitData(initData)) {
-      throw new UnauthorizedException('Invalid initData signature');
+      throw new UnauthorizedException('Authentication required. Please open the app from Telegram');
     }
 
     if (!this.verifyAuthDate(initData)) {
-      throw new UnauthorizedException('initData auth_date expired or invalid');
+      throw new UnauthorizedException('Authentication required. Please open the app from Telegram');
     }
 
     const user = this.parseUser(initData);
     if (!user) {
-      throw new UnauthorizedException('Failed to parse user from initData');
+      throw new UnauthorizedException('Authentication required. Please open the app from Telegram');
     }
 
     return user;

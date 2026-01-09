@@ -248,3 +248,5 @@ async findAll(): Promise<PromoDto[]> {
 4. `apps/api/prisma/schema.prisma` - Prisma schema (should match migrations)
 
 
+
+

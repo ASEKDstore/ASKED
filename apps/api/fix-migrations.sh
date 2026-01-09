@@ -19,3 +19,5 @@ pnpm prisma generate
 echo "✅ All migration steps completed successfully!"
 
 
+
+

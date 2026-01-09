@@ -38,35 +38,41 @@ export class TelegramBotService {
         })
         .join('\n');
 
-      // Build message
+      // Build message according to specification
+      // Header: New order with order id
+      // Buyer: name + @username + telegramId
+      // Items list: • {title} ×{qty} — {lineTotal} ₽
+      // Total price
+      // Optional comment/delivery info
       const message = `🆕 *Новый заказ*
 
-📦 *№ ${order.id}*
+📦 *Заказ №${order.id}*
 
 👤 *Покупатель:*
 ${buyerName}${buyerUsername ? ` ${buyerUsername}` : ''}${buyerTelegramId}
 📞 ${order.customerPhone}
-${order.customerAddress ? `📍 ${order.customerAddress}` : ''}
+${order.customerAddress ? `📍 *Адрес:* ${order.customerAddress}` : ''}
 
 🛍️ *Товары:*
 ${itemsText}
 
 💰 *Итого: ${this.formatPrice(order.totalAmount)} ₽*
+${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
 
-${order.comment ? `💬 *Комментарий:*\n${order.comment}` : ''}`;
-
-      // Build inline keyboard - link to admin orders page (orders will be visible there)
+      // Build inline keyboard as specified:
+      // "Открыть заказ" → {ADMIN_PANEL_URL}/orders/{orderId}
+      // "Открыть админку" → {ADMIN_PANEL_URL}
       const keyboard = {
         inline_keyboard: [
           [
             {
-              text: '📋 Открыть заказы',
-              url: `${this.adminPanelUrl}/orders`,
+              text: 'Открыть заказ',
+              url: `${this.adminPanelUrl}/orders/${order.id}`,
             },
           ],
           [
             {
-              text: '🏠 Открыть админку',
+              text: 'Открыть админку',
               url: this.adminPanelUrl,
             },
           ],

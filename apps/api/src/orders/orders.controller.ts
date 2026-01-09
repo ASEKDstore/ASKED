@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
-import { TelegramInitDataService } from '../auth/telegram-init-data.service';
 import type { TelegramUser } from '../auth/types/telegram-user.interface';
+import type { AuthenticatedRequest } from '../auth/telegram-auth.guard';
 import { UsersService } from '../users/users.service';
 
 import { createOrderSchema } from './dto/create-order.dto';
@@ -17,61 +17,52 @@ export class OrdersController {
   constructor(
     private readonly ordersService: OrdersService,
     private readonly usersService: UsersService,
-    private readonly telegramInitDataService: TelegramInitDataService,
     private readonly telegramBotService: TelegramBotService,
   ) {}
 
   @Post()
-  async create(@Req() req: Request, @Body() body: any): Promise<OrderDto> {
+  @UseGuards(TelegramAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async create(
+    @Req() req: Request & AuthenticatedRequest,
+    @Body() body: any,
+  ): Promise<OrderDto> {
     const createOrderDto = createOrderSchema.parse(body);
-    const allowGuestCheckout = process.env.ALLOW_GUEST_CHECKOUT === 'true';
 
-    // Try to parse Telegram initData if present
-    const initDataHeader = req.headers['x-telegram-init-data'];
-    let telegramUser: TelegramUser | undefined;
-
-    if (initDataHeader) {
-      try {
-        const initData = typeof initDataHeader === 'string' ? initDataHeader : initDataHeader[0];
-        if (initData) {
-          telegramUser = this.telegramInitDataService.validateAndParse(initData);
-        }
-      } catch {
-        // Invalid initData - ignore and proceed to guest checkout if allowed
-      }
+    // User is authenticated via TelegramAuthGuard
+    // req.user and req.telegramUser are both available
+    const telegramUser = req.user;
+    
+    if (!telegramUser) {
+      throw new Error('User not authenticated');
     }
 
-    let userId: string | null = null;
-    let userData: { username?: string; firstName?: string; lastName?: string; telegramId?: string } | undefined;
+    // Upsert user in database
+    const user = await this.usersService.upsertByTelegramData(telegramUser);
+    const userId = user.id;
 
-    if (telegramUser) {
-      // User authenticated via Telegram
-      const user = await this.usersService.upsertByTelegramData(telegramUser);
-      userId = user.id;
-      userData = {
-        username: telegramUser.username,
-        firstName: telegramUser.first_name,
-        lastName: telegramUser.last_name,
-        telegramId: telegramUser.id.toString(),
-      };
-    } else if (allowGuestCheckout) {
-      // Guest checkout allowed - userId will be null
-      userId = null;
-    } else {
-      // Guest checkout not allowed and no Telegram auth
-      throw new UnauthorizedException(
-        'Authentication required. Please open the app from Telegram.',
-      );
-    }
+    // Prepare user data for notification
+    const userData = {
+      username: telegramUser.username,
+      firstName: telegramUser.first_name,
+      lastName: telegramUser.last_name,
+      telegramId: telegramUser.id.toString(),
+    };
 
+    // Create order in DB
+    // The service will:
+    // - Link order to userId (telegramId)
+    // - Store snapshot of items (title, price, qty)
+    // - Set status = NEW
     const order = await this.ordersService.create(userId, createOrderDto);
 
-    // Send Telegram notification (don't await - fire and forget)
+    // Send Telegram notification to admin (fire and forget - don't fail order creation if it fails)
     this.telegramBotService.notifyNewOrder(order, userData).catch((error) => {
       // Log but don't fail the request
       console.error('Failed to send order notification:', error);
     });
 
+    // Return 201 with order id
     return order;
   }
 

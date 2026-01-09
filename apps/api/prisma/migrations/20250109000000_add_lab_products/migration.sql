@@ -50,3 +50,5 @@ ALTER TABLE "lab_products" ADD CONSTRAINT "lab_products_ctaProductId_fkey" FOREI
 ALTER TABLE "lab_product_media" ADD CONSTRAINT "lab_product_media_labProductId_fkey" FOREIGN KEY ("labProductId") REFERENCES "lab_products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
+
+

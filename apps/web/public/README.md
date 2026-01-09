@@ -18,3 +18,5 @@ To set the application favicon:
 - The icon is configured in `src/app/layout.tsx` via `metadata.icons`
 
 
+
+

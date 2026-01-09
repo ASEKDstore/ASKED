@@ -514,7 +514,7 @@ export const api = {
   },
 
   async getMyOrders(initData: string | null): Promise<OrdersListResponse> {
-    return request<OrdersListResponse>('/orders/my', {
+    return request<OrdersListResponse>('/public/orders/my', {
       method: 'GET',
       initData,
     });
