@@ -13,7 +13,9 @@ export class TelegramBotService {
   constructor(private readonly configService: ConfigService) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN', '');
     this.adminChatId = this.configService.get<string>('TELEGRAM_ADMIN_CHAT_ID', '');
-    this.adminPanelUrl = this.configService.get<string>('ADMIN_PANEL_URL', 'http://localhost:3000/admin');
+    // ADMIN_PANEL_URL should be the base URL (e.g., http://localhost:3000 or https://example.com)
+    // We'll append /admin for the admin routes
+    this.adminPanelUrl = this.configService.get<string>('ADMIN_PANEL_URL', 'http://localhost:3000');
   }
 
   async notifyNewOrder(order: OrderDto, buyerInfo?: { username?: string; firstName?: string; lastName?: string; telegramId?: string }): Promise<void> {
@@ -60,20 +62,20 @@ ${itemsText}
 ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
 
       // Build inline keyboard as specified:
-      // "Открыть заказ" → {ADMIN_PANEL_URL}/orders/{orderId}
-      // "Открыть админку" → {ADMIN_PANEL_URL}
+      // "Открыть заказ" → {ADMIN_PANEL_URL}/admin/orders/{orderId}
+      // "Открыть админку" → {ADMIN_PANEL_URL}/admin
       const keyboard = {
         inline_keyboard: [
           [
             {
               text: 'Открыть заказ',
-              url: `${this.adminPanelUrl}/orders/${order.id}`,
+              url: `${this.adminPanelUrl}/admin/orders/${order.id}`,
             },
           ],
           [
             {
               text: 'Открыть админку',
-              url: this.adminPanelUrl,
+              url: `${this.adminPanelUrl}/admin`,
             },
           ],
         ],
@@ -99,10 +101,11 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
         throw new Error(`Telegram API error: ${response.status} ${errorText}`);
       }
 
-      this.logger.log(`Order notification sent for order ${order.id}`);
+      // Log success with details for verification
+      this.logger.log(`✅ Admin notify sent: true - Order ${order.id} notification sent to chat ${this.adminChatId}`);
     } catch (error) {
-      // Don't throw - just log the error so it doesn't break order creation
-      this.logger.error(`Failed to send order notification for order ${order.id}:`, error);
+      // Log failure with details but don't throw - order creation should succeed
+      this.logger.error(`❌ Admin notify sent: false - Failed to send order notification for order ${order.id}:`, error);
     }
   }
 

@@ -62,6 +62,9 @@ export class OrdersController {
       console.error('Failed to send order notification:', error);
     });
 
+    // Log order creation success
+    console.log(`Order ${order.id} created successfully for user ${telegramUser.id}`);
+
     // Return 201 with order id
     return order;
   }
