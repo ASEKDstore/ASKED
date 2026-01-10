@@ -232,6 +232,39 @@ export interface Tag {
   slug: string;
 }
 
+export interface Subscription {
+  id: string;
+  name: string;
+  provider: string | null;
+  lastPaidAt: string; // ISO datetime string
+  periodMonths: number;
+  remindBeforeDays: number;
+  nextDueAt: string; // ISO datetime string (computed by backend)
+  lastRemindedAt: string | null; // ISO datetime string
+  lastRemindedForDueAt: string | null; // ISO datetime string
+  isActive: boolean;
+  createdAt: string; // ISO datetime string
+  updatedAt: string; // ISO datetime string
+}
+
+export interface CreateSubscriptionDto {
+  name: string;
+  provider?: string | null;
+  lastPaidAt: string; // ISO datetime string
+  periodMonths?: number;
+  remindBeforeDays?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateSubscriptionDto {
+  name?: string;
+  provider?: string | null;
+  lastPaidAt?: string; // ISO datetime string
+  periodMonths?: number;
+  remindBeforeDays?: number;
+  isActive?: boolean;
+}
+
 export interface Banner {
   id: string;
   title: string;
@@ -1041,6 +1074,44 @@ export const api = {
   async getPublicLabProducts(): Promise<LabProduct[]> {
     return request<LabProduct[]>('/public/lab-products', {
       method: 'GET',
+    });
+  },
+
+  // Admin Subscriptions
+  async getAdminSubscriptions(initData: string | null): Promise<Subscription[]> {
+    return request<Subscription[]>('/admin/subscriptions', {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getAdminSubscription(initData: string | null, id: string): Promise<Subscription> {
+    return request<Subscription>(`/admin/subscriptions/${id}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async createAdminSubscription(initData: string | null, subscription: CreateSubscriptionDto): Promise<Subscription> {
+    return request<Subscription>('/admin/subscriptions', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(subscription),
+    });
+  },
+
+  async updateAdminSubscription(initData: string | null, id: string, subscription: UpdateSubscriptionDto): Promise<Subscription> {
+    return request<Subscription>(`/admin/subscriptions/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(subscription),
+    });
+  },
+
+  async deleteAdminSubscription(initData: string | null, id: string): Promise<Subscription> {
+    return request<Subscription>(`/admin/subscriptions/${id}`, {
+      method: 'DELETE',
+      initData,
     });
   },
 };

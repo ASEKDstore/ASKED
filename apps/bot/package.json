@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "ASKED Miniapp Telegram Bot",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -23,6 +27,8 @@
     "typescript": "^5.3.3"
   }
 }
+
+
 
 
 

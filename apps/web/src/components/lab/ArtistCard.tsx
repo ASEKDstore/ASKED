@@ -220,3 +220,5 @@ export function ArtistCard({ onOrderClick }: ArtistCardProps): JSX.Element {
 
 
 
+
+

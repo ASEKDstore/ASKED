@@ -105,6 +105,31 @@ export class AdminController {
     return this.telegramBotService.sendTestNotification();
   }
 
+  @Get('telegram/debug-config')
+  async getTelegramDebugConfig(): Promise<{
+    configured: {
+      botToken: boolean;
+      adminTgId: boolean;
+      adminChatId: boolean;
+      adminChatThreadId: boolean;
+      legacyAdminChatId: boolean;
+    };
+    instructions: string;
+  }> {
+    // Return configuration status (without exposing actual values for security)
+    return {
+      configured: {
+        botToken: !!process.env.TELEGRAM_BOT_TOKEN,
+        adminTgId: !!process.env.ADMIN_TG_ID,
+        adminChatId: !!process.env.ADMIN_CHAT_ID,
+        adminChatThreadId: !!process.env.ADMIN_CHAT_THREAD_ID,
+        legacyAdminChatId: !!process.env.TELEGRAM_ADMIN_CHAT_ID,
+      },
+      instructions:
+        'To obtain chat_id and thread_id, send any message to the bot from the chat/topic, then check bot logs. Alternatively, use @userinfobot in Telegram to get your user ID, or @getidsbot to get group chat ID and topic ID.',
+    };
+  }
+
   @Get('dashboard/summary')
   async getDashboardSummary(): Promise<{
     todayOrders: number;

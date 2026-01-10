@@ -349,3 +349,22 @@ model LabProductMedia {
   @@map("lab_product_media")
 }
 
+model Subscription {
+  id                     String   @id @default(cuid())
+  name                   String
+  provider               String?
+  lastPaidAt             DateTime
+  periodMonths           Int      @default(1)
+  remindBeforeDays       Int      @default(1)
+  nextDueAt              DateTime
+  lastRemindedAt         DateTime?
+  lastRemindedForDueAt   DateTime?
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([isActive, nextDueAt])
+  @@index([nextDueAt])
+  @@map("subscriptions")
+}
+

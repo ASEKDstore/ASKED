@@ -7,47 +7,120 @@ import type { OrderDto } from './dto/order.dto';
 export class TelegramBotService {
   private readonly logger = new Logger(TelegramBotService.name);
   private readonly botToken: string;
-  private readonly adminChatId: string;
+  private readonly adminChatId: string; // Legacy: kept for backward compatibility (TELEGRAM_ADMIN_CHAT_ID)
+  private readonly adminTgId: string; // ADMIN_TG_ID - for direct messages
+  private readonly adminChatIdNew: string; // ADMIN_CHAT_ID - for group chat
+  private readonly adminChatThreadId: number | null; // ADMIN_CHAT_THREAD_ID - optional topic/thread ID
   private readonly adminPanelUrl: string;
 
   constructor(private readonly configService: ConfigService) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN', '');
     this.adminChatId = this.configService.get<string>('TELEGRAM_ADMIN_CHAT_ID', '');
+    this.adminTgId = this.configService.get<string>('ADMIN_TG_ID', '');
+    this.adminChatIdNew = this.configService.get<string>('ADMIN_CHAT_ID', '');
+    const threadIdStr = this.configService.get<string>('ADMIN_CHAT_THREAD_ID', '');
+    this.adminChatThreadId = threadIdStr ? parseInt(threadIdStr, 10) : null;
     // ADMIN_PANEL_URL should be the base URL (e.g., http://localhost:3000 or https://example.com)
     // We'll append /admin for the admin routes
     this.adminPanelUrl = this.configService.get<string>('ADMIN_PANEL_URL', 'http://localhost:3000');
   }
 
-  async notifyNewOrder(order: OrderDto, buyerInfo?: { username?: string; firstName?: string; lastName?: string; telegramId?: string }): Promise<void> {
-    // Log before send: chat_id, token present (boolean), order id
-    this.logger.log(`📤 Preparing to send order notification: orderId=${order.id}, chatId=${this.adminChatId}, hasToken=${!!this.botToken}, hasChatId=${!!this.adminChatId}`);
+  /**
+   * Send a message to a chat, optionally in a specific thread
+   */
+  private async sendMessage(
+    chatId: string,
+    text: string,
+    options?: {
+      parseMode?: 'Markdown' | 'HTML';
+      replyMarkup?: unknown;
+      messageThreadId?: number;
+    },
+  ): Promise<void> {
+    if (!this.botToken) {
+      this.logger.warn('⚠️ TELEGRAM_BOT_TOKEN not configured - skipping message send');
+      return;
+    }
 
-    if (!this.botToken || !this.adminChatId) {
-      this.logger.warn(`⚠️ TELEGRAM_BOT_TOKEN or TELEGRAM_ADMIN_CHAT_ID not configured - hasToken=${!!this.botToken}, hasChatId=${!!this.adminChatId}, skipping order notification`);
+    if (!chatId) {
+      this.logger.warn(`⚠️ Chat ID not provided - skipping message send`);
+      return;
+    }
+
+    const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
+    const payload: {
+      chat_id: string;
+      text: string;
+      parse_mode?: string;
+      reply_markup?: unknown;
+      message_thread_id?: number;
+    } = {
+      chat_id: chatId,
+      text,
+    };
+
+    if (options?.parseMode) {
+      payload.parse_mode = options.parseMode;
+    }
+
+    if (options?.replyMarkup) {
+      payload.reply_markup = options.replyMarkup;
+    }
+
+    if (options?.messageThreadId !== undefined) {
+      payload.message_thread_id = options.messageThreadId;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      this.logger.error(
+        `❌ Telegram API error: status=${response.status}, response=${responseText}, chatId=${chatId}`,
+      );
+      throw new Error(`Telegram API error: ${response.status} ${responseText}`);
+    }
+
+    this.logger.log(`✅ Message sent successfully to chat ${chatId}`);
+  }
+
+  async notifyNewOrder(order: OrderDto, buyerInfo?: { username?: string; firstName?: string; lastName?: string; telegramId?: string }): Promise<void> {
+    this.logger.log(
+      `📤 Preparing to send order notification: orderId=${order.id}, hasToken=${!!this.botToken}, adminTgId=${!!this.adminTgId}, adminChatId=${!!this.adminChatIdNew}, legacyChatId=${!!this.adminChatId}`,
+    );
+
+    if (!this.botToken) {
+      this.logger.warn(
+        `⚠️ TELEGRAM_BOT_TOKEN not configured - skipping order notification for order ${order.id}`,
+      );
       return;
     }
 
     try {
-      const buyerName = buyerInfo?.firstName && buyerInfo?.lastName
-        ? `${buyerInfo.firstName} ${buyerInfo.lastName}`
-        : buyerInfo?.firstName || buyerInfo?.username || 'Не указано';
-      
+      const buyerName =
+        buyerInfo?.firstName && buyerInfo?.lastName
+          ? `${buyerInfo.firstName} ${buyerInfo.lastName}`
+          : buyerInfo?.firstName || buyerInfo?.username || 'Не указано';
+
       const buyerUsername = buyerInfo?.username ? `@${buyerInfo.username}` : '';
       const buyerTelegramId = buyerInfo?.telegramId ? ` (ID: ${buyerInfo.telegramId})` : '';
 
       // Build items list
       const itemsText = order.items
-        .map(item => {
+        .map((item) => {
           const lineTotal = item.priceSnapshot * item.qty;
           return `• ${item.titleSnapshot} ×${item.qty} — ${this.formatPrice(lineTotal)} ₽`;
         })
         .join('\n');
 
-      // Build message according to specification:
-      // - "Новый заказ №{orderNumber}"
-      // - Buyer: name + @username + telegramId
-      // - Items list: "• title ×qty — lineTotal ₽"
-      // - Total
+      // Build message
       const orderNumber = order.number || order.id.slice(0, 8);
       const message = `🆕 *Новый заказ ${orderNumber}*
 
@@ -62,9 +135,7 @@ ${itemsText}
 💰 *Итого: ${this.formatPrice(order.totalAmount)} ₽*
 ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
 
-      // Build inline keyboard as specified:
-      // "Открыть заказ" → {ADMIN_PANEL_URL}/admin/orders/{orderId}
-      // "Открыть админку" → {ADMIN_PANEL_URL}/admin
+      // Build inline keyboard
       const keyboard = {
         inline_keyboard: [
           [
@@ -82,39 +153,56 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
         ],
       };
 
-      // Send message via Telegram Bot API
-      const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
-      const payload = {
-        chat_id: this.adminChatId,
-        text: message,
-        parse_mode: 'Markdown',
-        reply_markup: keyboard,
-      };
+      const sendPromises: Promise<void>[] = [];
 
-      this.logger.log(`📡 Sending Telegram message to chat ${this.adminChatId} for order ${order.id}`);
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const responseText = await response.text();
-
-      if (!response.ok) {
-        // Log error with status code and response body (do NOT swallow)
-        this.logger.error(`❌ Admin notify sent: false - Telegram API error for order ${order.id}: status=${response.status}, response=${responseText}`);
-        throw new Error(`Telegram API error: ${response.status} ${responseText}`);
+      // 1. Send to ADMIN_TG_ID (DM) if configured
+      if (this.adminTgId) {
+        this.logger.log(`📡 Sending order notification to admin DM (${this.adminTgId})`);
+        sendPromises.push(
+          this.sendMessage(this.adminTgId, message, {
+            parseMode: 'Markdown',
+            replyMarkup: keyboard,
+          }).catch((error) => {
+            this.logger.error(`❌ Failed to send to admin DM:`, error);
+          }),
+        );
       }
 
-      // Log success with details for verification
-      this.logger.log(`✅ Admin notify sent: true - Order ${order.id} notification sent successfully to chat ${this.adminChatId}, status=${response.status}`);
+      // 2. Send to ADMIN_CHAT_ID (group chat) if configured
+      sendPromises.push(
+        this.sendToAdminChat(message, {
+          parseMode: 'Markdown',
+          replyMarkup: keyboard,
+        }).catch(() => {
+          // Already logged in sendToAdminChat
+        }),
+      );
+
+      // 3. Legacy: Send to TELEGRAM_ADMIN_CHAT_ID if configured (for backward compatibility)
+      if (this.adminChatId && this.adminChatId !== this.adminChatIdNew) {
+        this.logger.log(`📡 Sending order notification to legacy admin chat (${this.adminChatId})`);
+        sendPromises.push(
+          this.sendMessage(this.adminChatId, message, {
+            parseMode: 'Markdown',
+            replyMarkup: keyboard,
+          }).catch((error) => {
+            this.logger.error(`❌ Failed to send to legacy admin chat:`, error);
+          }),
+        );
+      }
+
+      if (sendPromises.length === 0) {
+        this.logger.warn(
+          `⚠️ No admin chat IDs configured (ADMIN_TG_ID, ADMIN_CHAT_ID, or TELEGRAM_ADMIN_CHAT_ID) - skipping order notification`,
+        );
+        return;
+      }
+
+      await Promise.all(sendPromises);
+      this.logger.log(`✅ Order ${order.id} notification sent successfully`);
     } catch (error) {
-      // Log failure with details but don't throw - order creation should succeed
-      this.logger.error(`❌ Admin notify sent: false - Failed to send order notification for order ${order.id}:`, error);
-      // Re-throw to allow caller to handle if needed, but order creation should continue
+      // Log failure but don't throw - order creation should succeed
+      this.logger.error(`❌ Failed to send order notification for order ${order.id}:`, error);
     }
   }
 
@@ -250,6 +338,164 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
       // Log failure but don't throw - status update should succeed even if notification fails
       this.logger.error(`❌ Failed to send buyer notification for order ${orderNumber}:`, error);
     }
+  }
+
+  /**
+   * Send a message to admin chat (group) if configured
+   * Reusable helper for all admin chat notifications
+   */
+  async sendToAdminChat(
+    text: string,
+    options?: {
+      parseMode?: 'Markdown' | 'HTML';
+      replyMarkup?: unknown;
+    },
+  ): Promise<void> {
+    if (!this.adminChatIdNew) {
+      this.logger.warn('⚠️ ADMIN_CHAT_ID not configured - skipping admin chat message');
+      return;
+    }
+
+    if (!this.botToken) {
+      this.logger.warn('⚠️ TELEGRAM_BOT_TOKEN not configured - skipping admin chat message');
+      return;
+    }
+
+    try {
+      await this.sendMessage(this.adminChatIdNew, text, {
+        parseMode: options?.parseMode,
+        replyMarkup: options?.replyMarkup,
+        messageThreadId: this.adminChatThreadId ?? undefined,
+      });
+      this.logger.log(`✅ Message sent to admin chat (${this.adminChatIdNew})${this.adminChatThreadId ? ` in thread ${this.adminChatThreadId}` : ''}`);
+    } catch (error) {
+      this.logger.error('❌ Failed to send message to admin chat:', error);
+      // Don't throw - failures should be logged but not crash the app
+    }
+  }
+
+  /**
+   * Send subscription reminder notification with inline button
+   * Sends to ADMIN_TG_ID (DM) and ADMIN_CHAT_ID (group) if configured
+   */
+  async sendSubscriptionReminder(
+    subscriptionId: string,
+    subscriptionName: string,
+    dueDateFormatted: string,
+    daysRemaining: number,
+  ): Promise<void> {
+    this.logger.log(
+      `📤 Preparing to send subscription reminder: subscriptionId=${subscriptionId}, adminTgId=${!!this.adminTgId}, adminChatId=${!!this.adminChatIdNew}`,
+    );
+
+    if (!this.botToken) {
+      this.logger.warn(
+        `⚠️ TELEGRAM_BOT_TOKEN not configured - skipping subscription reminder for ${subscriptionId}`,
+      );
+      return;
+    }
+
+    try {
+      // Build message
+      const daysText =
+        daysRemaining === 1
+          ? 'день'
+          : daysRemaining < 5
+            ? 'дня'
+            : 'дней';
+      const message = `⏰ *Напоминание*
+
+Подписка «${subscriptionName}»
+Заканчивается: ${dueDateFormatted}
+Осталось ${daysRemaining} ${daysText}.`;
+
+      // Build inline keyboard with update button
+      const keyboard = {
+        inline_keyboard: [
+          [
+            {
+              text: '🔄 Обновить дату оплаты',
+              callback_data: `update_subscription_payment:${subscriptionId}`,
+            },
+          ],
+        ],
+      };
+
+      const sendPromises: Promise<void>[] = [];
+
+      // 1. Send to ADMIN_TG_ID (DM) if configured
+      if (this.adminTgId) {
+        this.logger.log(`📡 Sending subscription reminder to admin DM (${this.adminTgId})`);
+        sendPromises.push(
+          this.sendMessage(this.adminTgId, message, {
+            parseMode: 'Markdown',
+            replyMarkup: keyboard,
+          }).catch((error) => {
+            this.logger.error(`❌ Failed to send subscription reminder to admin DM:`, error);
+          }),
+        );
+      }
+
+      // 2. Send to ADMIN_CHAT_ID (group chat) if configured
+      if (this.adminChatIdNew) {
+        this.logger.log(
+          `📡 Sending subscription reminder to admin chat (${this.adminChatIdNew})${this.adminChatThreadId ? ` in thread ${this.adminChatThreadId}` : ''}`,
+        );
+        sendPromises.push(
+          this.sendMessage(this.adminChatIdNew, message, {
+            parseMode: 'Markdown',
+            replyMarkup: keyboard,
+            messageThreadId: this.adminChatThreadId ?? undefined,
+          }).catch((error) => {
+            this.logger.error(`❌ Failed to send subscription reminder to admin chat:`, error);
+          }),
+        );
+      }
+
+      if (sendPromises.length === 0) {
+        this.logger.warn(
+          `⚠️ No admin chat IDs configured (ADMIN_TG_ID or ADMIN_CHAT_ID) - skipping subscription reminder`,
+        );
+        return;
+      }
+
+      await Promise.all(sendPromises);
+      this.logger.log(`✅ Subscription reminder for ${subscriptionId} sent successfully`);
+    } catch (error) {
+      this.logger.error(`❌ Failed to send subscription reminder for ${subscriptionId}:`, error);
+    }
+  }
+
+  /**
+   * Send subscription payment update confirmation
+   */
+  async sendSubscriptionUpdateConfirmation(
+    subscriptionName: string,
+    newDueDateFormatted: string,
+  ): Promise<void> {
+    const message = `✅ Подписка «${subscriptionName}» обновлена.
+Новая дата окончания: ${newDueDateFormatted}`;
+
+    const sendPromises: Promise<void>[] = [];
+
+    // Send to ADMIN_TG_ID (DM) if configured
+    if (this.adminTgId) {
+      sendPromises.push(
+        this.sendMessage(this.adminTgId, message, {
+          parseMode: 'Markdown',
+        }).catch((error) => {
+          this.logger.error(`❌ Failed to send confirmation to admin DM:`, error);
+        }),
+      );
+    }
+
+    // Send to ADMIN_CHAT_ID (group chat) if configured
+    await this.sendToAdminChat(message, { parseMode: 'Markdown' }).catch(() => {
+      // Already logged in sendToAdminChat
+    });
+
+    await Promise.all(sendPromises);
+    this.logger.log(`✅ Subscription update confirmation sent`);
   }
 
   private formatPrice(price: number): string {
