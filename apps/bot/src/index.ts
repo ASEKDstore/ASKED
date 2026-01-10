@@ -318,8 +318,14 @@ bot.command('help', async (ctx: Context) => {
 
 // Handle callback_query for subscription payment update
 bot.callbackQuery(/^update_subscription_payment:(.+)$/, async (ctx: Context) => {
+  // Type guard: ensure callbackQuery exists and has data
+  if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
+    return;
+  }
+
   const userId = ctx.from?.id;
-  const callbackData = ctx.callbackQuery.data;
+  const callbackQuery = ctx.callbackQuery;
+  const callbackData = callbackQuery.data;
 
   // Validate admin access
   if (!adminTgId || userId?.toString() !== adminTgId) {
@@ -330,7 +336,7 @@ bot.callbackQuery(/^update_subscription_payment:(.+)$/, async (ctx: Context) => 
     return;
   }
 
-  if (!callbackData) {
+  if (!callbackData || typeof callbackData !== 'string') {
     await ctx.answerCallbackQuery({
       text: '❌ Ошибка: неверные данные',
       show_alert: true,
@@ -391,10 +397,13 @@ bot.callbackQuery(/^update_subscription_payment:(.+)$/, async (ctx: Context) => 
 
     // Also try to edit the original message to show it was updated
     try {
-      if (ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message) {
-        await ctx.editMessageText(
-          `${ctx.callbackQuery.message.text}\n\n✅ Обновлено: ${new Date().toLocaleString('ru-RU')}`,
-        );
+      if (callbackQuery.message && 'text' in callbackQuery.message) {
+        const messageText = callbackQuery.message.text;
+        if (typeof messageText === 'string') {
+          await ctx.editMessageText(
+            `${messageText}\n\n✅ Обновлено: ${new Date().toLocaleString('ru-RU')}`,
+          );
+        }
       }
     } catch (editError) {
       // Ignore edit errors (message might be too old or already edited)
@@ -416,8 +425,19 @@ bot.callbackQuery(/^update_subscription_payment:(.+)$/, async (ctx: Context) => 
   }
 });
 
-// Handle all other callback queries
-bot.callbackQuery(async (ctx: Context) => {
+// Handle all other callback queries (catch-all)
+bot.on('callback_query:data', async (ctx: Context) => {
+  // Only handle if callbackQuery exists and has data
+  if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
+    return;
+  }
+
+  // Skip if already handled by the pattern handler above
+  const callbackData = ctx.callbackQuery.data;
+  if (typeof callbackData === 'string' && callbackData.startsWith('update_subscription_payment:')) {
+    return;
+  }
+
   await ctx.answerCallbackQuery({
     text: 'Неизвестная команда',
   });

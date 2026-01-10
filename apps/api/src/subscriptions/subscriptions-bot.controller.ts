@@ -1,4 +1,4 @@
-import { Controller, Post, Param, Headers, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, Post, Param, Headers, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { SubscriptionsService } from './subscriptions.service';
