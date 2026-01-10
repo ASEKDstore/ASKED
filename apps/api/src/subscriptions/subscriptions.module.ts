@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AuthModule } from '../auth/auth.module';
 import { OrdersModule } from '../orders/orders.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -9,7 +10,7 @@ import { SubscriptionsScheduler } from './subscriptions.scheduler';
 import { SubscriptionsService } from './subscriptions.service';
 
 @Module({
-  imports: [PrismaModule, OrdersModule],
+  imports: [PrismaModule, OrdersModule, AuthModule],
   controllers: [SubscriptionsController, SubscriptionsBotController],
   providers: [SubscriptionsService, SubscriptionsScheduler],
   exports: [SubscriptionsService],

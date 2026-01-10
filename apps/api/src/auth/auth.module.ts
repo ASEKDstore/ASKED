@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AdminGuard } from './admin.guard';
 import { AuthController } from './auth.controller';
 import { DevAdminAuthGuard } from './dev-admin-auth.guard';
 import { TelegramAuthGuard } from './telegram-auth.guard';
@@ -7,7 +8,7 @@ import { TelegramInitDataService } from './telegram-init-data.service';
 
 @Module({
   controllers: [AuthController],
-  providers: [TelegramInitDataService, TelegramAuthGuard, DevAdminAuthGuard],
-  exports: [TelegramInitDataService, TelegramAuthGuard, DevAdminAuthGuard],
+  providers: [TelegramInitDataService, TelegramAuthGuard, DevAdminAuthGuard, AdminGuard],
+  exports: [TelegramInitDataService, TelegramAuthGuard, DevAdminAuthGuard, AdminGuard],
 })
 export class AuthModule {}
