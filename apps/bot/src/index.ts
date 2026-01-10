@@ -101,6 +101,166 @@ bot.command('whoami', async (ctx: Context) => {
   await ctx.reply(`Your Telegram ID: ${userId}, username: ${username}`);
 });
 
+// Helper: Check if user is admin
+function isAdmin(userId: number | undefined): boolean {
+  if (!adminTgId || !userId) {
+    return false;
+  }
+  return userId.toString() === adminTgId;
+}
+
+// Handle /set_admin_chat command (admin-only)
+bot.command('set_admin_chat', async (ctx: Context) => {
+  const userId = ctx.from?.id;
+
+  // Check if user is admin
+  if (!isAdmin(userId)) {
+    await ctx.reply('❌ Нет доступа. Эта команда доступна только администратору.');
+    return;
+  }
+
+  // Must be run in a chat (group/supergroup), not in DM
+  const chatId = ctx.chat?.id;
+  const messageThreadId = ctx.message?.message_thread_id;
+
+  if (!chatId) {
+    await ctx.reply('❌ Не удалось определить chat_id. Убедитесь, что команда выполнена в группе/чате.');
+    return;
+  }
+
+  // Private chat (DM) check - admin chat should be a group/supergroup
+  if (ctx.chat?.type === 'private') {
+    await ctx.reply('❌ Админ-чат должен быть группой или супергруппой. Выполните команду в нужной группе.');
+    return;
+  }
+
+  try {
+    // Call API to save config
+    const response = (await callApi(
+      '/telegram/admin-chat-config',
+      'POST',
+      {
+        chatId: chatId.toString(),
+        threadId: messageThreadId ?? null,
+      },
+      {
+        'x-bot-token': token,
+      },
+    )) as {
+      success: boolean;
+      config?: { chatId: string; threadId: number | null; updatedAt: string };
+      error?: string;
+    };
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to save admin chat config');
+    }
+
+    let responseText = `✅ *Админ-чат сохранён*\n\n`;
+    responseText += `*Chat ID:* \`${response.config?.chatId}\`\n`;
+    if (response.config?.threadId) {
+      responseText += `*Thread ID:* \`${response.config.threadId}\`\n`;
+    } else {
+      responseText += `*Thread ID:* не указан\n`;
+    }
+
+    await ctx.reply(responseText, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('Error setting admin chat config:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+    await ctx.reply(`❌ Ошибка: ${errorMessage}`);
+  }
+});
+
+// Handle /get_admin_chat command (admin-only)
+bot.command('get_admin_chat', async (ctx: Context) => {
+  const userId = ctx.from?.id;
+
+  // Check if user is admin
+  if (!isAdmin(userId)) {
+    await ctx.reply('❌ Нет доступа. Эта команда доступна только администратору.');
+    return;
+  }
+
+  try {
+    // Call API to get config
+    const response = (await callApi(
+      '/telegram/admin-chat-config',
+      'GET',
+      undefined,
+      {
+        'x-bot-token': token,
+      },
+    )) as {
+      success: boolean;
+      config?: { chatId: string; threadId: number | null; updatedAt: string } | null;
+      error?: string;
+    };
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to get admin chat config');
+    }
+
+    if (!response.config) {
+      await ctx.reply('ℹ️ Админ-чат не задан.\nИспользуйте /set_admin_chat в нужной группе, чтобы установить.');
+      return;
+    }
+
+    let responseText = `📋 *Текущая конфигурация админ-чата*\n\n`;
+    responseText += `*Chat ID:* \`${response.config.chatId}\`\n`;
+    if (response.config.threadId) {
+      responseText += `*Thread ID:* \`${response.config.threadId}\`\n`;
+    } else {
+      responseText += `*Thread ID:* не указан\n`;
+    }
+    responseText += `*Обновлено:* ${new Date(response.config.updatedAt).toLocaleString('ru-RU')}\n`;
+
+    await ctx.reply(responseText, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('Error getting admin chat config:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+    await ctx.reply(`❌ Ошибка: ${errorMessage}`);
+  }
+});
+
+// Handle /clear_admin_chat command (admin-only)
+bot.command('clear_admin_chat', async (ctx: Context) => {
+  const userId = ctx.from?.id;
+
+  // Check if user is admin
+  if (!isAdmin(userId)) {
+    await ctx.reply('❌ Нет доступа. Эта команда доступна только администратору.');
+    return;
+  }
+
+  try {
+    // Call API to clear config
+    const response = (await callApi(
+      '/telegram/admin-chat-config',
+      'DELETE',
+      undefined,
+      {
+        'x-bot-token': token,
+      },
+    )) as {
+      success: boolean;
+      error?: string;
+    };
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to clear admin chat config');
+    }
+
+    await ctx.reply('🗑 *Админ-чат сброшен.*\nТеперь будут использоваться значения из ENV (если заданы) или уведомления в админ-чат отправляться не будут.', {
+      parse_mode: 'Markdown',
+    });
+  } catch (error) {
+    console.error('Error clearing admin chat config:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+    await ctx.reply(`❌ Ошибка: ${errorMessage}`);
+  }
+});
+
 // Handle /debug_chat command (admin-only)
 bot.command('debug_chat', async (ctx: Context) => {
   const userId = ctx.from?.id;
@@ -108,7 +268,7 @@ bot.command('debug_chat', async (ctx: Context) => {
   const messageThreadId = ctx.message?.message_thread_id;
 
   // Check if user is admin
-  if (adminTgId && userId?.toString() !== adminTgId) {
+  if (!isAdmin(userId)) {
     await ctx.reply('❌ Доступ запрещен. Эта команда доступна только администратору.');
     return;
   }
@@ -122,7 +282,8 @@ bot.command('debug_chat', async (ctx: Context) => {
     responseText += `*Message Thread ID:* не указан (это не топик форума)\n`;
   }
 
-  responseText += `\n💡 Используйте эти значения для настройки:\n`;
+  responseText += `\n💡 Используйте /set_admin_chat для сохранения этого чата как админ-чат.\n`;
+  responseText += `Или используйте эти значения для настройки ENV:\n`;
   responseText += `- ADMIN_CHAT_ID=${chatId}\n`;
   if (messageThreadId) {
     responseText += `- ADMIN_CHAT_THREAD_ID=${messageThreadId}\n`;
@@ -144,7 +305,10 @@ bot.command('help', async (ctx: Context) => {
     '/whoami - Показать ваш Telegram ID и username\n';
 
   if (isAdmin) {
-    helpText += '/debug_chat - Показать chat_id и thread_id (для настройки ADMIN_CHAT_ID)\n';
+    helpText += '/set_admin_chat - Сохранить текущий чат как админ-чат\n';
+    helpText += '/get_admin_chat - Показать текущую конфигурацию админ-чата\n';
+    helpText += '/clear_admin_chat - Сбросить конфигурацию админ-чата\n';
+    helpText += '/debug_chat - Показать chat_id и thread_id (для настройки)\n';
   }
 
   helpText += '/help - Показать помощь';

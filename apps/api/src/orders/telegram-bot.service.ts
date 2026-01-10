@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { AdminChatConfigService } from './admin-chat-config.service';
 import type { OrderDto } from './dto/order.dto';
 
 @Injectable()
@@ -9,11 +10,14 @@ export class TelegramBotService {
   private readonly botToken: string;
   private readonly adminChatId: string; // Legacy: kept for backward compatibility (TELEGRAM_ADMIN_CHAT_ID)
   private readonly adminTgId: string; // ADMIN_TG_ID - for direct messages
-  private readonly adminChatIdNew: string; // ADMIN_CHAT_ID - for group chat
-  private readonly adminChatThreadId: number | null; // ADMIN_CHAT_THREAD_ID - optional topic/thread ID
+  private readonly adminChatIdNew: string; // ADMIN_CHAT_ID - for group chat (ENV fallback)
+  private readonly adminChatThreadId: number | null; // ADMIN_CHAT_THREAD_ID - optional topic/thread ID (ENV fallback)
   private readonly adminPanelUrl: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly adminChatConfigService: AdminChatConfigService,
+  ) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN', '');
     this.adminChatId = this.configService.get<string>('TELEGRAM_ADMIN_CHAT_ID', '');
     this.adminTgId = this.configService.get<string>('ADMIN_TG_ID', '');
@@ -23,6 +27,45 @@ export class TelegramBotService {
     // ADMIN_PANEL_URL should be the base URL (e.g., http://localhost:3000 or https://example.com)
     // We'll append /admin for the admin routes
     this.adminPanelUrl = this.configService.get<string>('ADMIN_PANEL_URL', 'http://localhost:3000');
+  }
+
+  /**
+   * Resolve admin chat configuration (DB priority, ENV fallback)
+   */
+  private async resolveAdminChatConfig(): Promise<{ chatId: string | null; threadId: number | null }> {
+    try {
+      // 1. Try DB config first
+      const dbConfig = await this.adminChatConfigService.getConfig();
+      if (dbConfig) {
+        this.logger.log(`📋 Using admin chat config from DB: chatId=${dbConfig.chatId}, threadId=${dbConfig.threadId || 'null'}`);
+        return {
+          chatId: dbConfig.chatId,
+          threadId: dbConfig.threadId,
+        };
+      }
+
+      // 2. Fallback to ENV
+      if (this.adminChatIdNew) {
+        this.logger.log(`📋 Using admin chat config from ENV: chatId=${this.adminChatIdNew}, threadId=${this.adminChatThreadId || 'null'}`);
+        return {
+          chatId: this.adminChatIdNew,
+          threadId: this.adminChatThreadId,
+        };
+      }
+
+      // 3. No config available
+      return {
+        chatId: null,
+        threadId: null,
+      };
+    } catch (error) {
+      this.logger.error('Failed to resolve admin chat config, falling back to ENV:', error);
+      // Fallback to ENV on error
+      return {
+        chatId: this.adminChatIdNew || null,
+        threadId: this.adminChatThreadId,
+      };
+    }
   }
 
   /**
@@ -168,7 +211,7 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
         );
       }
 
-      // 2. Send to ADMIN_CHAT_ID (group chat) if configured
+      // 2. Send to admin chat (DB config or ENV fallback)
       sendPromises.push(
         this.sendToAdminChat(message, {
           parseMode: 'Markdown',
@@ -342,6 +385,7 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
 
   /**
    * Send a message to admin chat (group) if configured
+   * Uses DB config with ENV fallback
    * Reusable helper for all admin chat notifications
    */
   async sendToAdminChat(
@@ -351,25 +395,30 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
       replyMarkup?: unknown;
     },
   ): Promise<void> {
-    if (!this.adminChatIdNew) {
-      this.logger.warn('⚠️ ADMIN_CHAT_ID not configured - skipping admin chat message');
-      return;
-    }
-
     if (!this.botToken) {
       this.logger.warn('⚠️ TELEGRAM_BOT_TOKEN not configured - skipping admin chat message');
       return;
     }
 
+    // Resolve admin chat config (DB priority, ENV fallback)
+    const config = await this.resolveAdminChatConfig();
+
+    if (!config.chatId) {
+      this.logger.warn('⚠️ Admin chat not configured (neither DB nor ENV) - skipping admin chat message');
+      return;
+    }
+
     try {
-      await this.sendMessage(this.adminChatIdNew, text, {
+      await this.sendMessage(config.chatId, text, {
         parseMode: options?.parseMode,
         replyMarkup: options?.replyMarkup,
-        messageThreadId: this.adminChatThreadId ?? undefined,
+        messageThreadId: config.threadId ?? undefined,
       });
-      this.logger.log(`✅ Message sent to admin chat (${this.adminChatIdNew})${this.adminChatThreadId ? ` in thread ${this.adminChatThreadId}` : ''}`);
+      this.logger.log(`✅ Message sent to admin chat (${config.chatId})${config.threadId ? ` in thread ${config.threadId}` : ''}`);
     } catch (error) {
-      this.logger.error('❌ Failed to send message to admin chat:', error);
+      // Log warning but don't throw - failures should not crash the app
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.warn(`⚠️ Failed to send message to admin chat (${config.chatId}): ${errorMessage}`);
       // Don't throw - failures should be logged but not crash the app
     }
   }
@@ -385,7 +434,7 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
     daysRemaining: number,
   ): Promise<void> {
     this.logger.log(
-      `📤 Preparing to send subscription reminder: subscriptionId=${subscriptionId}, adminTgId=${!!this.adminTgId}, adminChatId=${!!this.adminChatIdNew}`,
+      `📤 Preparing to send subscription reminder: subscriptionId=${subscriptionId}, adminTgId=${!!this.adminTgId}`,
     );
 
     if (!this.botToken) {
@@ -436,25 +485,21 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
         );
       }
 
-      // 2. Send to ADMIN_CHAT_ID (group chat) if configured
-      if (this.adminChatIdNew) {
-        this.logger.log(
-          `📡 Sending subscription reminder to admin chat (${this.adminChatIdNew})${this.adminChatThreadId ? ` in thread ${this.adminChatThreadId}` : ''}`,
-        );
-        sendPromises.push(
-          this.sendMessage(this.adminChatIdNew, message, {
-            parseMode: 'Markdown',
-            replyMarkup: keyboard,
-            messageThreadId: this.adminChatThreadId ?? undefined,
-          }).catch((error) => {
-            this.logger.error(`❌ Failed to send subscription reminder to admin chat:`, error);
-          }),
-        );
-      }
+      // 2. Send to admin chat (DB config or ENV fallback)
+      sendPromises.push(
+        this.sendToAdminChat(message, {
+          parseMode: 'Markdown',
+          replyMarkup: keyboard,
+        }).catch(() => {
+          // Already logged in sendToAdminChat
+        }),
+      );
 
+      // Note: sendToAdminChat already handles the case when no config is available
+      // We still send to DM if adminTgId is configured, so check only for that
       if (sendPromises.length === 0) {
         this.logger.warn(
-          `⚠️ No admin chat IDs configured (ADMIN_TG_ID or ADMIN_CHAT_ID) - skipping subscription reminder`,
+          `⚠️ No admin notifications configured (ADMIN_TG_ID or admin chat) - skipping subscription reminder`,
         );
         return;
       }
@@ -489,10 +534,12 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
       );
     }
 
-    // Send to ADMIN_CHAT_ID (group chat) if configured
-    await this.sendToAdminChat(message, { parseMode: 'Markdown' }).catch(() => {
-      // Already logged in sendToAdminChat
-    });
+    // Send to admin chat (DB config or ENV fallback)
+    sendPromises.push(
+      this.sendToAdminChat(message, { parseMode: 'Markdown' }).catch(() => {
+        // Already logged in sendToAdminChat
+      }),
+    );
 
     await Promise.all(sendPromises);
     this.logger.log(`✅ Subscription update confirmation sent`);
