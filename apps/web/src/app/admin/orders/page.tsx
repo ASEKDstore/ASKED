@@ -89,11 +89,25 @@ export default function AdminOrdersPage(): JSX.Element {
   const handleOpenDrawer = (orderId: string) => {
     setSelectedOrderId(orderId);
     setDrawerOpen(true);
+    
+    // Handle Telegram WebApp BackButton when drawer opens
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.BackButton) {
+      const backButton = window.Telegram.WebApp.BackButton;
+      backButton.show();
+      backButton.onClick(() => {
+        handleCloseDrawer();
+      });
+    }
   };
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
     setSelectedOrderId(null);
+    
+    // Hide Telegram WebApp BackButton when drawer closes
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp?.BackButton) {
+      window.Telegram.WebApp.BackButton.hide();
+    }
   };
 
   const handleStatusChange = (status: 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED') => {
@@ -185,51 +199,105 @@ export default function AdminOrdersPage(): JSX.Element {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Клиент</TableHead>
-                  <TableHead>Телефон</TableHead>
-                  <TableHead>Статус</TableHead>
-                  <TableHead>Сумма</TableHead>
-                  <TableHead>Дата</TableHead>
-                  <TableHead className="text-right">Действия</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((order: OrderListItem) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-mono text-xs">
-                      {order.number || order.id.slice(0, 8)}
-                    </TableCell>
-                    <TableCell>{order.customerName}</TableCell>
-                    <TableCell>{order.customerPhone}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={statusVariants[order.status] || 'default'}
-                      >
-                        {statusLabels[order.status] || order.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatPrice(order.totalAmount)}</TableCell>
-                    <TableCell>
-                      {new Date(order.createdAt).toLocaleDateString('ru-RU')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenDrawer(order.id)}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        Подробнее
-                      </Button>
-                    </TableCell>
+            {/* Mobile: Card layout */}
+            <div className="md:hidden space-y-4">
+              {orders.map((order: OrderListItem) => (
+                <div
+                  key={order.id}
+                  className="border rounded-lg p-4 space-y-3 bg-white"
+                  onClick={() => handleOpenDrawer(order.id)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-mono text-sm font-semibold">
+                        {order.number || order.id.slice(0, 8)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {new Date(order.createdAt).toLocaleDateString('ru-RU')}
+                      </div>
+                    </div>
+                    <Badge variant={statusVariants[order.status] || 'default'}>
+                      {statusLabels[order.status] || order.status}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <div>
+                      <span className="text-gray-500">Клиент:</span>{' '}
+                      <span className="font-medium">{order.customerName}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Телефон:</span>{' '}
+                      <span className="font-medium">{order.customerPhone}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Сумма:</span>{' '}
+                      <span className="font-semibold">{formatPrice(order.totalAmount)}</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenDrawer(order.id);
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Подробнее
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: Table layout with horizontal scroll */}
+            <div className="hidden md:block overflow-x-auto scrollbar-hide">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Клиент</TableHead>
+                    <TableHead>Телефон</TableHead>
+                    <TableHead>Статус</TableHead>
+                    <TableHead>Сумма</TableHead>
+                    <TableHead>Дата</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order: OrderListItem) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-mono text-xs">
+                        {order.number || order.id.slice(0, 8)}
+                      </TableCell>
+                      <TableCell>{order.customerName}</TableCell>
+                      <TableCell>{order.customerPhone}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={statusVariants[order.status] || 'default'}
+                        >
+                          {statusLabels[order.status] || order.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatPrice(order.totalAmount)}</TableCell>
+                      <TableCell>
+                        {new Date(order.createdAt).toLocaleDateString('ru-RU')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenDrawer(order.id)}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Подробнее
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -297,28 +365,47 @@ export default function AdminOrdersPage(): JSX.Element {
               {/* Order Items */}
               <div>
                 <h3 className="text-sm font-medium mb-3">Товары в заказе</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Товар</TableHead>
-                      <TableHead>Цена</TableHead>
-                      <TableHead>Кол-во</TableHead>
-                      <TableHead className="text-right">Сумма</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedOrder.items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.titleSnapshot}</TableCell>
-                        <TableCell>{formatPrice(item.priceSnapshot)}</TableCell>
-                        <TableCell>{item.qty}</TableCell>
-                        <TableCell className="text-right">
+                {/* Mobile: Card layout */}
+                <div className="md:hidden space-y-3">
+                  {selectedOrder.items.map((item) => (
+                    <div key={item.id} className="border rounded-lg p-3 bg-gray-50">
+                      <div className="font-medium text-sm mb-2">{item.titleSnapshot}</div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">
+                          {formatPrice(item.priceSnapshot)} × {item.qty}
+                        </span>
+                        <span className="font-semibold">
                           {formatPrice(item.priceSnapshot * item.qty)}
-                        </TableCell>
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop: Table layout */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Товар</TableHead>
+                        <TableHead>Цена</TableHead>
+                        <TableHead>Кол-во</TableHead>
+                        <TableHead className="text-right">Сумма</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedOrder.items.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.titleSnapshot}</TableCell>
+                          <TableCell>{formatPrice(item.priceSnapshot)}</TableCell>
+                          <TableCell>{item.qty}</TableCell>
+                          <TableCell className="text-right">
+                            {formatPrice(item.priceSnapshot * item.qty)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
 
               {/* Order Total */}
@@ -340,7 +427,7 @@ export default function AdminOrdersPage(): JSX.Element {
               )}
 
               <DrawerFooter>
-                <Button variant="outline" onClick={handleCloseDrawer}>
+                <Button variant="outline" onClick={handleCloseDrawer} className="w-full md:w-auto">
                   Закрыть
                 </Button>
               </DrawerFooter>

@@ -140,7 +140,7 @@ export default function NewProductPage(): JSX.Element {
     <div className="container mx-auto px-4 py-8">
       <Button
         variant="ghost"
-        onClick={() => router.back()}
+        onClick={() => router.push(addTokenToUrl('/admin/products', token))}
         className="mb-6"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -394,7 +394,7 @@ export default function NewProductPage(): JSX.Element {
 
         {/* Actions */}
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button type="button" variant="outline" onClick={() => router.push(addTokenToUrl('/admin/products', token))}>
             Отмена
           </Button>
           <Button type="submit" disabled={createMutation.isPending}>

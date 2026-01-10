@@ -226,11 +226,11 @@ export default function EditProductPage(): JSX.Element {
     <div className="container mx-auto px-4 py-8">
       <Button
         variant="ghost"
-        onClick={() => router.back()}
+        onClick={() => router.push(addTokenToUrl('/admin/products', token))}
         className="mb-6"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Назад
+        Назад к товарам
       </Button>
 
       <h1 className="text-3xl font-bold mb-8">Редактировать товар</h1>
@@ -477,7 +477,7 @@ export default function EditProductPage(): JSX.Element {
 
         {/* Actions */}
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button type="button" variant="outline" onClick={() => router.push(addTokenToUrl('/admin/products', token))}>
             Отмена
           </Button>
           <Button type="submit" disabled={updateMutation.isPending}>

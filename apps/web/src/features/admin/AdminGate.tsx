@@ -1,171 +1,39 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Lock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense } from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { api } from '@/lib/api';
+import { isInTelegramWebApp } from '@/lib/telegram';
 
 interface AdminGateProps {
   children: React.ReactNode;
 }
 
-interface TelegramState {
-  hasWebApp: boolean;
-  initDataLen: number;
-}
-
-interface DebugInfo {
-  hasWindow: boolean;
-  hasTelegramObject: boolean;
-  hasWebApp: boolean;
-  initDataLength: number;
-  initDataPreview: string;
-  platform: string;
-  version: string;
-  currentUrl: string;
-  hasTgParams: boolean;
-  tgParamsList: string[];
-}
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN ?? '';
 
 function AdminGateContent({ children }: AdminGateProps): JSX.Element {
   const searchParams = useSearchParams();
-  const [telegramState, setTelegramState] = useState<TelegramState>({
-    hasWebApp: false,
-    initDataLen: 0,
-  });
-  const [authStatus, setAuthStatus] = useState<'checking' | 'authorized' | 'unauthorized' | 'forbidden' | 'error'>('checking');
-  const [isLoading, setIsLoading] = useState(true);
-  const [debugInfo, setDebugInfo] = useState<DebugInfo>({
-    hasWindow: false,
-    hasTelegramObject: false,
-    hasWebApp: false,
-    initDataLength: 0,
-    initDataPreview: '',
-    platform: '',
-    version: '',
-    currentUrl: '',
-    hasTgParams: false,
-    tgParamsList: [],
+  const isTelegram = isInTelegramWebApp();
+  
+  // Check dev token first (bypasses all checks if valid)
+  const token = searchParams.get('token') ?? '';
+  const hasDevToken = DEV_ADMIN_TOKEN !== '' && token === DEV_ADMIN_TOKEN;
+
+  // Use React Query for caching and proper state management
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['admin', 'me', token], // Include token in key for dev mode
+    queryFn: () => api.getAdminMe(null), // initData will be added automatically by api client
+    enabled: isTelegram || hasDevToken, // Only run if in Telegram or has dev token
+    retry: false,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
-  useEffect(() => {
-    // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
-    // TOKEN FIRST: Check dev token before any Telegram checks
-    const token = searchParams.get('token') ?? '';
-    const devToken = DEV_ADMIN_TOKEN;
-    
-    // If valid dev token provided, bypass all Telegram checks
-    if (devToken !== '' && token === devToken) {
-      setTelegramState({ hasWebApp: false, initDataLen: 0 });
-      setAuthStatus('authorized');
-      setIsLoading(false);
-      return;
-    }
-
-    // Otherwise, proceed with Telegram authentication
-
-    // Get Telegram WebApp
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hasWindow = typeof window !== 'undefined';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const telegramObj = hasWindow ? (window as any).Telegram : null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const wa = telegramObj?.WebApp ?? null;
-
-    // Collect debug info
-    const initData = wa?.initData ?? '';
-    
-    // Collect URL info
-    const href = hasWindow ? window.location.href : '';
-    let hasTgParams = false;
-    let tgParamsList: string[] = [];
-    
-    if (hasWindow) {
-      try {
-        const url = new URL(href);
-        const params = url.searchParams;
-        tgParamsList = [...params.keys()].filter((k) => k.startsWith('tgWebApp'));
-        hasTgParams = tgParamsList.length > 0;
-      } catch (error) {
-        // Ignore URL parsing errors
-      }
-    }
-    
-    const debug: DebugInfo = {
-      hasWindow,
-      hasTelegramObject: !!telegramObj,
-      hasWebApp: !!wa,
-      initDataLength: initData.length,
-      initDataPreview: initData.length > 0 ? initData.substring(0, 20) : '',
-      platform: wa?.platform ?? '',
-      version: wa?.version ?? '',
-      currentUrl: href,
-      hasTgParams,
-      tgParamsList,
-    };
-    setDebugInfo(debug);
-
-    if (!wa) {
-      setTelegramState({ hasWebApp: false, initDataLen: 0 });
-      setAuthStatus('unauthorized');
-      setIsLoading(false);
-      return;
-    }
-
-    // Initialize Telegram WebApp
-    try {
-      wa.ready?.();
-      wa.expand?.();
-    } catch (error) {
-      console.error('[AdminGate] Error initializing Telegram WebApp:', error);
-    }
-
-    // Get initData (already collected in debug info above)
-    setTelegramState({
-      hasWebApp: true,
-      initDataLen: initData.length,
-    });
-
-    // If initData is empty, show error
-    if (initData.length === 0) {
-      setAuthStatus('unauthorized');
-      setIsLoading(false);
-      return;
-    }
-
-    // Make request to /admin/me
-    fetch(`${API_BASE_URL}/admin/me`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-telegram-init-data': initData,
-      },
-    })
-      .then((response) => {
-        if (response.status === 200) {
-          setAuthStatus('authorized');
-        } else if (response.status === 401) {
-          setAuthStatus('unauthorized');
-        } else if (response.status === 403) {
-          setAuthStatus('forbidden');
-        } else {
-          setAuthStatus('error');
-        }
-      })
-      .catch((error) => {
-        console.error('[AdminGate] Error checking admin access:', error);
-        setAuthStatus('error');
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [searchParams]);
-
-  // Show loading state
+  // Show loading state WHILE checking (not after error)
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -177,44 +45,13 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
     );
   }
 
-  // Authorized - show children (check FIRST, before Telegram checks)
-  if (authStatus === 'authorized') {
-    return (
-      <>
-        {children}
-        {/* Diagnostic info (always visible for debugging) */}
-        <div className="fixed bottom-0 left-0 right-0 bg-black/80 text-white text-xs p-2 text-center z-50">
-          TG WebApp: {telegramState.hasWebApp ? 'yes' : 'no'} | initData length: {telegramState.initDataLen}
-        </div>
-      </>
-    );
+  // Dev token bypass - authorized immediately
+  if (hasDevToken) {
+    return <>{children}</>;
   }
 
-  // Helper function to render debug panel
-  const renderDebugPanel = () => (
-    <Card className="mt-4 bg-gray-100 border-gray-300">
-      <CardHeader>
-        <CardTitle className="text-sm">DEBUG Info</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-1 text-xs font-mono">
-          <div>hasWindow: {debugInfo.hasWindow ? 'true' : 'false'}</div>
-          <div>hasTelegramObject: {debugInfo.hasTelegramObject ? 'true' : 'false'}</div>
-          <div>hasWebApp: {debugInfo.hasWebApp ? 'true' : 'false'}</div>
-          <div>initDataLength: {debugInfo.initDataLength}</div>
-          <div>initDataPreview: {debugInfo.initDataPreview || '(empty)'}</div>
-          <div>platform: {debugInfo.platform || '(empty)'}</div>
-          <div>version: {debugInfo.version || '(empty)'}</div>
-          <div>currentUrl: {debugInfo.currentUrl || '(empty)'}</div>
-          <div>hasTgParams: {debugInfo.hasTgParams ? 'true' : 'false'}</div>
-          <div>tgParamsList: {debugInfo.tgParamsList.length > 0 ? debugInfo.tgParamsList.join(', ') : '(none)'}</div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   // Not in Telegram WebApp
-  if (!telegramState.hasWebApp) {
+  if (!isTelegram) {
     return (
       <div className="container mx-auto px-4 py-12">
         <Card className="max-w-md mx-auto">
@@ -236,80 +73,55 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
             </div>
           </CardContent>
         </Card>
-        {renderDebugPanel()}
       </div>
     );
   }
 
-  // In Telegram but initData is empty
-  if (telegramState.initDataLen === 0) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-6 h-6 text-orange-500" />
-              <CardTitle>Откройте из Telegram</CardTitle>
-            </div>
-            <CardDescription>
-              Не удалось получить данные авторизации. Попробуйте открыть приложение через кнопку в Telegram.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 text-sm text-gray-600">
-              <p>Убедитесь, что вы открыли приложение через Telegram WebApp.</p>
-              <p>Если проблема сохраняется, попробуйте перезагрузить страницу.</p>
-            </div>
-          </CardContent>
-        </Card>
-        {renderDebugPanel()}
-      </div>
-    );
-  }
+  // Error handling - only show errors AFTER loading completes
+  if (error) {
+    const statusCode = (error as { statusCode?: number })?.statusCode;
+    
+    // 401 - Unauthorized (empty or invalid initData)
+    if (statusCode === 401) {
+      return (
+        <div className="container mx-auto px-4 py-12">
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-6 h-6 text-orange-500" />
+                <CardTitle>Откройте из Telegram</CardTitle>
+              </div>
+              <CardDescription>
+                Для доступа к админ-панели необходимо открыть приложение через
+                Telegram WebApp.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      );
+    }
 
-  // 401 - Unauthorized
-  if (authStatus === 'unauthorized') {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-6 h-6 text-orange-500" />
-              <CardTitle>Откройте из Telegram</CardTitle>
-            </div>
-            <CardDescription>
-              Для доступа к админ-панели необходимо открыть приложение через
-              Telegram WebApp.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-        {renderDebugPanel()}
-      </div>
-    );
-  }
+    // 403 - Forbidden (user is not admin)
+    if (statusCode === 403) {
+      return (
+        <div className="container mx-auto px-4 py-12">
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Lock className="w-6 h-6 text-red-500" />
+                <CardTitle>Нет доступа</CardTitle>
+              </div>
+              <CardDescription>
+                У вас нет прав для доступа к админ-панели. Обратитесь к
+                администратору.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      );
+    }
 
-  // 403 - Forbidden
-  if (authStatus === 'forbidden') {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Lock className="w-6 h-6 text-red-500" />
-              <CardTitle>Нет доступа</CardTitle>
-            </div>
-            <CardDescription>
-              У вас нет прав для доступа к админ-панели. Обратитесь к
-              администратору.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
-  // Error
-  if (authStatus === 'error') {
+    // Other errors
     return (
       <div className="container mx-auto px-4 py-12">
         <Card className="max-w-md mx-auto">
@@ -324,7 +136,24 @@ function AdminGateContent({ children }: AdminGateProps): JSX.Element {
     );
   }
 
-  return <>{children}</>;
+  // Authorized - show children (data exists and no error)
+  if (data) {
+    return <>{children}</>;
+  }
+
+  // Fallback (should not reach here, but just in case)
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <Card className="max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle>Ошибка</CardTitle>
+          <CardDescription>
+            Не удалось проверить доступ. Попробуйте обновить страницу.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    </div>
+  );
 }
 
 export function AdminGate({ children }: AdminGateProps): JSX.Element {
