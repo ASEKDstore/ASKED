@@ -1204,5 +1204,67 @@ export const api = {
       body: JSON.stringify(notification),
     });
   },
+
+  async sendAdminTargeted(
+    initData: string | null,
+    notification: {
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+      recipientTelegramIds: (string | number)[];
+    },
+  ): Promise<{ notificationId: string; recipientsCount: number }> {
+    return request<{ notificationId: string; recipientsCount: number }>('/admin/notifications/targeted', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(notification),
+    });
+  },
+
+  // Admin Users
+  async getAdminUsers(
+    initData: string | null,
+    params?: { search?: string; page?: number; pageSize?: number },
+  ): Promise<{
+    items: Array<{
+      telegramId: string;
+      username: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      firstOpenedAt: string | null;
+      lastOpenedAt: string | null;
+      opensCount: number | null;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<{
+      items: Array<{
+        telegramId: string;
+        username: string | null;
+        firstName: string | null;
+        lastName: string | null;
+        firstOpenedAt: string | null;
+        lastOpenedAt: string | null;
+        opensCount: number | null;
+      }>;
+      total: number;
+      page: number;
+      pageSize: number;
+    }>(`/admin/users${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      initData,
+    });
+  },
 };
 

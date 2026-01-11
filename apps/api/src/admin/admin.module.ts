@@ -19,6 +19,7 @@ import { AdminPromosController } from './admin-promos.controller';
 import { AdminPromosService } from './admin-promos.service';
 import { AdminTagsController } from './admin-tags.controller';
 import { AdminTagsService } from './admin-tags.service';
+import { AdminUsersController } from './admin-users.controller';
 import { AdminController } from './admin.controller';
 
 @Module({
@@ -32,6 +33,7 @@ import { AdminController } from './admin.controller';
     AdminBannersController,
     AdminPromosController,
     AdminNotificationsController,
+    AdminUsersController,
   ],
   providers: [
     AdminProductsService,

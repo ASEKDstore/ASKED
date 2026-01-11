@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ImageIcon, FileText, Plus, Edit, X, Search, ChevronUp, ChevronDown, Send } from 'lucide-react';
+import { ImageIcon, FileText, Plus, Edit, X, Search, ChevronUp, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
 import { Alert } from '@/components/ui/alert';
@@ -1013,6 +1013,7 @@ function PromosTab(): JSX.Element {
 // Notifications Tab Component
 function NotificationsTab(): JSX.Element {
   const { initData } = useTelegram();
+  const [mode, setMode] = useState<'broadcast' | 'targeted'>('broadcast');
   const [formData, setFormData] = useState({
     title: '',
     body: '',
@@ -1021,12 +1022,48 @@ function NotificationsTab(): JSX.Element {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const sendMutation = useMutation({
+  // User selection state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+
+  // Fetch users for targeted mode
+  const {
+    data: usersData,
+    isLoading: isLoadingUsers,
+  } = useQuery({
+    queryKey: ['admin', 'users', searchQuery, currentPage, pageSize],
+    queryFn: () => api.getAdminUsers(initData, { search: searchQuery || undefined, page: currentPage, pageSize }),
+    enabled: mode === 'targeted',
+  });
+
+  const broadcastMutation = useMutation({
     mutationFn: (data: { title: string; body: string; data?: Record<string, unknown> }) =>
       api.sendAdminBroadcast(initData, data),
     onSuccess: async () => {
       setSuccessMessage('Уведомление отправлено всем пользователям');
       setFormData({ title: '', body: '', deepLink: '' });
+      setErrorMessage(null);
+      setTimeout(() => setSuccessMessage(null), 5000);
+    },
+    onError: (error: Error) => {
+      setErrorMessage(formatError(error));
+      setSuccessMessage(null);
+    },
+  });
+
+  const targetedMutation = useMutation({
+    mutationFn: (data: {
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+      recipientTelegramIds: (string | number)[];
+    }) => api.sendAdminTargeted(initData, data),
+    onSuccess: async (data) => {
+      setSuccessMessage(`Уведомление отправлено ${data.recipientsCount} пользователям`);
+      setFormData({ title: '', body: '', deepLink: '' });
+      setSelectedUserIds(new Set());
       setErrorMessage(null);
       setTimeout(() => setSuccessMessage(null), 5000);
     },
@@ -1057,7 +1094,50 @@ function NotificationsTab(): JSX.Element {
       };
     }
 
-    sendMutation.mutate(notificationData);
+    if (mode === 'broadcast') {
+      broadcastMutation.mutate(notificationData);
+    } else {
+      if (selectedUserIds.size === 0) {
+        setErrorMessage('Выберите хотя бы одного пользователя');
+        return;
+      }
+      targetedMutation.mutate({
+        ...notificationData,
+        recipientTelegramIds: Array.from(selectedUserIds),
+      });
+    }
+  };
+
+  const handleUserToggle = (telegramId: string) => {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(telegramId)) {
+        next.delete(telegramId);
+      } else {
+        next.add(telegramId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (!usersData?.items) return;
+    const allIds = new Set(usersData.items.map((u) => u.telegramId));
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      allIds.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const handleDeselectAll = () => {
+    if (!usersData?.items) return;
+    const userIdsOnPage = new Set(usersData.items.map((u) => u.telegramId));
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      userIdsOnPage.forEach((id) => next.delete(id));
+      return next;
+    });
   };
 
   return (
@@ -1068,22 +1148,144 @@ function NotificationsTab(): JSX.Element {
 
       <Card>
         <CardHeader>
-          <CardTitle>Отправить уведомление всем пользователям</CardTitle>
+          <CardTitle>Отправить уведомление</CardTitle>
           <CardDescription>
-            Создайте уведомление, которое будет отправлено всем пользователям приложения
+            Выберите режим отправки: всем пользователям или выбранным
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {errorMessage && (
-              <Alert variant="destructive">{errorMessage}</Alert>
-            )}
+            {errorMessage && <Alert variant="destructive">{errorMessage}</Alert>}
             {successMessage && (
-              <Alert className="bg-green-50 border-green-200 text-green-800">
-                {successMessage}
-              </Alert>
+              <Alert className="bg-green-50 border-green-200 text-green-800">{successMessage}</Alert>
             )}
 
+            {/* Mode Toggle */}
+            <div className="flex gap-4">
+              <Button
+                type="button"
+                variant={mode === 'broadcast' ? 'default' : 'outline'}
+                onClick={() => {
+                  setMode('broadcast');
+                  setSelectedUserIds(new Set());
+                }}
+              >
+                Всем
+              </Button>
+              <Button
+                type="button"
+                variant={mode === 'targeted' ? 'default' : 'outline'}
+                onClick={() => setMode('targeted')}
+              >
+                Выбранным
+              </Button>
+            </div>
+
+            {/* User Selection (Targeted Mode) */}
+            {mode === 'targeted' && (
+              <div className="space-y-4 border rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Выбор пользователей</h3>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={handleSelectAll}>
+                      Выбрать всех на странице
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={handleDeselectAll}>
+                      Снять выбор
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600">
+                  Выбрано: {selectedUserIds.size} пользователей
+                </div>
+
+                {/* Search */}
+                <div>
+                  <Input
+                    placeholder="Поиск по username, Telegram ID, имени..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </div>
+
+                {/* Users List */}
+                {isLoadingUsers ? (
+                  <div className="text-center py-8 text-gray-500">Загрузка пользователей...</div>
+                ) : usersData && usersData.items.length > 0 ? (
+                  <div className="border rounded-lg max-h-96 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12"></TableHead>
+                          <TableHead>Telegram ID</TableHead>
+                          <TableHead>Username</TableHead>
+                          <TableHead>Имя</TableHead>
+                          <TableHead>Открытий</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {usersData.items.map((user) => (
+                          <TableRow key={user.telegramId}>
+                            <TableCell>
+                              <input
+                                type="checkbox"
+                                checked={selectedUserIds.has(user.telegramId)}
+                                onChange={() => handleUserToggle(user.telegramId)}
+                                className="cursor-pointer"
+                              />
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">{user.telegramId}</TableCell>
+                            <TableCell>@{user.username || '—'}</TableCell>
+                            <TableCell>
+                              {user.firstName || user.lastName
+                                ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+                                : '—'}
+                            </TableCell>
+                            <TableCell>{user.opensCount ?? '—'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">Пользователи не найдены</div>
+                )}
+
+                {/* Pagination */}
+                {usersData && usersData.total > pageSize && (
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Страница {usersData.page} из {Math.ceil(usersData.total / usersData.pageSize)}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      >
+                        Назад
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage >= Math.ceil(usersData.total / usersData.pageSize)}
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                      >
+                        Вперед
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Notification Form */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 Заголовок <span className="text-red-500">*</span>
@@ -1112,35 +1314,32 @@ function NotificationsTab(): JSX.Element {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Ссылка (опционально)
-              </label>
+              <label className="block text-sm font-medium mb-2">Deep Link (опционально)</label>
               <Input
                 value={formData.deepLink}
                 onChange={(e) => setFormData({ ...formData, deepLink: e.target.value })}
-                placeholder="/orders?open=123 или /promo/slug"
+                placeholder="Например: /promo/new-year-sale или /orders"
               />
               <p className="text-xs text-gray-500 mt-1">
-                При клике на уведомление пользователь перейдет по этой ссылке
+                Ссылка внутри приложения, куда перейдет пользователь при нажатии на уведомление.
               </p>
             </div>
 
             <Button
               type="submit"
-              disabled={sendMutation.isPending}
-              className="w-full"
+              disabled={
+                mode === 'targeted'
+                  ? targetedMutation.isPending || selectedUserIds.size === 0
+                  : broadcastMutation.isPending
+              }
             >
-              {sendMutation.isPending ? (
-                <>
-                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Отправка...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Отправить всем
-                </>
-              )}
+              {mode === 'targeted'
+                ? targetedMutation.isPending
+                  ? 'Отправка...'
+                  : `Отправить выбранным (${selectedUserIds.size})`
+                : broadcastMutation.isPending
+                  ? 'Отправка...'
+                  : 'Отправить всем'}
             </Button>
           </form>
         </CardContent>

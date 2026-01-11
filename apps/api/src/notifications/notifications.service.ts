@@ -216,6 +216,54 @@ export class NotificationsService {
   }
 
   /**
+   * Create targeted notification for multiple users
+   * More efficient than calling createNotification multiple times
+   */
+  async createTargetedNotification(
+    dto: Omit<CreateNotificationDto, 'target' | 'userId'>,
+    userIds: string[],
+  ): Promise<{ notificationId: string; recipientsCount: number }> {
+    if (userIds.length === 0) {
+      throw new Error('At least one user ID is required');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Create notification
+      const notification = await tx.notification.create({
+        data: {
+          type: dto.type,
+          title: dto.title,
+          body: dto.body,
+          ...(dto.data ? { data: dto.data as never } : {}),
+        },
+      });
+
+      // Create UserNotification for each user (batch insert)
+      // Prisma createMany has a limit, so we batch in chunks of 1000
+      const batchSize = 1000;
+      let totalCreated = 0;
+
+      for (let i = 0; i < userIds.length; i += batchSize) {
+        const batch = userIds.slice(i, i + batchSize);
+        await tx.userNotification.createMany({
+          data: batch.map((userId) => ({
+            userId,
+            notificationId: notification.id,
+            isRead: false,
+          })),
+          skipDuplicates: true, // Skip if duplicate (shouldn't happen, but safe)
+        });
+        totalCreated += batch.length;
+      }
+
+      return {
+        notificationId: notification.id,
+        recipientsCount: totalCreated,
+      };
+    });
+  }
+
+  /**
    * Create order notification (helper for order hooks)
    */
   async createOrderNotification(
