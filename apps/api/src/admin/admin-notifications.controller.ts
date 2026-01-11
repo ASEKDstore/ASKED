@@ -1,4 +1,4 @@
-import { Controller, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Param, Body, UseGuards, Logger } from '@nestjs/common';
 
 import { AdminGuard } from '../auth/admin.guard';
 import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
@@ -15,20 +15,34 @@ import { NotificationsService } from '../notifications/notifications.service';
 // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
 @UseGuards(DevAdminAuthGuard, TelegramAuthGuard, AdminGuard)
 export class AdminNotificationsController {
+  private readonly logger = new Logger(AdminNotificationsController.name);
+
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post('broadcast')
-  async broadcast(@Body() body: unknown): Promise<{ notificationId: string }> {
-    const parsed = adminBroadcastNotificationSchema.parse(body);
-    const dto: CreateNotificationDto = {
-      title: parsed.title,
-      body: parsed.body,
-      ...(parsed.data ? { data: parsed.data } : {}),
-      type: 'ADMIN_BROADCAST',
-      target: 'ALL',
-    };
+  async broadcast(@Body() body: unknown): Promise<{ notificationId: string; delivered: number }> {
+    try {
+      const parsed = adminBroadcastNotificationSchema.parse(body);
+      const dto: CreateNotificationDto = {
+        title: parsed.title,
+        body: parsed.body,
+        ...(parsed.data ? { data: parsed.data } : {}),
+        type: 'ADMIN_BROADCAST',
+        target: 'ALL',
+      };
 
-    return this.notificationsService.createNotification(dto);
+      const result = await this.notificationsService.createNotification(dto);
+      return {
+        notificationId: result.notificationId,
+        delivered: result.delivered ?? 0,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Failed to send broadcast notification',
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw error;
+    }
   }
 
   @Post('user/:userId')

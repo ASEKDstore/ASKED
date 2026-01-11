@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Logger } from '@nestjs/common';
 
 import { AdminGuard } from '../auth/admin.guard';
 import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
@@ -9,7 +9,20 @@ import { PrismaService } from '../prisma/prisma.service';
 // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
 @UseGuards(DevAdminAuthGuard, TelegramAuthGuard, AdminGuard)
 export class AdminUsersController {
+  private readonly logger = new Logger(AdminUsersController.name);
+
   constructor(private readonly prisma: PrismaService) {}
+
+  @Get('count')
+  async getUserCount(): Promise<{ count: number }> {
+    try {
+      const count = await this.prisma.user.count();
+      return { count };
+    } catch (error) {
+      this.logger.error('Failed to get user count', error instanceof Error ? error.stack : String(error));
+      throw error;
+    }
+  }
 
   @Get()
   async getUsers(
@@ -30,80 +43,99 @@ export class AdminUsersController {
     page: number;
     pageSize: number;
   }> {
-    const pageNum = page ? Math.max(1, parseInt(page, 10)) : 1;
-    const pageSizeNum = pageSize ? Math.min(100, Math.max(1, parseInt(pageSize, 10))) : 20;
-    const skip = (pageNum - 1) * pageSizeNum;
+    try {
+      const pageNum = page ? Math.max(1, parseInt(page, 10)) : 1;
+      const pageSizeNum = pageSize ? Math.min(100, Math.max(1, parseInt(pageSize, 10))) : 20;
+      const skip = (pageNum - 1) * pageSizeNum;
 
-    // Build search condition
-    const searchCondition = search
-      ? {
-          OR: [
-            { username: { contains: search, mode: 'insensitive' as const } },
-            { telegramId: { contains: search } },
-            { firstName: { contains: search, mode: 'insensitive' as const } },
-            { lastName: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : undefined;
+      // Build search condition
+      const searchCondition = search
+        ? {
+            OR: [
+              { username: { contains: search, mode: 'insensitive' as const } },
+              { telegramId: { contains: search } },
+              { firstName: { contains: search, mode: 'insensitive' as const } },
+              { lastName: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : undefined;
 
-    // Get users with app open events (left join)
-    const [users, total] = await Promise.all([
-      this.prisma.user.findMany({
-        where: searchCondition,
-        take: pageSizeNum,
-        skip,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          telegramId: true,
-          username: true,
-          firstName: true,
-          lastName: true,
-        },
-      }),
-      this.prisma.user.count({
-        where: searchCondition,
-      }),
-    ]);
+      // Get users with app open events (left join)
+      const [users, total] = await Promise.all([
+        this.prisma.user.findMany({
+          where: searchCondition,
+          take: pageSizeNum,
+          skip,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            telegramId: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+          },
+        }),
+        this.prisma.user.count({
+          where: searchCondition,
+        }),
+      ]);
 
-    // Get app open events for these users
-    const telegramIds = users.map((u) => u.telegramId);
-    const appOpenEvents = await this.prisma.appOpenEvent.findMany({
-      where: {
-        userId: { in: telegramIds },
-      },
-      select: {
-        userId: true,
-        firstOpenedAt: true,
-        lastOpenedAt: true,
-        opensCount: true,
-      },
-    });
+      // Get app open events for these users (if any users found)
+      const telegramIds = users.map((u) => u.telegramId);
+      const appOpenEvents =
+        telegramIds.length > 0
+          ? await this.prisma.appOpenEvent.findMany({
+              where: {
+                userId: { in: telegramIds },
+              },
+              select: {
+                userId: true,
+                firstOpenedAt: true,
+                lastOpenedAt: true,
+                opensCount: true,
+              },
+            })
+          : [];
 
-    // Create a map for quick lookup
-    const appOpenMap = new Map(
-      appOpenEvents.map((event) => [event.userId, event]),
-    );
+      // Create a map for quick lookup
+      const appOpenMap = new Map(
+        appOpenEvents.map((event) => [event.userId, event]),
+      );
 
-    // Combine user data with app open events
-    const items = users.map((user) => {
-      const appOpen = appOpenMap.get(user.telegramId);
+      // Combine user data with app open events
+      const items = users.map((user) => {
+        const appOpen = appOpenMap.get(user.telegramId);
+        return {
+          telegramId: user.telegramId,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          firstOpenedAt: appOpen?.firstOpenedAt.toISOString() || null,
+          lastOpenedAt: appOpen?.lastOpenedAt.toISOString() || null,
+          opensCount: appOpen?.opensCount || null,
+        };
+      });
+
+      this.logger.log(`Admin users list: found ${total} total users, returning ${items.length} items`);
+
       return {
-        telegramId: user.telegramId,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        firstOpenedAt: appOpen?.firstOpenedAt.toISOString() || null,
-        lastOpenedAt: appOpen?.lastOpenedAt.toISOString() || null,
-        opensCount: appOpen?.opensCount || null,
+        items,
+        total,
+        page: pageNum,
+        pageSize: pageSizeNum,
       };
-    });
-
-    return {
-      items,
-      total,
-      page: pageNum,
-      pageSize: pageSizeNum,
-    };
+    } catch (error) {
+      this.logger.error(
+        'Failed to get admin users list',
+        error instanceof Error ? error.stack : String(error),
+      );
+      // Return empty list instead of throwing to prevent 500
+      return {
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+      };
+    }
   }
 }
 

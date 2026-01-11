@@ -137,38 +137,62 @@ export class NotificationsService {
   /**
    * Create a notification and deliver it to user(s)
    */
-  async createNotification(dto: CreateNotificationDto): Promise<{ notificationId: string }> {
+  async createNotification(dto: CreateNotificationDto): Promise<{ notificationId: string; delivered?: number }> {
     if (dto.target === 'ALL') {
       // Broadcast to all users
-      return this.prisma.$transaction(async (tx) => {
-        // Create notification
-        const notification = await tx.notification.create({
-          data: {
-            type: dto.type,
-            title: dto.title,
-            body: dto.body,
-            ...(dto.data ? { data: dto.data as never } : {}),
-          },
-        });
-
-        // Get all user IDs
-        const users = await tx.user.findMany({
-          select: { id: true },
-        });
-
-        // Create UserNotification for each user (batch insert)
-        if (users.length > 0) {
-          await tx.userNotification.createMany({
-            data: users.map((u) => ({
-              userId: u.id,
-              notificationId: notification.id,
-              isRead: false,
-            })),
+      try {
+        return await this.prisma.$transaction(async (tx) => {
+          // Create notification
+          const notification = await tx.notification.create({
+            data: {
+              type: dto.type,
+              title: dto.title,
+              body: dto.body,
+              ...(dto.data ? { data: dto.data as never } : {}),
+            },
           });
-        }
 
-        return { notificationId: notification.id };
-      });
+          // Get all user IDs
+          const users = await tx.user.findMany({
+            select: { id: true },
+          });
+
+          this.logger.log(`Broadcast notification created: ${notification.id}, found ${users.length} users`);
+
+          // Create UserNotification for each user (batch insert)
+          if (users.length > 0) {
+            // Batch insert in chunks of 1000 to avoid Prisma limits
+            const batchSize = 1000;
+            let totalCreated = 0;
+
+            for (let i = 0; i < users.length; i += batchSize) {
+              const batch = users.slice(i, i + batchSize);
+              const result = await tx.userNotification.createMany({
+                data: batch.map((u) => ({
+                  userId: u.id,
+                  notificationId: notification.id,
+                  isRead: false,
+                })),
+                skipDuplicates: true,
+              });
+              totalCreated += result.count;
+            }
+
+            this.logger.log(`Broadcast notification delivered to ${totalCreated} users`);
+            return { notificationId: notification.id, delivered: totalCreated };
+          }
+
+          // No users found - return success with delivered: 0
+          this.logger.warn(`Broadcast notification created but no users found to deliver to`);
+          return { notificationId: notification.id, delivered: 0 };
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to create broadcast notification: ${dto.title}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+        throw error;
+      }
     }
 
     if (dto.target === 'USER') {
