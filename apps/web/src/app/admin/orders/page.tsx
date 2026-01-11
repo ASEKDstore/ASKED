@@ -62,6 +62,8 @@ export default function AdminOrdersPage(): JSX.Element {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'orders', initData, statusFilter],
