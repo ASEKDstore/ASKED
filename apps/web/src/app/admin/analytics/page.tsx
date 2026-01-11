@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Alert } from '@/components/ui/alert';
@@ -37,6 +38,7 @@ export default function AdminAnalyticsPage(): JSX.Element {
   const { initData } = useTelegram();
   const token = getTokenFromUrl();
   const isDevMode = !!token;
+  const router = useRouter();
 
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d');
 
@@ -288,7 +290,11 @@ export default function AdminAnalyticsPage(): JSX.Element {
                 </TableHeader>
                 <TableBody>
                   {topProducts.items.map((product) => (
-                    <TableRow key={product.productId}>
+                    <TableRow
+                      key={product.productId}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => router.push(`/admin/products/${product.productId}/edit${token ? `?token=${encodeURIComponent(token)}` : ''}`)}
+                    >
                       <TableCell className="max-w-xs truncate">{product.productTitle}</TableCell>
                       <TableCell>{formatNumber(product.metric)}</TableCell>
                     </TableRow>

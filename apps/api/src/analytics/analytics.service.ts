@@ -49,11 +49,12 @@ export class AnalyticsService {
       ? subscribersNow - previousSnapshot.subscriberCount
       : 0;
 
-    // Get orders in period
+    // Get orders in period (exclude soft-deleted orders)
     const orders = await this.prisma.order.findMany({
       where: {
         createdAt: { gte: from, lte: to },
         status: { not: 'CANCELED' },
+        deletedAt: null, // Exclude soft-deleted orders
       },
     });
 
@@ -209,6 +210,7 @@ export class AnalyticsService {
               ...(to ? { lte: to } : {}),
             },
             status: { not: 'CANCELED' },
+            deletedAt: null, // Exclude soft-deleted orders
           },
         },
         include: {
@@ -246,6 +248,7 @@ export class AnalyticsService {
               ...(to ? { lte: to } : {}),
             },
             status: { not: 'CANCELED' },
+            deletedAt: null, // Exclude soft-deleted orders
           },
         },
         include: {
