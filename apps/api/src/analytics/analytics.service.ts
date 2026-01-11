@@ -324,40 +324,61 @@ export class AnalyticsService {
     const from = query.from ? new Date(query.from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const to = query.to ? new Date(query.to) : new Date();
 
-    const pageViews = await this.prisma.appEvent.count({
-      where: {
-        eventType: 'PAGE_VIEW',
-        createdAt: { gte: from, lte: to },
-      },
-    });
+    // Get unique user counts per event type (for funnel analysis)
+    const [pageViewEvents, productViewEvents, addToCartEvents, checkoutStartedEvents, purchaseEvents] =
+      await Promise.all([
+        this.prisma.appEvent.findMany({
+          where: {
+            eventType: 'PAGE_VIEW',
+            createdAt: { gte: from, lte: to },
+            userId: { not: null },
+          },
+          select: { userId: true },
+          distinct: ['userId'],
+        }),
+        this.prisma.appEvent.findMany({
+          where: {
+            eventType: 'PRODUCT_VIEW',
+            createdAt: { gte: from, lte: to },
+            userId: { not: null },
+          },
+          select: { userId: true },
+          distinct: ['userId'],
+        }),
+        this.prisma.appEvent.findMany({
+          where: {
+            eventType: 'ADD_TO_CART',
+            createdAt: { gte: from, lte: to },
+            userId: { not: null },
+          },
+          select: { userId: true },
+          distinct: ['userId'],
+        }),
+        this.prisma.appEvent.findMany({
+          where: {
+            eventType: 'CHECKOUT_STARTED',
+            createdAt: { gte: from, lte: to },
+            userId: { not: null },
+          },
+          select: { userId: true },
+          distinct: ['userId'],
+        }),
+        this.prisma.appEvent.findMany({
+          where: {
+            eventType: 'PURCHASE',
+            createdAt: { gte: from, lte: to },
+            userId: { not: null },
+          },
+          select: { userId: true },
+          distinct: ['userId'],
+        }),
+      ]);
 
-    const productViews = await this.prisma.appEvent.count({
-      where: {
-        eventType: 'PRODUCT_VIEW',
-        createdAt: { gte: from, lte: to },
-      },
-    });
-
-    const addToCart = await this.prisma.appEvent.count({
-      where: {
-        eventType: 'ADD_TO_CART',
-        createdAt: { gte: from, lte: to },
-      },
-    });
-
-    const checkoutStarted = await this.prisma.appEvent.count({
-      where: {
-        eventType: 'CHECKOUT_STARTED',
-        createdAt: { gte: from, lte: to },
-      },
-    });
-
-    const purchases = await this.prisma.appEvent.count({
-      where: {
-        eventType: 'PURCHASE',
-        createdAt: { gte: from, lte: to },
-      },
-    });
+    const pageViews = pageViewEvents.length;
+    const productViews = productViewEvents.length;
+    const addToCart = addToCartEvents.length;
+    const checkoutStarted = checkoutStartedEvents.length;
+    const purchases = purchaseEvents.length;
 
     const funnel = [
       {

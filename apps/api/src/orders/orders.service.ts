@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import type { CreateOrderDto } from './dto/create-order.dto';
@@ -13,6 +14,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegramBotService: TelegramBotService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<OrderDto> {
@@ -118,7 +120,18 @@ export class OrdersService {
       return createdOrder;
     });
 
-    return this.mapToDto(order);
+    const orderDto = this.mapToDto(order);
+
+    // Create ORDER_CREATED notification (fire and forget - don't fail order creation if this fails)
+    if (userId && orderDto.number) {
+      void this.notificationsService
+        .createOrderNotification('ORDER_CREATED', userId, orderDto.id, orderDto.number)
+        .catch((error) => {
+          console.error('Failed to create order notification:', error);
+        });
+    }
+
+    return orderDto;
   }
 
   async findAll(query: OrderQueryDto): Promise<OrdersListResponse> {
@@ -309,6 +322,25 @@ export class OrdersService {
         user: true,
       },
     });
+
+    // Create ORDER_STATUS_CHANGED notification (fire and forget)
+    if (updated.userId && updated.number) {
+      const statusMessages: Record<string, string> = {
+        NEW: 'новый',
+        CONFIRMED: 'подтверждён',
+        IN_PROGRESS: 'в обработке',
+        DONE: 'выполнен',
+        CANCELED: 'отменён',
+      };
+
+      const statusText = statusMessages[updateDto.status] || 'изменён';
+
+      void this.notificationsService
+        .createOrderNotification('ORDER_STATUS_CHANGED', updated.userId, updated.id, updated.number, statusText)
+        .catch((error) => {
+          console.error('Failed to create order status notification:', error);
+        });
+    }
 
     // Send notification to buyer if order has a user with telegramId
     if (updated.userId && updated.user?.telegramId) {

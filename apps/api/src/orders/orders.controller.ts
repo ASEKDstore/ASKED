@@ -4,6 +4,7 @@ import type { Request } from 'express';
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
 import type { TelegramUser } from '../auth/types/telegram-user.interface';
 import type { AuthenticatedRequest } from '../auth/telegram-auth.guard';
+import { AppEventsService } from '../analytics/app-events.service';
 import { UsersService } from '../users/users.service';
 
 import { createOrderSchema } from './dto/create-order.dto';
@@ -18,6 +19,7 @@ export class OrdersController {
     private readonly ordersService: OrdersService,
     private readonly usersService: UsersService,
     private readonly telegramBotService: TelegramBotService,
+    private readonly appEventsService: AppEventsService,
   ) {}
 
   @Post()
@@ -56,8 +58,19 @@ export class OrdersController {
     // - Set status = NEW
     const order = await this.ordersService.create(userId, createOrderDto);
 
+    // Track PURCHASE event for analytics (fire and forget - don't fail order creation if this fails)
+    void this.appEventsService
+      .createEvent({
+        eventType: 'PURCHASE',
+        userId: telegramUser.id.toString(),
+        source: 'telegram',
+      })
+      .catch((error) => {
+        console.error('Failed to track purchase event:', error);
+      });
+
     // Send Telegram notification to admin (fire and forget - don't fail order creation if it fails)
-    this.telegramBotService.notifyNewOrder(order, userData).catch((error) => {
+    void this.telegramBotService.notifyNewOrder(order, userData).catch((error) => {
       // Log but don't fail the request
       console.error('Failed to send order notification:', error);
     });

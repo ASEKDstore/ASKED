@@ -29,4 +29,3 @@ import { TelegramWebhookService } from './telegram-webhook.service';
   exports: [AnalyticsService, AppEventsService, AppOpensService],
 })
 export class AnalyticsModule {}
-

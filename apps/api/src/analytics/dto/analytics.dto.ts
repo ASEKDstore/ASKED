@@ -65,6 +65,29 @@ export interface FunnelResponse {
   };
 }
 
+export interface AppUsersStatsResponse {
+  totalUsers: number;
+  newUsers: number;
+  activeUsers: number;
+  period?: {
+    from: string;
+    to: string;
+  };
+}
+
+export interface AppUserDto {
+  userId: string;
+  username: string | null;
+  firstOpenedAt: string;
+  lastOpenedAt: string;
+  opensCount: number;
+}
+
+export interface AppUsersListResponse {
+  items: AppUserDto[];
+  total: number;
+}
+
 
 
 

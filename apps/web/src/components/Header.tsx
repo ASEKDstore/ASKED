@@ -1,10 +1,11 @@
 'use client';
 
-import { User } from 'lucide-react';
+import { User, Bell } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
 import { useTelegramUser } from '@/hooks/useTelegramUser';
+import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 
 import { MenuToggleIcon } from './MenuToggleIcon';
 import { ProfileSheet } from './ProfileSheet';
@@ -17,6 +18,7 @@ export function Header(): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useTelegramUser();
+  const { unreadCount } = useUnreadNotifications();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -89,18 +91,37 @@ export function Header(): JSX.Element {
             </span>
           </button>
 
-          {/* Center: User Name */}
-          <button
-            onClick={handleProfileOpen}
-            className="flex items-center gap-2 px-3 py-1.5 active:opacity-70 transition-opacity duration-150 min-w-0 flex-1 max-w-[180px] mx-2"
-            aria-label="Profile"
-            aria-expanded={isProfileOpen}
-          >
-            <User className="w-[clamp(14px,3.5vw,16px)] h-[clamp(14px,3.5vw,16px)] text-white/90 flex-shrink-0" />
-            <span className="text-white text-[clamp(13px,3.5vw,15px)] font-medium truncate">
-              {displayName}
-            </span>
-          </button>
+          {/* Center: User Name + Notifications */}
+          <div className="flex items-center gap-2 flex-1 min-w-0 max-w-[200px] mx-2">
+            <button
+              onClick={handleProfileOpen}
+              className="flex items-center gap-2 px-3 py-1.5 active:opacity-70 transition-opacity duration-150 min-w-0 flex-1"
+              aria-label="Profile"
+              aria-expanded={isProfileOpen}
+            >
+              <User className="w-[clamp(14px,3.5vw,16px)] h-[clamp(14px,3.5vw,16px)] text-white/90 flex-shrink-0" />
+              <span className="text-white text-[clamp(13px,3.5vw,15px)] font-medium truncate">
+                {displayName}
+              </span>
+              {unreadCount > 0 && (
+                <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-red-500 text-white text-[10px] font-semibold flex-shrink-0">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => router.push('/notifications')}
+              className="relative flex items-center justify-center w-9 h-9 active:opacity-70 transition-opacity duration-150 text-white"
+              aria-label="Notifications"
+            >
+              <Bell className="w-[clamp(16px,4vw,18px)] h-[clamp(16px,4vw,18px)]" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full bg-red-500 text-white text-[10px] font-semibold">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
 
           {/* Right: Menu Toggle - Only show when menu is closed */}
           {!isMenuOpen && (

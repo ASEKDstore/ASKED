@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ImageIcon, FileText, Plus, Edit, X, Search, ChevronUp, ChevronDown } from 'lucide-react';
+import { ImageIcon, FileText, Plus, Edit, X, Search, ChevronUp, ChevronDown, Send } from 'lucide-react';
 import { useState } from 'react';
 
 import { Alert } from '@/components/ui/alert';
@@ -1010,6 +1010,145 @@ function PromosTab(): JSX.Element {
   );
 }
 
+// Notifications Tab Component
+function NotificationsTab(): JSX.Element {
+  const { initData } = useTelegram();
+  const [formData, setFormData] = useState({
+    title: '',
+    body: '',
+    deepLink: '',
+  });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const sendMutation = useMutation({
+    mutationFn: (data: { title: string; body: string; data?: Record<string, unknown> }) =>
+      api.sendAdminBroadcast(initData, data),
+    onSuccess: async () => {
+      setSuccessMessage('Уведомление отправлено всем пользователям');
+      setFormData({ title: '', body: '', deepLink: '' });
+      setErrorMessage(null);
+      setTimeout(() => setSuccessMessage(null), 5000);
+    },
+    onError: (error: Error) => {
+      setErrorMessage(formatError(error));
+      setSuccessMessage(null);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!formData.title.trim() || !formData.body.trim()) {
+      setErrorMessage('Заполните заголовок и текст уведомления');
+      return;
+    }
+
+    const notificationData: { title: string; body: string; data?: Record<string, unknown> } = {
+      title: formData.title.trim(),
+      body: formData.body.trim(),
+    };
+
+    if (formData.deepLink.trim()) {
+      notificationData.data = {
+        deepLink: formData.deepLink.trim(),
+      };
+    }
+
+    sendMutation.mutate(notificationData);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Уведомления</h2>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Отправить уведомление всем пользователям</CardTitle>
+          <CardDescription>
+            Создайте уведомление, которое будет отправлено всем пользователям приложения
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {errorMessage && (
+              <Alert variant="destructive">{errorMessage}</Alert>
+            )}
+            {successMessage && (
+              <Alert className="bg-green-50 border-green-200 text-green-800">
+                {successMessage}
+              </Alert>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Заголовок <span className="text-red-500">*</span>
+              </label>
+              <Input
+                required
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Заголовок уведомления"
+                maxLength={100}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Текст <span className="text-red-500">*</span>
+              </label>
+              <Textarea
+                required
+                value={formData.body}
+                onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                placeholder="Текст уведомления"
+                rows={4}
+                maxLength={500}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Ссылка (опционально)
+              </label>
+              <Input
+                value={formData.deepLink}
+                onChange={(e) => setFormData({ ...formData, deepLink: e.target.value })}
+                placeholder="/orders?open=123 или /promo/slug"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                При клике на уведомление пользователь перейдет по этой ссылке
+              </p>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={sendMutation.isPending}
+              className="w-full"
+            >
+              {sendMutation.isPending ? (
+                <>
+                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Отправка...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Отправить всем
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // Main Marketing Page
 export default function AdminMarketingPage(): JSX.Element {
   return (
@@ -1020,12 +1159,16 @@ export default function AdminMarketingPage(): JSX.Element {
         <TabsList>
           <TabsTrigger value="banners">Баннеры</TabsTrigger>
           <TabsTrigger value="promos">Промо</TabsTrigger>
+          <TabsTrigger value="notifications">Уведомления</TabsTrigger>
         </TabsList>
         <TabsContent value="banners">
           <BannersTab />
         </TabsContent>
         <TabsContent value="promos">
           <PromosTab />
+        </TabsContent>
+        <TabsContent value="notifications">
+          <NotificationsTab />
         </TabsContent>
       </Tabs>
     </div>

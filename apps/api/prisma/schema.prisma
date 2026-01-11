@@ -54,6 +54,13 @@ enum LabCtaType {
   URL
 }
 
+enum NotificationType {
+  ORDER_CREATED
+  ORDER_STATUS_CHANGED
+  ADMIN_BROADCAST
+  ADMIN_DIRECT
+}
+
 enum AppEventType {
   PAGE_VIEW
   PRODUCT_VIEW
@@ -73,6 +80,7 @@ model User {
   updatedAt   DateTime @updatedAt
   admin       Admin?
   orders      Order[]
+  notifications UserNotification[]
 
   @@map("users")
 }
@@ -394,5 +402,34 @@ model AdminChatConfig {
   updatedAt DateTime @updatedAt
 
   @@map("admin_chat_config")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?            // orderId, orderNumber, deepLink, promoId etc
+  createdAt DateTime         @default(now())
+  userNotifications UserNotification[]
+
+  @@index([type, createdAt])
+  @@map("notifications")
+}
+
+model UserNotification {
+  id           String       @id @default(cuid())
+  userId       String       // FK to User.id
+  notificationId String
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isRead       Boolean      @default(false)
+  readAt       DateTime?
+  createdAt    DateTime     @default(now())
+
+  @@unique([userId, notificationId])
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("user_notifications")
 }
 

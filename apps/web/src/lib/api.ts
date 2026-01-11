@@ -247,6 +247,37 @@ export interface Subscription {
   updatedAt: string; // ISO datetime string
 }
 
+export interface Notification {
+  id: string;
+  notification: {
+    type: 'ORDER_CREATED' | 'ORDER_STATUS_CHANGED' | 'ADMIN_BROADCAST' | 'ADMIN_DIRECT';
+    title: string;
+    body: string;
+    data: Record<string, unknown> | null;
+    createdAt: string;
+  };
+  isRead: boolean;
+  readAt: string | null;
+}
+
+export interface NotificationsListResponse {
+  items: Notification[];
+  nextCursor?: string;
+}
+
+export interface UnreadCountResponse {
+  unreadCount: number;
+}
+
+export interface MarkReadResponse {
+  updated: number;
+}
+
+export interface MarkReadDto {
+  ids?: string[];
+  all?: boolean;
+}
+
 export interface CreateSubscriptionDto {
   name: string;
   provider?: string | null;
@@ -1133,6 +1164,44 @@ export const api = {
     return request<Subscription>(`/admin/subscriptions/${id}`, {
       method: 'DELETE',
       initData,
+    });
+  },
+
+  // Notifications
+  async getNotifications(initData: string | null, params?: { limit?: number; cursor?: string }): Promise<NotificationsListResponse> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      if (params.limit) searchParams.append('limit', String(params.limit));
+      if (params.cursor) searchParams.append('cursor', params.cursor);
+    }
+    const query = searchParams.toString();
+    return request<NotificationsListResponse>(`/notifications/my${query ? `?${query}` : ''}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getUnreadCount(initData: string | null): Promise<UnreadCountResponse> {
+    return request<UnreadCountResponse>('/notifications/my/unread-count', {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async markNotificationsRead(initData: string | null, dto: MarkReadDto): Promise<MarkReadResponse> {
+    return request<MarkReadResponse>('/notifications/my/mark-read', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(dto),
+    });
+  },
+
+  // Admin Notifications
+  async sendAdminBroadcast(initData: string | null, notification: { title: string; body: string; data?: Record<string, unknown> }): Promise<{ notificationId: string }> {
+    return request<{ notificationId: string }>('/admin/notifications/broadcast', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(notification),
     });
   },
 };

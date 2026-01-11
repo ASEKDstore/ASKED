@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 
 import type { TelegramUser } from '../auth/types/telegram-user.interface';
+import { AppEventsService } from '../analytics/app-events.service';
+import { AppOpensService } from '../analytics/app-opens.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { userResponseSchema, type UserResponseDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly appOpensService: AppOpensService,
+    private readonly appEventsService: AppEventsService,
+  ) {}
 
   async upsertByTelegramData(telegramUser: TelegramUser): Promise<UserResponseDto> {
     const telegramId = telegramUser.id.toString();
@@ -29,6 +35,25 @@ export class UsersService {
         lastName: telegramUser.last_name || null,
         photoUrl: telegramUser.photo_url || null,
       },
+    });
+
+    // Track app open event (fire and forget - don't fail user creation if this fails)
+    // Use void to explicitly ignore the promise
+    void Promise.all([
+      this.appOpensService.trackAppOpen(telegramId, telegramUser.username || undefined).catch((error) => {
+        console.error('Failed to track app open:', error);
+      }),
+      this.appEventsService
+        .createEvent({
+          eventType: 'PAGE_VIEW', // Using PAGE_VIEW as APP_OPEN equivalent for funnel
+          userId: telegramId,
+          source: 'telegram',
+        })
+        .catch((error) => {
+          console.error('Failed to track app event:', error);
+        }),
+    ]).catch(() => {
+      // Ignore errors - analytics should not break user creation
     });
 
     // Validate and return only allowed fields

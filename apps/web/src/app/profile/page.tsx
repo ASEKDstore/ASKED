@@ -2,13 +2,15 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { AlertCircle, User as UserIcon, ArrowRight, Shield } from 'lucide-react';
+import { AlertCircle, User as UserIcon, ArrowRight, Shield, Bell } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { MyOrdersList } from '@/components/orders/MyOrdersList';
 import { useTelegram } from '@/hooks/useTelegram';
+import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { api } from '@/lib/api';
 import { formatPrice, formatDateTime } from '@/lib/utils';
 
@@ -17,6 +19,8 @@ const BG_IMAGE_URL = '/home-bg.jpg';
 
 export default function ProfilePage(): JSX.Element {
   const { initData, isTelegram } = useTelegram();
+  const router = useRouter();
+  const { unreadCount } = useUnreadNotifications();
 
   // Calculate header height with safe area
   const headerTotalHeight = `calc(${HEADER_HEIGHT_PX}px + env(safe-area-inset-top, 0px))`;
@@ -313,6 +317,40 @@ export default function ProfilePage(): JSX.Element {
               )}
             </div>
           )}
+
+          {/* Notifications Button */}
+          <div className="w-full mb-6">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                try {
+                  window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
+                } catch {
+                  // Ignore if not in Telegram
+                }
+                router.push('/notifications');
+              }}
+              className="w-full rounded-[20px] bg-black/30 backdrop-blur-xl border border-white/10 p-4 flex items-center justify-between hover:bg-black/40 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-white/80" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-[20px] px-1.5 rounded-full bg-red-500 text-white text-[11px] font-semibold">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                <div className="text-left">
+                  <p className="text-white font-medium text-sm">Уведомления</p>
+                  <p className="text-white/60 text-xs">
+                    {unreadCount > 0 ? `${unreadCount} непрочитанных` : 'Нет новых уведомлений'}
+                  </p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-white/60" />
+            </motion.button>
+          </div>
 
           {/* Admin Panel Button - Show always (access is protected by admin routes) */}
           <div className="w-full mb-6">
