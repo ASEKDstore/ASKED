@@ -122,7 +122,7 @@ export class OrdersService {
   }
 
   async findAll(query: OrderQueryDto): Promise<OrdersListResponse> {
-    const { page, pageSize, status, search, includeDeleted } = query;
+    const { page, pageSize, status, search, includeDeleted = false } = query;
 
     const where: any = {};
 

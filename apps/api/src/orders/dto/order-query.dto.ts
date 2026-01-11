@@ -8,7 +8,10 @@ export const orderQuerySchema = z.object({
   includeDeleted: z.coerce.boolean().optional().default(false), // Include soft-deleted orders (admin only)
 });
 
-export type OrderQueryDto = z.infer<typeof orderQuerySchema>;
+// Type where includeDeleted is optional (for callers), but schema provides default at runtime
+export type OrderQueryDto = Omit<z.infer<typeof orderQuerySchema>, 'includeDeleted'> & {
+  includeDeleted?: boolean;
+};
 
 
 
