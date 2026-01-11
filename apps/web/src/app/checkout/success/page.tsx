@@ -98,7 +98,7 @@ function CheckoutSuccessContent(): JSX.Element {
               {/* CTA Buttons */}
               <div className="space-y-3">
                 <motion.div whileTap={{ scale: 0.97 }}>
-                  <Link href="/profile">
+                  <Link href="/orders">
                     <button
                       onClick={handleHaptic}
                       className="w-full rounded-full px-6 py-4 bg-white text-black font-semibold text-base transition-opacity hover:opacity-90"

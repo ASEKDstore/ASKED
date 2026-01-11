@@ -12,10 +12,12 @@ export class AppController {
   }
 
   @Get('health')
-  getHealth(): { status: string; timestamp: string } {
+  getHealth(): { status: string; timestamp: string; apiVersion: string; webVersion?: string } {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
+      apiVersion: process.env.APP_VERSION || require('../package.json').version,
+      webVersion: process.env.WEB_VERSION || undefined,
     };
   }
 }

@@ -41,7 +41,7 @@ export function ProfileSheet({ isOpen, onClose }: ProfileSheetProps): JSX.Elemen
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const handleOrdersClick = () => {
-    router.push('/profile');
+    router.push('/orders');
     onClose();
   };
 

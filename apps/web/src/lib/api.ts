@@ -598,6 +598,13 @@ export const api = {
     });
   },
 
+  async getMyOrder(initData: string | null, id: string): Promise<Order> {
+    return request<Order>(`/orders/my/${id}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
   // Admin endpoints
   async getAdminMe(initData: string | null): Promise<{
     user: {
