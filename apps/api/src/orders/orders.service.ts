@@ -122,9 +122,14 @@ export class OrdersService {
   }
 
   async findAll(query: OrderQueryDto): Promise<OrdersListResponse> {
-    const { page, pageSize, status, search } = query;
+    const { page, pageSize, status, search, includeDeleted } = query;
 
     const where: any = {};
+
+    // Filter out deleted orders by default (unless includeDeleted=true)
+    if (!includeDeleted) {
+      where.deletedAt = null;
+    }
 
     if (status) {
       where.status = status;
@@ -180,6 +185,7 @@ export class OrdersService {
 
     const where = {
       userId,
+      deletedAt: null, // Always exclude deleted orders for users
     };
 
     const total = await this.prisma.order.count({ where });
@@ -220,9 +226,33 @@ export class OrdersService {
     };
   }
 
-  async findOne(id: string): Promise<OrderDto> {
-    const order = await this.prisma.order.findUnique({
-      where: { id },
+  async findLastByUserId(userId: string): Promise<OrderDto | null> {
+    const order = await this.prisma.order.findFirst({
+      where: {
+        userId,
+        deletedAt: null, // Only non-deleted orders
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        items: true,
+      },
+    });
+
+    if (!order) {
+      return null;
+    }
+
+    return this.mapToDto(order);
+  }
+
+  async findOne(id: string, includeDeleted = false): Promise<OrderDto> {
+    const where: any = { id };
+    if (!includeDeleted) {
+      where.deletedAt = null;
+    }
+
+    const order = await this.prisma.order.findFirst({
+      where,
       include: {
         items: true,
       },
@@ -236,8 +266,11 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, updateDto: UpdateOrderStatusDto): Promise<OrderDto> {
-    const order = await this.prisma.order.findUnique({
-      where: { id },
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id,
+        deletedAt: null, // Cannot update deleted orders
+      },
       include: {
         user: true, // Include user to get telegramId
       },
@@ -272,6 +305,37 @@ export class OrdersService {
         console.error('Failed to send status change notification:', error);
       }
     }
+
+    return this.mapToDto(updated);
+  }
+
+  async softDelete(id: string, deletedBy?: string): Promise<OrderDto> {
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id,
+        deletedAt: null, // Cannot delete already deleted orders
+      },
+      include: {
+        items: true,
+        user: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with id ${id} not found or already deleted`);
+    }
+
+    const updated = await this.prisma.order.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        deletedBy: deletedBy || null,
+      },
+      include: {
+        items: true,
+        user: true,
+      },
+    });
 
     return this.mapToDto(updated);
   }

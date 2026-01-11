@@ -591,6 +591,13 @@ export const api = {
     });
   },
 
+  async getMyLastOrder(initData: string | null): Promise<Order | null> {
+    return request<Order | null>('/orders/my/last', {
+      method: 'GET',
+      initData,
+    });
+  },
+
   // Admin endpoints
   async getAdminMe(initData: string | null): Promise<{
     user: {
@@ -654,6 +661,13 @@ export const api = {
       method: 'PATCH',
       initData,
       body: JSON.stringify({ status }),
+    });
+  },
+
+  async deleteAdminOrder(initData: string | null, id: string): Promise<Order> {
+    return request<Order>(`/admin/orders/${id}`, {
+      method: 'DELETE',
+      initData,
     });
   },
 

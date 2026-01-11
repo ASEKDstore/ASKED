@@ -10,6 +10,7 @@ import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { MyOrdersList } from '@/components/orders/MyOrdersList';
 import { useTelegram } from '@/hooks/useTelegram';
 import { api } from '@/lib/api';
+import { formatPrice, formatDateTime } from '@/lib/utils';
 
 // Use same background image as Home page
 const BG_IMAGE_URL = '/home-bg.jpg';
@@ -30,6 +31,16 @@ export default function ProfilePage(): JSX.Element {
   } = useQuery({
     queryKey: ['me', initData],
     queryFn: () => api.getMe(initData),
+    enabled: !!initData && isTelegram,
+    retry: false,
+  });
+
+  const {
+    data: lastOrder,
+    isLoading: isLoadingLastOrder,
+  } = useQuery({
+    queryKey: ['orders', 'my', 'last', initData],
+    queryFn: () => api.getMyLastOrder(initData),
     enabled: !!initData && isTelegram,
     retry: false,
   });
@@ -219,6 +230,55 @@ export default function ProfilePage(): JSX.Element {
             </div>
           </div>
 
+          {/* Latest Order Card */}
+          {!isLoadingLastOrder && lastOrder && (
+            <div className="w-full mb-6">
+              <motion.div
+                whileTap={{ scale: 0.98 }}
+                className="rounded-[20px] bg-black/30 backdrop-blur-xl border border-white/10 p-4"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm mb-1">
+                      Заказ {lastOrder.number || `№${lastOrder.id.slice(0, 8)}`} —{' '}
+                      {lastOrder.status === 'NEW' && 'Новый'}
+                      {lastOrder.status === 'CONFIRMED' && 'Подтвержден'}
+                      {lastOrder.status === 'IN_PROGRESS' && 'В работе'}
+                      {lastOrder.status === 'DONE' && 'Выполнен'}
+                      {lastOrder.status === 'CANCELED' && 'Отменен'}
+                    </p>
+                    <p className="text-white/60 text-xs mb-2">
+                      {formatDateTime(lastOrder.createdAt)}
+                    </p>
+                    <p className="text-white font-medium text-sm">
+                      {formatPrice(lastOrder.totalAmount, lastOrder.currency)}
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-white/10">
+                  <button
+                    onClick={() => {
+                      try {
+                        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
+                      } catch {
+                        // Ignore if not in Telegram
+                      }
+                      // Scroll to orders list below
+                      const ordersSection = document.getElementById('my-orders-section');
+                      if (ordersSection) {
+                        ordersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }}
+                    className="w-full rounded-full px-4 py-2 bg-white/10 hover:bg-white/12 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    Открыть
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
           {/* Admin Panel Button - Show always (access is protected by admin routes) */}
           <div className="w-full mb-6">
             <Link href={DEV_ADMIN_TOKEN ? `/admin?token=${encodeURIComponent(DEV_ADMIN_TOKEN)}` : '/admin'}>
@@ -248,7 +308,7 @@ export default function ProfilePage(): JSX.Element {
           </div>
 
           {/* Мои заказы Section */}
-          <div className="w-full">
+          <div id="my-orders-section" className="w-full">
             <MyOrdersList />
 
             {/* Admin Panel Button */}

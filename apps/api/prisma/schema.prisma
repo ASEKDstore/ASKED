@@ -175,11 +175,14 @@ model Order {
   paymentMethod  PaymentMethod @default(MANAGER)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?     // Soft delete timestamp
+  deletedBy      String?       // Admin user ID who deleted the order (optional)
   user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   items          OrderItem[]
 
   @@index([channel, seq])
   @@index([number])
+  @@index([deletedAt])
   @@map("orders")
 }
 

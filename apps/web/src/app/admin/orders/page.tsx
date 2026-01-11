@@ -1,6 +1,6 @@
 'use client';
 
-import { ShoppingBag, Eye, ArrowLeft } from 'lucide-react';
+import { ShoppingBag, Eye, ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 // eslint-disable-next-line import/order
@@ -26,6 +26,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useTelegram } from '@/hooks/useTelegram';
 import { api, type OrderListItem } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
@@ -86,6 +96,20 @@ export default function AdminOrdersPage(): JSX.Element {
     },
   });
 
+  const deleteOrderMutation = useMutation({
+    mutationFn: (id: string) => api.deleteAdminOrder(initData, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'order'] });
+      setDeleteDialogOpen(false);
+      setDeleteOrderId(null);
+      if (selectedOrderId === deleteOrderId) {
+        setDrawerOpen(false);
+        setSelectedOrderId(null);
+      }
+    },
+  });
+
   const handleOpenDrawer = (orderId: string) => {
     setSelectedOrderId(orderId);
     setDrawerOpen(true);
@@ -113,6 +137,17 @@ export default function AdminOrdersPage(): JSX.Element {
   const handleStatusChange = (status: 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED') => {
     if (selectedOrderId) {
       updateStatusMutation.mutate({ id: selectedOrderId, status });
+    }
+  };
+
+  const handleDeleteClick = (orderId: string) => {
+    setDeleteOrderId(orderId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteOrderId) {
+      deleteOrderMutation.mutate(deleteOrderId);
     }
   };
 
@@ -426,8 +461,17 @@ export default function AdminOrdersPage(): JSX.Element {
                 </div>
               )}
 
-              <DrawerFooter>
-                <Button variant="outline" onClick={handleCloseDrawer} className="w-full md:w-auto">
+              <DrawerFooter className="flex-col sm:flex-row gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeleteClick(selectedOrder.id)}
+                  disabled={deleteOrderMutation.isPending}
+                  className="w-full sm:w-auto"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Удалить заказ
+                </Button>
+                <Button variant="outline" onClick={handleCloseDrawer} className="w-full sm:w-auto">
                   Закрыть
                 </Button>
               </DrawerFooter>
@@ -439,6 +483,28 @@ export default function AdminOrdersPage(): JSX.Element {
           )}
         </DrawerContent>
       </Drawer>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить заказ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы уверены, что хотите удалить этот заказ? Заказ будет скрыт из списка, но данные сохранятся.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteOrderMutation.isPending}
+            >
+              {deleteOrderMutation.isPending ? 'Удаление...' : 'Удалить'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

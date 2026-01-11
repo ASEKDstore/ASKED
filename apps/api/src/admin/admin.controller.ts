@@ -141,23 +141,25 @@ export class AdminController {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Orders today (created today)
+    // Orders today (created today, not deleted)
     const todayOrdersCount = await this.prisma.order.count({
       where: {
         createdAt: {
           gte: today,
           lt: tomorrow,
         },
+        deletedAt: null, // Exclude deleted orders
       },
     });
 
-    // Revenue today (sum of totalAmount for orders created today)
+    // Revenue today (sum of totalAmount for orders created today, not deleted)
     const todayOrders = await this.prisma.order.findMany({
       where: {
         createdAt: {
           gte: today,
           lt: tomorrow,
         },
+        deletedAt: null, // Exclude deleted orders
       },
       select: {
         totalAmount: true,
@@ -166,8 +168,12 @@ export class AdminController {
 
     const todayRevenue = todayOrders.reduce((sum, order) => sum + order.totalAmount, 0);
 
-    // Total orders count
-    const totalOrders = await this.prisma.order.count();
+    // Total orders count (not deleted)
+    const totalOrders = await this.prisma.order.count({
+      where: {
+        deletedAt: null, // Exclude deleted orders
+      },
+    });
 
     return {
       todayOrders: todayOrdersCount,

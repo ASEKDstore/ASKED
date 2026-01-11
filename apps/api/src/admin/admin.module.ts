@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module';
 import { OrdersModule } from '../orders/orders.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ProductsModule } from '../products/products.module';
+import { UsersModule } from '../users/users.module';
 
 import { AdminBannersController } from './admin-banners.controller';
 import { AdminBannersService } from './admin-banners.service';
@@ -19,7 +20,7 @@ import { AdminTagsService } from './admin-tags.service';
 import { AdminController } from './admin.controller';
 
 @Module({
-  imports: [OrdersModule, ProductsModule, AuthModule, PrismaModule],
+  imports: [OrdersModule, ProductsModule, AuthModule, PrismaModule, UsersModule],
   controllers: [
     AdminController,
     AdminOrdersController,

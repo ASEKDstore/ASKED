@@ -80,4 +80,13 @@ export class OrdersController {
       pageSize: 50,
     });
   }
+
+  @Get('my/last')
+  @UseGuards(TelegramAuthGuard)
+  async getMyLastOrder(@Req() req: Request & { user: TelegramUser }): Promise<OrderDto | null> {
+    // User is authenticated via TelegramAuthGuard, so req.user exists
+    const user = await this.usersService.upsertByTelegramData(req.user);
+    
+    return this.ordersService.findLastByUserId(user.id);
+  }
 }
