@@ -5,7 +5,10 @@ import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
 
 import type { CreateNotificationDto } from '../notifications/dto/create-notification.dto';
-import { createNotificationSchema } from '../notifications/dto/create-notification.dto';
+import {
+  adminBroadcastNotificationSchema,
+  adminDirectNotificationSchema,
+} from '../notifications/dto/create-notification.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Controller('admin/notifications')
@@ -16,7 +19,7 @@ export class AdminNotificationsController {
 
   @Post('broadcast')
   async broadcast(@Body() body: unknown): Promise<{ notificationId: string }> {
-    const parsed = createNotificationSchema.parse(body);
+    const parsed = adminBroadcastNotificationSchema.parse(body);
     const dto: CreateNotificationDto = {
       title: parsed.title,
       body: parsed.body,
@@ -33,7 +36,7 @@ export class AdminNotificationsController {
     @Param('userId') userId: string,
     @Body() body: unknown,
   ): Promise<{ notificationId: string }> {
-    const parsed = createNotificationSchema.parse(body);
+    const parsed = adminDirectNotificationSchema.parse(body);
     const dto: CreateNotificationDto = {
       title: parsed.title,
       body: parsed.body,
