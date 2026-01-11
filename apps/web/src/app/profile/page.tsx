@@ -38,6 +38,7 @@ export default function ProfilePage(): JSX.Element {
   const {
     data: lastOrder,
     isLoading: isLoadingLastOrder,
+    error: lastOrderError,
   } = useQuery({
     queryKey: ['orders', 'my', 'last', initData],
     queryFn: () => api.getMyLastOrder(initData),
@@ -230,6 +231,34 @@ export default function ProfilePage(): JSX.Element {
             </div>
           </div>
 
+          {/* Latest Order Card - Loading Skeleton */}
+          {isLoadingLastOrder && (
+            <div className="w-full mb-6">
+              <div className="rounded-[20px] bg-black/30 backdrop-blur-xl border border-white/10 p-4 animate-pulse">
+                <div className="h-4 bg-white/10 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-white/10 rounded w-1/2 mb-2"></div>
+                <div className="h-4 bg-white/10 rounded w-1/3 mb-3"></div>
+                <div className="pt-3 border-t border-white/10">
+                  <div className="h-9 bg-white/10 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Latest Order Card - Error State (Dev Only) */}
+          {!isLoadingLastOrder && lastOrderError && process.env.NODE_ENV !== 'production' && (
+            <div className="w-full mb-6">
+              <div className="rounded-[20px] bg-red-900/20 backdrop-blur-xl border border-red-500/30 p-3">
+                <p className="text-red-400 text-xs font-medium mb-1">Ошибка загрузки последнего заказа</p>
+                <p className="text-red-300/80 text-xs">
+                  {lastOrderError instanceof Error
+                    ? lastOrderError.message
+                    : String(lastOrderError)}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Latest Order Card */}
           {!isLoadingLastOrder && lastOrder && (
             <div className="w-full mb-6">
@@ -276,6 +305,12 @@ export default function ProfilePage(): JSX.Element {
                   </button>
                 </div>
               </motion.div>
+              {/* Debug info (dev only) */}
+              {process.env.NODE_ENV !== 'production' && (
+                <div className="text-xs text-white/40 mt-1 px-1 font-mono">
+                  Debug: Order ID: {lastOrder.id.slice(0, 8)} | Status: {lastOrder.status}
+                </div>
+              )}
             </div>
           )}
 
