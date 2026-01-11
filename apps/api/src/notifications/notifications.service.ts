@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -8,6 +8,8 @@ import type { NotificationDto } from './dto/notification.dto';
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -18,50 +20,78 @@ export class NotificationsService {
     limit = 20,
     cursor?: string,
   ): Promise<{ items: NotificationDto[]; nextCursor?: string }> {
-    const where = {
-      userId,
-      ...(cursor ? { id: { lt: cursor } } : {}),
-    };
+    try {
+      if (!userId) {
+        this.logger.warn('getUserNotifications called with empty userId');
+        return { items: [] };
+      }
 
-    const userNotifications = await this.prisma.userNotification.findMany({
-      where,
-      take: limit + 1, // Fetch one extra to determine if there's a next page
-      orderBy: { createdAt: 'desc' },
-      include: {
-        notification: true,
-      },
-    });
+      const where = {
+        userId,
+        ...(cursor ? { id: { lt: cursor } } : {}),
+      };
 
-    const hasMore = userNotifications.length > limit;
-    const items = hasMore ? userNotifications.slice(0, limit) : userNotifications;
-
-    return {
-      items: items.map((un) => ({
-        id: un.id,
-        notification: {
-          type: un.notification.type,
-          title: un.notification.title,
-          body: un.notification.body,
-          data: un.notification.data as Record<string, unknown> | null,
-          createdAt: un.notification.createdAt.toISOString(),
+      const userNotifications = await this.prisma.userNotification.findMany({
+        where,
+        take: limit + 1, // Fetch one extra to determine if there's a next page
+        orderBy: { createdAt: 'desc' },
+        include: {
+          notification: true,
         },
-        isRead: un.isRead,
-        readAt: un.readAt?.toISOString() || null,
-      })),
-      nextCursor: hasMore ? items[items.length - 1].id : undefined,
-    };
+      });
+
+      const hasMore = userNotifications.length > limit;
+      const items = hasMore ? userNotifications.slice(0, limit) : userNotifications;
+
+      return {
+        items: items.map((un) => ({
+          id: un.id,
+          notification: {
+            type: un.notification.type,
+            title: un.notification.title,
+            body: un.notification.body,
+            data: un.notification.data as Record<string, unknown> | null,
+            createdAt: un.notification.createdAt.toISOString(),
+          },
+          isRead: un.isRead,
+          readAt: un.readAt?.toISOString() || null,
+        })),
+        nextCursor: hasMore ? items[items.length - 1].id : undefined,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get user notifications for userId=${userId}, cursor=${cursor || 'none'}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      // Return empty list instead of throwing to prevent 500 errors
+      return { items: [] };
+    }
   }
 
   /**
    * Get unread count for a user
    */
   async getUnreadCount(userId: string): Promise<number> {
-    return this.prisma.userNotification.count({
-      where: {
-        userId,
-        isRead: false,
-      },
-    });
+    try {
+      if (!userId) {
+        this.logger.warn('getUnreadCount called with empty userId');
+        return 0;
+      }
+
+      return await this.prisma.userNotification.count({
+        where: {
+          userId,
+          isRead: false,
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to get unread count for userId=${userId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      // Return 0 instead of throwing to prevent 500 errors
+      return 0;
+    }
   }
 
   /**
