@@ -345,27 +345,6 @@ export default function ProfilePage(): JSX.Element {
           {/* Мои заказы Section */}
           <div id="my-orders-section" className="w-full">
             <MyOrdersList />
-
-            {/* Admin Panel Button */}
-            <div className="mt-4">
-              <Link href={DEV_ADMIN_TOKEN ? `/admin?token=${encodeURIComponent(DEV_ADMIN_TOKEN)}` : '/admin'}>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ duration: 0.18 }}
-                  onClick={() => {
-                    try {
-                      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
-                    } catch {
-                      // Ignore if not in Telegram
-                    }
-                  }}
-                  className="w-full rounded-full bg-white/10 backdrop-blur-xl border border-white/10 shadow-sm py-3.5 px-4 text-white font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/12 transition-all duration-200 active:scale-[0.97]"
-                >
-                  <span>Войти в админку</span>
-                  <ArrowRight className="w-4 h-4" />
-                </motion.button>
-              </Link>
-            </div>
           </div>
         </div>
       </div>
