@@ -245,6 +245,25 @@ export class OrdersService {
     return this.mapToDto(order);
   }
 
+  async findOneByUserId(userId: string, id: string): Promise<OrderDto> {
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id,
+        userId,
+        deletedAt: null, // Only non-deleted orders
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with id ${id} not found`);
+    }
+
+    return this.mapToDto(order);
+  }
+
   async findOne(id: string, includeDeleted = false): Promise<OrderDto> {
     const where: any = { id };
     if (!includeDeleted) {

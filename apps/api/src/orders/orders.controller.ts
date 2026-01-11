@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, UseGuards, HttpCode, HttpStatus, Param } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
@@ -88,5 +88,18 @@ export class OrdersController {
     const user = await this.usersService.upsertByTelegramData(req.user);
     
     return this.ordersService.findLastByUserId(user.id);
+  }
+
+  @Get('my/:id')
+  @UseGuards(TelegramAuthGuard)
+  async getMyOrder(
+    @Req() req: Request & { user: TelegramUser },
+    @Param('id') id: string,
+  ): Promise<OrderDto> {
+    // User is authenticated via TelegramAuthGuard, so req.user exists
+    const user = await this.usersService.upsertByTelegramData(req.user);
+    
+    // Find order by ID and userId (ensures user can only access their own orders)
+    return this.ordersService.findOneByUserId(user.id, id);
   }
 }

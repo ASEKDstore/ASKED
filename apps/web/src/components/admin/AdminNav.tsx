@@ -31,6 +31,9 @@ function AdminNavContent(): JSX.Element {
   const token = getTokenFromUrl();
   const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : '';
 
+  // Get app version from environment variable (set in next.config.js from package.json)
+  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION || 'dev';
+
   const handleExitAdmin = () => {
     // Navigate to shop main page (catalog or home)
     router.push('/catalog');
@@ -41,7 +44,10 @@ function AdminNavContent(): JSX.Element {
       <div className="container mx-auto px-4">
         {/* Mobile: Header with hamburger */}
         <div className="md:hidden flex items-center justify-between py-3">
-          <h1 className="text-lg font-bold">Админ-панель</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold">Админ-панель</h1>
+            <span className="text-xs text-gray-500 font-mono">v{appVersion}</span>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -89,7 +95,10 @@ function AdminNavContent(): JSX.Element {
 
         {/* Desktop: Horizontal nav with scroll */}
         <div className="hidden md:flex items-center gap-2 py-3">
-          <h1 className="text-xl font-bold mr-8 whitespace-nowrap">Админ-панель</h1>
+          <div className="flex items-center gap-2 mr-8 whitespace-nowrap">
+            <h1 className="text-xl font-bold">Админ-панель</h1>
+            <span className="text-xs text-gray-500 font-mono">v{appVersion}</span>
+          </div>
           <div className="flex-1 overflow-x-auto scrollbar-hide">
             <div className="flex items-center gap-2 min-w-max">
               {navItems.map((item) => {
