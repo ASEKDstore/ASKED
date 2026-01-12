@@ -33,7 +33,7 @@ export function Providers({ children }: { children: ReactNode }): JSX.Element {
       });
     }
 
-    // Call /me endpoint on startup to authenticate user and create analytics
+    // Call /users/me endpoint on startup to authenticate user and create/update AppUser
     // This ensures users are created in DB and APP_OPEN events are tracked
     if (!hasCalledStartup.current) {
       hasCalledStartup.current = true;
@@ -41,12 +41,23 @@ export function Providers({ children }: { children: ReactNode }): JSX.Element {
       
       if (initData) {
         // Fire and forget - don't block UI if this fails
-        api.getMeStartup(initData).catch((error) => {
-          // Only log in dev mode to avoid console noise in production
+        api.getMe(initData).catch((error) => {
+          // Log in dev mode to help debug user creation issues
           if (process.env.NODE_ENV === 'development') {
-            console.error('[Startup] Failed to call /me:', error);
+            console.error('[Startup] Failed to call /users/me:', error);
+            // Show temporary debug message in dev mode
+            if (typeof window !== 'undefined') {
+              const debugDiv = document.createElement('div');
+              debugDiv.style.cssText = 'position:fixed;top:10px;right:10px;background:red;color:white;padding:8px;z-index:9999;font-size:12px;border-radius:4px;';
+              debugDiv.textContent = `User creation failed: ${error instanceof Error ? error.message : String(error)}`;
+              document.body.appendChild(debugDiv);
+              setTimeout(() => debugDiv.remove(), 5000);
+            }
           }
         });
+      } else if (process.env.NODE_ENV === 'development') {
+        // Log warning if no initData in dev mode
+        console.warn('[Startup] No Telegram initData available - user will not be created');
       }
     }
   }, []);

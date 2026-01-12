@@ -1041,8 +1041,12 @@ function NotificationsTab(): JSX.Element {
   const broadcastMutation = useMutation({
     mutationFn: (data: { title: string; body: string; data?: Record<string, unknown> }) =>
       api.sendAdminBroadcast(initData, data),
-    onSuccess: async () => {
-      setSuccessMessage('Уведомление отправлено всем пользователям');
+    onSuccess: async (response) => {
+      if (response.delivered === 0) {
+        setSuccessMessage(`Уведомление создано, но не доставлено (пользователей в системе: ${response.totalUsers})`);
+      } else {
+        setSuccessMessage(`Уведомление отправлено ${response.delivered} из ${response.totalUsers} пользователей`);
+      }
       setFormData({ title: '', body: '', deepLink: '' });
       setErrorMessage(null);
       setTimeout(() => setSuccessMessage(null), 5000);

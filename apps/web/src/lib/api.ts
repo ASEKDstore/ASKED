@@ -548,19 +548,6 @@ export const api = {
     });
   },
 
-  async getMeStartup(initData: string | null): Promise<{
-    telegramId: string;
-    username: string | null;
-  }> {
-    return request<{
-      telegramId: string;
-      username: string | null;
-    }>('/me', {
-      method: 'GET',
-      initData,
-    });
-  },
-
   async getHealth(): Promise<{ status: string; timestamp: string }> {
     return request<{ status: string; timestamp: string }>('/health', {
       method: 'GET',
@@ -1210,8 +1197,8 @@ export const api = {
   },
 
   // Admin Notifications
-  async sendAdminBroadcast(initData: string | null, notification: { title: string; body: string; data?: Record<string, unknown> }): Promise<{ notificationId: string }> {
-    return request<{ notificationId: string }>('/admin/notifications/broadcast', {
+  async sendAdminBroadcast(initData: string | null, notification: { title: string; body: string; data?: Record<string, unknown> }): Promise<{ notificationId: string; delivered: number; totalUsers: number }> {
+    return request<{ notificationId: string; delivered: number; totalUsers: number }>('/admin/notifications/broadcast', {
       method: 'POST',
       initData,
       body: JSON.stringify(notification),
