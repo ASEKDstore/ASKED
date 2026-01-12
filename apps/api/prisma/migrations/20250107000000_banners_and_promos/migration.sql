@@ -59,3 +59,4 @@ ALTER TABLE "promo_media" ADD CONSTRAINT "promo_media_promoId_fkey" FOREIGN KEY 
 
 
 
+
