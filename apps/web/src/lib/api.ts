@@ -117,11 +117,23 @@ async function request<T>(
   } else {
     // Non-admin endpoints: always add Telegram initData if available
     // Try provided initData first, then window.Telegram, then helper
+    // IMPORTANT: Always try to get initData, even if not explicitly provided
     const telegramInitData = initData ?? getTelegramInitData() ?? getInitData();
     const finalInitData = telegramInitData;
 
     if (finalInitData) {
       headers['x-telegram-init-data'] = finalInitData;
+    }
+
+    // Debug logging in dev mode (only log initData presence, not content)
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[API] Request:', {
+        endpoint,
+        method: fetchOptions.method || 'GET',
+        hasInitData: !!finalInitData,
+        initDataLength: finalInitData?.length ?? 0,
+        initDataSource: initData ? 'provided' : (getTelegramInitData() ? 'window.Telegram' : (getInitData() ? 'helper' : 'none')),
+      });
     }
   }
 
@@ -151,6 +163,19 @@ async function request<T>(
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
       const errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+      
+      // Log auth errors in dev mode for debugging
+      if (process.env.NODE_ENV === 'development' && (response.status === 401 || response.status === 403)) {
+        console.error('[API] Auth error:', {
+          endpoint,
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          hasInitData: !!headers['x-telegram-init-data'],
+          initDataLength: headers['x-telegram-init-data']?.length ?? 0,
+        });
+      }
+      
       throw new ApiClientError(
         `[${response.status}] ${errorMessage}`,
         response.status
