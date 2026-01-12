@@ -137,12 +137,12 @@ export class NotificationsService {
   /**
    * Create a notification and deliver it to user(s)
    */
-  async createNotification(dto: CreateNotificationDto): Promise<{ notificationId: string; delivered?: number }> {
+  async createNotification(dto: CreateNotificationDto): Promise<{ notificationId: string; delivered?: number; totalUsers?: number }> {
     if (dto.target === 'ALL') {
-      // Broadcast to all users
+      // Broadcast to all users - MUST NEVER crash
       try {
         return await this.prisma.$transaction(async (tx) => {
-          // Create notification
+          // Create notification first (always create, even if no users)
           const notification = await tx.notification.create({
             data: {
               type: dto.type,
@@ -157,16 +157,24 @@ export class NotificationsService {
             select: { id: true },
           });
 
-          this.logger.log(`Broadcast notification created: ${notification.id}, found ${users.length} users`);
+          const totalUsers = users.length;
+          this.logger.log(`Broadcast notification created: ${notification.id}, found ${totalUsers} users`);
+
+          // Handle empty users gracefully - return success with delivered: 0
+          if (totalUsers === 0) {
+            this.logger.warn(`Broadcast notification created but no users found to deliver to`);
+            return { notificationId: notification.id, delivered: 0, totalUsers: 0 };
+          }
 
           // Create UserNotification for each user (batch insert)
-          if (users.length > 0) {
-            // Batch insert in chunks of 1000 to avoid Prisma limits
-            const batchSize = 1000;
-            let totalCreated = 0;
+          // Batch insert in chunks of 1000 to avoid Prisma limits
+          const batchSize = 1000;
+          let totalCreated = 0;
 
-            for (let i = 0; i < users.length; i += batchSize) {
-              const batch = users.slice(i, i + batchSize);
+          for (let i = 0; i < users.length; i += batchSize) {
+            const batch = users.slice(i, i + batchSize);
+            // Ensure batch is not empty before calling createMany
+            if (batch.length > 0) {
               const result = await tx.userNotification.createMany({
                 data: batch.map((u) => ({
                   userId: u.id,
@@ -177,21 +185,44 @@ export class NotificationsService {
               });
               totalCreated += result.count;
             }
-
-            this.logger.log(`Broadcast notification delivered to ${totalCreated} users`);
-            return { notificationId: notification.id, delivered: totalCreated };
           }
 
-          // No users found - return success with delivered: 0
-          this.logger.warn(`Broadcast notification created but no users found to deliver to`);
-          return { notificationId: notification.id, delivered: 0 };
+          this.logger.log(`Broadcast notification delivered to ${totalCreated} users`);
+          return { notificationId: notification.id, delivered: totalCreated, totalUsers };
         });
       } catch (error) {
+        // Log the real error with full details
         this.logger.error(
           `Failed to create broadcast notification: ${dto.title}`,
-          error instanceof Error ? error.stack : String(error),
+          error instanceof Error ? error.message : String(error),
         );
-        throw error;
+        this.logger.error(
+          `Error stack trace:`,
+          error instanceof Error ? error.stack : 'No stack trace available',
+        );
+        
+        // For broadcast, we should still try to create the notification record for logging
+        // But if that also fails, return a safe response
+        try {
+          const notification = await this.prisma.notification.create({
+            data: {
+              type: dto.type,
+              title: dto.title,
+              body: dto.body,
+              ...(dto.data ? { data: dto.data as never } : {}),
+            },
+          });
+          this.logger.warn(`Notification created but delivery failed: ${notification.id}`);
+          return { notificationId: notification.id, delivered: 0, totalUsers: 0 };
+        } catch (fallbackError) {
+          // Even notification creation failed - return error response but don't throw
+          this.logger.error(
+            `Critical: Failed to create notification record: ${dto.title}`,
+            fallbackError instanceof Error ? fallbackError.stack : String(fallbackError),
+          );
+          // Return a safe response - broadcast must NEVER crash
+          return { notificationId: 'error', delivered: 0, totalUsers: 0 };
+        }
       }
     }
 

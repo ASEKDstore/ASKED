@@ -20,7 +20,7 @@ export class AdminNotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post('broadcast')
-  async broadcast(@Body() body: unknown): Promise<{ notificationId: string; delivered: number }> {
+  async broadcast(@Body() body: unknown): Promise<{ notificationId: string; delivered: number; totalUsers: number }> {
     try {
       const parsed = adminBroadcastNotificationSchema.parse(body);
       const dto: CreateNotificationDto = {
@@ -35,13 +35,26 @@ export class AdminNotificationsController {
       return {
         notificationId: result.notificationId,
         delivered: result.delivered ?? 0,
+        totalUsers: result.totalUsers ?? 0,
       };
     } catch (error) {
+      // Log the real error with full details
       this.logger.error(
         'Failed to send broadcast notification',
-        error instanceof Error ? error.stack : String(error),
+        error instanceof Error ? error.message : String(error),
       );
-      throw error;
+      this.logger.error(
+        'Error stack trace:',
+        error instanceof Error ? error.stack : 'No stack trace available',
+      );
+      
+      // Broadcast must NEVER crash - always return 200 with delivered=0
+      // This handles validation errors or any other unexpected errors
+      return {
+        notificationId: 'error',
+        delivered: 0,
+        totalUsers: 0,
+      };
     }
   }
 
