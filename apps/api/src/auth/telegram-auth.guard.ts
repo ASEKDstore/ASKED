@@ -104,38 +104,42 @@ export class TelegramAuthGuard implements CanActivate {
         lastName: user.last_name,
       };
 
-      // Automatically upsert user in database (fire and forget to avoid blocking auth)
-      // This ensures users are persisted when they open the app
-      // This is GUARANTEED to run on every authenticated request
+      // CRITICAL: Upsert user in database SYNCHRONOUSLY
+      // This MUST run on every authenticated request and MUST NOT fail silently
       // Use ModuleRef for lazy loading to avoid requiring UsersModule in all modules that use this guard
+      const telegramId = user.id.toString();
+      
       try {
         const usersService = this.moduleRef.get(UsersService, { strict: false });
-        if (usersService) {
-          void usersService.upsertByTelegramData(user)
-            .then((upsertedUser) => {
-              // Log successful upsert in debug mode (production-safe, no sensitive data)
-              this.logger.debug(
-                `User upserted: telegramId=${upsertedUser.telegramId}, username=${upsertedUser.username || 'null'}, userId=${upsertedUser.id}`
-              );
-            })
-            .catch((error: unknown) => {
-              // Log error but don't fail authentication
-              this.logger.error(
-                `Failed to upsert user in TelegramAuthGuard: telegramId=${user.id.toString()}`,
-                error instanceof Error ? error.stack : String(error)
-              );
-            });
-        } else {
-          // UsersService not available - log warning but don't fail auth
-          this.logger.warn(
-            `UsersService not available in TelegramAuthGuard context - user upsert skipped for telegramId=${user.id.toString()}`
+        if (!usersService) {
+          // UsersService not available - this is a critical error
+          this.logger.error(
+            `CRITICAL: UsersService not available in TelegramAuthGuard context - user upsert FAILED for telegramId=${telegramId}`
           );
+          // Don't fail auth, but log the error loudly
+        } else {
+          // Execute upsert SYNCHRONOUSLY - await it to ensure it completes
+          // If this fails, we want to see it in logs, but don't fail authentication
+          try {
+            const upsertedUser = await usersService.upsertByTelegramData(user);
+            // Log successful upsert
+            this.logger.debug(
+              `TG user upserted: telegramId=${upsertedUser.telegramId}, username=${upsertedUser.username || 'null'}, userId=${upsertedUser.id}`
+            );
+          } catch (upsertError) {
+            // Log error LOUDLY - this is critical and should not be silent
+            this.logger.error(
+              `CRITICAL: Failed to upsert user in TelegramAuthGuard: telegramId=${telegramId}`,
+              upsertError instanceof Error ? upsertError.stack : String(upsertError)
+            );
+            // Don't fail authentication, but ensure error is visible
+          }
         }
       } catch (error) {
-        // ModuleRef.get may throw if service not found - log and continue
-        this.logger.warn(
-          `Could not get UsersService in TelegramAuthGuard: telegramId=${user.id.toString()}`,
-          error instanceof Error ? error.message : String(error)
+        // ModuleRef.get may throw if service not found - log CRITICAL error
+        this.logger.error(
+          `CRITICAL: Could not get UsersService in TelegramAuthGuard: telegramId=${telegramId}`,
+          error instanceof Error ? error.stack : String(error)
         );
       }
 
