@@ -1,10 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { TelegramInitDataService } from './telegram-init-data.service';
 import type { TelegramUser } from './types/telegram-user.interface';
-import type { UsersService } from '../users/users.service';
+import { UsersService } from '../users/users.service';
 
 export interface AuthenticatedRequest {
   user: TelegramUser;
@@ -20,11 +19,12 @@ export interface AuthenticatedRequest {
 @Injectable()
 export class TelegramAuthGuard implements CanActivate {
   private readonly botToken: string;
+  private readonly logger = new Logger(TelegramAuthGuard.name);
 
   constructor(
     private readonly telegramInitDataService: TelegramInitDataService,
     private readonly configService: ConfigService,
-    private readonly moduleRef: ModuleRef,
+    private readonly usersService: UsersService,
   ) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN', '');
     
@@ -105,19 +105,21 @@ export class TelegramAuthGuard implements CanActivate {
 
       // Automatically upsert user in database (fire and forget to avoid blocking auth)
       // This ensures users are persisted when they open the app
-      // Use ModuleRef to get UsersService lazily to avoid circular dependency
-      try {
-        const usersService = this.moduleRef.get<UsersService>('UsersService', { strict: false });
-        if (usersService) {
-          void usersService.upsertByTelegramData(user).catch((error: unknown) => {
-            // Log error but don't fail authentication
-            console.error('Failed to upsert user in TelegramAuthGuard:', error);
-          });
-        }
-      } catch (error) {
-        // ModuleRef.get may throw if service not found - ignore silently
-        // This is expected if UsersModule is not imported
-      }
+      // This is GUARANTEED to run on every authenticated request
+      void this.usersService.upsertByTelegramData(user)
+        .then((upsertedUser) => {
+          // Log successful upsert in debug mode (production-safe, no sensitive data)
+          this.logger.debug(
+            `User upserted: telegramId=${upsertedUser.telegramId}, username=${upsertedUser.username || 'null'}, userId=${upsertedUser.id}`
+          );
+        })
+        .catch((error: unknown) => {
+          // Log error but don't fail authentication
+          this.logger.error(
+            `Failed to upsert user in TelegramAuthGuard: telegramId=${user.id.toString()}`,
+            error instanceof Error ? error.stack : String(error)
+          );
+        });
 
       return true;
     } catch (error) {
