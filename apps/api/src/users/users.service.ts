@@ -45,7 +45,7 @@ export class UsersService {
       }),
       this.appEventsService
         .createEvent({
-          eventType: 'PAGE_VIEW', // Using PAGE_VIEW as APP_OPEN equivalent for funnel
+          eventType: 'APP_OPEN',
           userId: telegramId,
           source: 'telegram',
         })

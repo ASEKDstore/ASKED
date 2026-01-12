@@ -1,10 +1,17 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards, UnauthorizedException } from '@nestjs/common';
 
+import { CurrentTelegramUser } from './auth/decorators/current-telegram-user.decorator';
+import { TelegramAuthGuard } from './auth/telegram-auth.guard';
+import type { TelegramUser } from './auth/types/telegram-user.interface';
 import { AppService } from './app.service';
+import { UsersService } from './users/users.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Get()
   getHello(): string {
@@ -38,6 +45,22 @@ export class AppController {
       apiVersion,
       webVersion: process.env.WEB_VERSION || undefined,
       gitCommit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || undefined,
+    };
+  }
+
+  @Get('me')
+  @UseGuards(TelegramAuthGuard)
+  async getMe(@CurrentTelegramUser() telegramUser: TelegramUser | undefined): Promise<{
+    telegramId: string;
+    username: string | null;
+  }> {
+    if (!telegramUser) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+    const user = await this.usersService.upsertByTelegramData(telegramUser);
+    return {
+      telegramId: user.telegramId,
+      username: user.username,
     };
   }
 }

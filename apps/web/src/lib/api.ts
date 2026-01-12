@@ -548,6 +548,19 @@ export const api = {
     });
   },
 
+  async getMeStartup(initData: string | null): Promise<{
+    telegramId: string;
+    username: string | null;
+  }> {
+    return request<{
+      telegramId: string;
+      username: string | null;
+    }>('/me', {
+      method: 'GET',
+      initData,
+    });
+  },
+
   async getHealth(): Promise<{ status: string; timestamp: string }> {
     return request<{ status: string; timestamp: string }>('/health', {
       method: 'GET',

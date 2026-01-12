@@ -62,6 +62,7 @@ enum NotificationType {
 }
 
 enum AppEventType {
+  APP_OPEN
   PAGE_VIEW
   PRODUCT_VIEW
   ADD_TO_CART
