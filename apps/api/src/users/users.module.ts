@@ -8,7 +8,7 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
-  imports: [PrismaModule, TelegramAuthCoreModule, forwardRef(() => AnalyticsModule)],
+  imports: [PrismaModule, forwardRef(() => TelegramAuthCoreModule), forwardRef(() => AnalyticsModule)],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],
