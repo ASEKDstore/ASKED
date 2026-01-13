@@ -62,6 +62,9 @@ export class OrdersService {
           productId: product.id,
           titleSnapshot: product.title,
           priceSnapshot: product.price,
+          salePriceAtTime: product.price,
+          costPriceAtTime: product.costPrice ?? null,
+          packagingCostAtTime: product.packagingCost ?? null,
           qty: item.qty,
         });
       }
@@ -116,6 +119,19 @@ export class OrdersService {
           user: true,
         },
       });
+
+      // Create inventory movements (OUT) for each order item
+      for (const itemData of orderItemsData) {
+        await tx.inventoryMovement.create({
+          data: {
+            productId: itemData.productId,
+            quantity: -itemData.qty, // Negative for OUT
+            type: 'OUT',
+            sourceType: 'ORDER',
+            sourceId: createdOrder.id,
+          },
+        });
+      }
 
       return createdOrder;
     });

@@ -61,6 +61,18 @@ enum NotificationType {
   ADMIN_DIRECT
 }
 
+enum InventoryMovementType {
+  IN
+  OUT
+  ADJUST
+}
+
+enum InventoryMovementSourceType {
+  ORDER
+  MANUAL
+  PURCHASE
+}
+
 enum AppEventType {
   APP_OPEN
   PAGE_VIEW
@@ -71,66 +83,69 @@ enum AppEventType {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  telegramId  String   @unique
-  username    String?
-  firstName   String?
-  lastName    String?
-  photoUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  admin       Admin?
-  orders      Order[]
+  id            String             @id @default(cuid())
+  telegramId    String             @unique
+  username      String?
+  firstName     String?
+  lastName      String?
+  photoUrl      String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  admin         Admin?
+  orders        Order[]
   notifications UserNotification[]
 
   @@map("users")
 }
 
 model Admin {
-  id        String     @id @default(cuid())
-  userId    String     @unique
+  id        String    @id @default(cuid())
+  userId    String    @unique
   role      AdminRole
-  createdAt DateTime   @default(now())
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("admins")
 }
 
 model Category {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  sort      Int      @default(0)
-  products  ProductCategory[]
+  id       String            @id @default(cuid())
+  name     String
+  slug     String            @unique
+  sort     Int               @default(0)
+  products ProductCategory[]
 
   @@map("categories")
 }
 
 model Tag {
-  id       String   @id @default(cuid())
+  id       String       @id @default(cuid())
   name     String
-  slug     String   @unique
+  slug     String       @unique
   products ProductTag[]
 
   @@map("tags")
 }
 
 model Product {
-  id          String          @id @default(cuid())
-  title       String
-  description String?
-  sku         String?         @unique
-  price       Int
-  currency    String          @default("RUB")
-  status      ProductStatus   @default(DRAFT)
-  stock       Int             @default(0)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  categories  ProductCategory[]
-  tags        ProductTag[]
-  images      ProductImage[]
-  orderItems  OrderItem[]
-  labProducts LabProduct[]
+  id                 String              @id @default(cuid())
+  title              String
+  description        String?
+  sku                String?             @unique
+  price              Int
+  costPrice          Int? // Cost price in cents (nullable for backward compatibility)
+  packagingCost      Int? // Packaging cost in cents (nullable for backward compatibility)
+  currency           String              @default("RUB")
+  status             ProductStatus       @default(DRAFT)
+  stock              Int                 @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  categories         ProductCategory[]
+  tags               ProductTag[]
+  images             ProductImage[]
+  orderItems         OrderItem[]
+  labProducts        LabProduct[]
+  inventoryMovements InventoryMovement[]
 
   @@index([sku])
   @@map("products")
@@ -169,25 +184,25 @@ model ProductImage {
 }
 
 model Order {
-  id             String        @id @default(cuid())
-  userId         String?       // Nullable for guest checkout
-  status         OrderStatus   @default(NEW)
-  channel        OrderChannel  @default(AS)
-  seq            Int?
-  number         String?       @unique
-  totalAmount    Int
-  currency       String        @default("RUB")
-  customerName   String
-  customerPhone  String
+  id              String        @id @default(cuid())
+  userId          String? // Nullable for guest checkout
+  status          OrderStatus   @default(NEW)
+  channel         OrderChannel  @default(AS)
+  seq             Int?
+  number          String?       @unique
+  totalAmount     Int
+  currency        String        @default("RUB")
+  customerName    String
+  customerPhone   String
   customerAddress String?
-  comment        String?
-  paymentMethod  PaymentMethod @default(MANAGER)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  deletedAt      DateTime?     // Soft delete timestamp
-  deletedBy      String?       // Admin user ID who deleted the order (optional)
-  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items          OrderItem[]
+  comment         String?
+  paymentMethod   PaymentMethod @default(MANAGER)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime? // Soft delete timestamp
+  deletedBy       String? // Admin user ID who deleted the order (optional)
+  user            User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           OrderItem[]
 
   @@index([channel, seq])
   @@index([number])
@@ -204,56 +219,59 @@ model OrderCounter {
 }
 
 model OrderItem {
-  id            String  @id @default(cuid())
-  orderId       String
-  productId     String
-  titleSnapshot String
-  priceSnapshot Int
-  qty           Int
-  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product       Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  id                  String  @id @default(cuid())
+  orderId             String
+  productId           String
+  titleSnapshot       String
+  priceSnapshot       Int
+  salePriceAtTime     Int // Snapshot of product.price at order time
+  costPriceAtTime     Int? // Snapshot of product.costPrice at order time
+  packagingCostAtTime Int? // Snapshot of product.packagingCost at order time
+  qty                 Int
+  order               Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product             Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@map("order_items")
 }
 
 model Banner {
-  id        String         @id @default(cuid())
+  id        String          @id @default(cuid())
   title     String
   subtitle  String?
   mediaType BannerMediaType
   mediaUrl  String
-  isActive  Boolean        @default(true)
-  sort      Int            @default(0)
+  isActive  Boolean         @default(true)
+  sort      Int             @default(0)
   promoSlug String
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
   @@map("banners")
 }
 
 model PromoPage {
-  id          String        @id @default(cuid())
-  slug        String        @unique
+  id          String       @id @default(cuid())
+  slug        String       @unique
   title       String
   description String?
-  isActive    Boolean       @default(true)
-  ctaType     PromoCtaType  @default(URL)
+  isActive    Boolean      @default(true)
+  ctaType     PromoCtaType @default(URL)
   ctaText     String?
   ctaUrl      String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   media       PromoMedia[]
 
   @@map("promo_pages")
 }
 
 model PromoMedia {
-  id        String         @id @default(cuid())
+  id        String          @id @default(cuid())
   promoId   String
-  promo     PromoPage      @relation(fields: [promoId], references: [id], onDelete: Cascade)
+  promo     PromoPage       @relation(fields: [promoId], references: [id], onDelete: Cascade)
   mediaType BannerMediaType
   mediaUrl  String
-  sort      Int            @default(0)
+  sort      Int             @default(0)
 
   @@map("promo_media")
 }
@@ -261,7 +279,7 @@ model PromoMedia {
 // Analytics Models
 model TelegramChannelSnapshot {
   id              String   @id @default(cuid())
-  channelId       String   // Telegram channel ID (numeric or @username)
+  channelId       String // Telegram channel ID (numeric or @username)
   subscriberCount Int
   snapshotAt      DateTime @default(now())
 
@@ -271,17 +289,17 @@ model TelegramChannelSnapshot {
 }
 
 model TelegramPost {
-  id          String                        @id @default(cuid())
+  id          String                       @id @default(cuid())
   channelId   String
-  messageId   Int                           // Telegram message ID
-  date        DateTime                      // Post date from Telegram
-  text        String?                       @db.Text
-  textExcerpt String?                       @db.VarChar(500) // First 500 chars for display
-  views       Int                           @default(0)
-  forwards    Int                           @default(0)
-  link        String?                       // Deep link to post (t.me/channel/messageId)
-  createdAt   DateTime                      @default(now())
-  updatedAt   DateTime                      @updatedAt
+  messageId   Int // Telegram message ID
+  date        DateTime // Post date from Telegram
+  text        String?                      @db.Text
+  textExcerpt String?                      @db.VarChar(500) // First 500 chars for display
+  views       Int                          @default(0)
+  forwards    Int                          @default(0)
+  link        String? // Deep link to post (t.me/channel/messageId)
+  createdAt   DateTime                     @default(now())
+  updatedAt   DateTime                     @updatedAt
   snapshots   TelegramPostMetricSnapshot[]
 
   @@unique([channelId, messageId])
@@ -291,12 +309,12 @@ model TelegramPost {
 }
 
 model TelegramPostMetricSnapshot {
-  id        String   @id @default(cuid())
-  postId    String
-  post      TelegramPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  views     Int
-  forwards  Int
-  snapshotAt DateTime @default(now())
+  id         String       @id @default(cuid())
+  postId     String
+  post       TelegramPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  views      Int
+  forwards   Int
+  snapshotAt DateTime     @default(now())
 
   @@unique([postId, snapshotAt])
   @@index([postId, snapshotAt])
@@ -306,13 +324,13 @@ model TelegramPostMetricSnapshot {
 model AppEvent {
   id        String       @id @default(cuid())
   eventType AppEventType
-  userId    String?      // Telegram user ID if available
-  sessionId String?      // Session identifier
-  productId String?      // Product ID if applicable
-  source    String?      // Traffic source (e.g., "telegram")
-  campaign  String?      // Campaign identifier
-  postId    String?      // Telegram post ID if from post
-  metadata  Json?        // Additional event metadata
+  userId    String? // Telegram user ID if available
+  sessionId String? // Session identifier
+  productId String? // Product ID if applicable
+  source    String? // Traffic source (e.g., "telegram")
+  campaign  String? // Campaign identifier
+  postId    String? // Telegram post ID if from post
+  metadata  Json? // Additional event metadata
   createdAt DateTime     @default(now())
 
   @@index([eventType, createdAt])
@@ -324,14 +342,14 @@ model AppEvent {
 }
 
 model AppOpenEvent {
-  id           String   @id @default(cuid())
-  userId       String   @unique // Telegram user ID (string representation)
-  username     String?
+  id            String   @id @default(cuid())
+  userId        String   @unique // Telegram user ID (string representation)
+  username      String?
   firstOpenedAt DateTime @default(now())
   lastOpenedAt  DateTime @default(now())
-  opensCount   Int      @default(1)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  opensCount    Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([userId])
   @@index([firstOpenedAt])
@@ -341,23 +359,23 @@ model AppOpenEvent {
 
 // LAB Products
 model LabProduct {
-  id            String          @id @default(cuid())
-  title         String
-  subtitle      String?
-  description   String?         @db.Text
-  price         Int
-  currency      String          @default("RUB")
-  isActive      Boolean         @default(true)
-  sortOrder     Int             @default(0)
+  id             String            @id @default(cuid())
+  title          String
+  subtitle       String?
+  description    String?           @db.Text
+  price          Int
+  currency       String            @default("RUB")
+  isActive       Boolean           @default(true)
+  sortOrder      Int               @default(0)
   coverMediaType BannerMediaType
-  coverMediaUrl String
-  ctaType       LabCtaType      @default(NONE)
-  ctaProductId  String?
-  ctaUrl        String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  gallery       LabProductMedia[]
-  ctaProduct    Product?        @relation(fields: [ctaProductId], references: [id], onDelete: SetNull)
+  coverMediaUrl  String
+  ctaType        LabCtaType        @default(NONE)
+  ctaProductId   String?
+  ctaUrl         String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  gallery        LabProductMedia[]
+  ctaProduct     Product?          @relation(fields: [ctaProductId], references: [id], onDelete: SetNull)
 
   @@index([isActive, sortOrder])
   @@index([createdAt])
@@ -365,31 +383,31 @@ model LabProduct {
 }
 
 model LabProductMedia {
-  id          String       @id @default(cuid())
+  id           String          @id @default(cuid())
   labProductId String
-  labProduct   LabProduct  @relation(fields: [labProductId], references: [id], onDelete: Cascade)
-  type        BannerMediaType
-  url         String
-  sortOrder   Int          @default(0)
-  createdAt   DateTime     @default(now())
+  labProduct   LabProduct      @relation(fields: [labProductId], references: [id], onDelete: Cascade)
+  type         BannerMediaType
+  url          String
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
 
   @@index([labProductId, sortOrder])
   @@map("lab_product_media")
 }
 
 model Subscription {
-  id                     String   @id @default(cuid())
-  name                   String
-  provider               String?
-  lastPaidAt             DateTime
-  periodMonths           Int      @default(1)
-  remindBeforeDays       Int      @default(1)
-  nextDueAt              DateTime
-  lastRemindedAt         DateTime?
-  lastRemindedForDueAt   DateTime?
-  isActive               Boolean  @default(true)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  id                   String    @id @default(cuid())
+  name                 String
+  provider             String?
+  lastPaidAt           DateTime
+  periodMonths         Int       @default(1)
+  remindBeforeDays     Int       @default(1)
+  nextDueAt            DateTime
+  lastRemindedAt       DateTime?
+  lastRemindedForDueAt DateTime?
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@index([isActive, nextDueAt])
   @@index([nextDueAt])
@@ -398,7 +416,7 @@ model Subscription {
 
 model AdminChatConfig {
   id        Int      @id @default(1)
-  chatId    String   // Store as String to handle BigInt safely (Telegram chat IDs can be very large)
+  chatId    String // Store as String to handle BigInt safely (Telegram chat IDs can be very large)
   threadId  Int?
   updatedAt DateTime @updatedAt
 
@@ -406,12 +424,12 @@ model AdminChatConfig {
 }
 
 model Notification {
-  id        String           @id @default(cuid())
-  type      NotificationType
-  title     String
-  body      String
-  data      Json?            // orderId, orderNumber, deepLink, promoId etc
-  createdAt DateTime         @default(now())
+  id                String             @id @default(cuid())
+  type              NotificationType
+  title             String
+  body              String
+  data              Json? // orderId, orderNumber, deepLink, promoId etc
+  createdAt         DateTime           @default(now())
   userNotifications UserNotification[]
 
   @@index([type, createdAt])
@@ -419,14 +437,14 @@ model Notification {
 }
 
 model UserNotification {
-  id           String       @id @default(cuid())
-  userId       String       // FK to User.id
+  id             String       @id @default(cuid())
+  userId         String // FK to User.id
   notificationId String
-  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  isRead       Boolean      @default(false)
-  readAt       DateTime?
-  createdAt    DateTime     @default(now())
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
 
   @@unique([userId, notificationId])
   @@index([userId, isRead])
@@ -434,3 +452,19 @@ model UserNotification {
   @@map("user_notifications")
 }
 
+model InventoryMovement {
+  id         String                      @id @default(cuid())
+  productId  String
+  quantity   Int // Positive for IN, negative for OUT, delta for ADJUST
+  type       InventoryMovementType
+  sourceType InventoryMovementSourceType
+  sourceId   String? // Order ID, purchase ID, or null for manual
+  note       String? // Optional note for manual movements
+  createdAt  DateTime                    @default(now())
+  product    Product                     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([productId, createdAt])
+  @@index([sourceType, sourceId])
+  @@index([type, createdAt])
+  @@map("inventory_movements")
+}

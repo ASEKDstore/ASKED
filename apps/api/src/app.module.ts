@@ -16,6 +16,7 @@ import { ProductsModule } from './products/products.module';
 import { PromosModule } from './promos/promos.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { UsersModule } from './users/users.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { UsersModule } from './users/users.module';
     LabModule,
     SubscriptionsModule,
     NotificationsModule,
+    WarehouseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

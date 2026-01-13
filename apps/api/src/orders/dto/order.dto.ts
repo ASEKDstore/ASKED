@@ -5,6 +5,9 @@ export const orderItemDtoSchema = z.object({
   productId: z.string(),
   titleSnapshot: z.string(),
   priceSnapshot: z.number(),
+  salePriceAtTime: z.number(),
+  costPriceAtTime: z.number().nullable(),
+  packagingCostAtTime: z.number().nullable(),
   qty: z.number(),
 });
 

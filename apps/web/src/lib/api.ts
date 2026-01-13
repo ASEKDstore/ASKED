@@ -217,6 +217,8 @@ export interface Product {
   description: string | null;
   sku: string | null;
   price: number;
+  costPrice: number | null;
+  packagingCost: number | null;
   currency: string;
   status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
   stock: number;
@@ -403,6 +405,8 @@ export interface CreateProductDto {
   description?: string;
   sku?: string | null;
   price: number;
+  costPrice?: number | null;
+  packagingCost?: number | null;
   currency?: string;
   status?: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
   stock?: number;
@@ -416,6 +420,8 @@ export interface UpdateProductDto {
   description?: string | null;
   sku?: string | null;
   price?: number;
+  costPrice?: number | null;
+  packagingCost?: number | null;
   currency?: string;
   status?: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
   stock?: number;
@@ -1290,6 +1296,141 @@ export const api = {
       method: 'GET',
       initData,
       cache: 'no-store', // Force no caching for admin users endpoint
+    });
+  },
+
+  // Warehouse
+  async getWarehouseStock(initData: string | null): Promise<{
+    items: Array<{
+      productId: string;
+      title: string;
+      sku: string | null;
+      currentStock: number;
+      costPrice: number | null;
+      packagingCost: number | null;
+      price: number;
+    }>;
+  }> {
+    return request<{
+      items: Array<{
+        productId: string;
+        title: string;
+        sku: string | null;
+        currentStock: number;
+        costPrice: number | null;
+        packagingCost: number | null;
+        price: number;
+      }>;
+    }>('/admin/warehouse/stock', {
+      method: 'GET',
+      initData,
+      cache: 'no-store',
+    });
+  },
+
+  async getWarehouseProfit(
+    initData: string | null,
+    params?: {
+      from?: string;
+      to?: string;
+      status?: 'NEW' | 'CONFIRMED' | 'IN_PROGRESS' | 'DONE' | 'CANCELED';
+    },
+  ): Promise<{
+    revenue: number;
+    cogs: number;
+    packaging: number;
+    grossProfit: number;
+    marginPercent: number;
+    orderCount: number;
+    productBreakdown: Array<{
+      productId: string;
+      title: string;
+      revenue: number;
+      cogs: number;
+      packaging: number;
+      profit: number;
+      quantity: number;
+    }>;
+    period: {
+      from: string;
+      to: string;
+    };
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<{
+      revenue: number;
+      cogs: number;
+      packaging: number;
+      grossProfit: number;
+      marginPercent: number;
+      orderCount: number;
+      productBreakdown: Array<{
+        productId: string;
+        title: string;
+        revenue: number;
+        cogs: number;
+        packaging: number;
+        profit: number;
+        quantity: number;
+      }>;
+      period: {
+        from: string;
+        to: string;
+      };
+    }>(`/admin/warehouse/profit${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      initData,
+      cache: 'no-store',
+    });
+  },
+
+  async createInventoryMovementIn(
+    initData: string | null,
+    data: { productId: string; qty: number; note?: string },
+  ): Promise<{
+    id: string;
+    productId: string;
+    quantity: number;
+    createdAt: string;
+  }> {
+    return request<{
+      id: string;
+      productId: string;
+      quantity: number;
+      createdAt: string;
+    }>('/admin/warehouse/movements/in', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(data),
+    });
+  },
+
+  async createInventoryMovementAdjust(
+    initData: string | null,
+    data: { productId: string; qtyDelta: number; note?: string },
+  ): Promise<{
+    id: string;
+    productId: string;
+    quantity: number;
+    createdAt: string;
+  }> {
+    return request<{
+      id: string;
+      productId: string;
+      quantity: number;
+      createdAt: string;
+    }>('/admin/warehouse/movements/adjust', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(data),
     });
   },
 };

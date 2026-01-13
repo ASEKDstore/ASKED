@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useTelegram } from '@/hooks/useTelegram';
 import { addTokenToUrl, getTokenFromUrl } from '@/lib/admin-nav';
 import { api, type UpdateProductDto } from '@/lib/api';
+import { formatPrice } from '@/lib/utils';
 
 export default function EditProductPage(): JSX.Element {
   const router = useRouter();
@@ -29,6 +30,8 @@ export default function EditProductPage(): JSX.Element {
     description: '',
     sku: null,
     price: 0,
+    costPrice: null,
+    packagingCost: null,
     currency: 'RUB',
     status: 'DRAFT',
     stock: 0,
@@ -77,6 +80,8 @@ export default function EditProductPage(): JSX.Element {
         description: product.description || '',
         sku: product.sku || null,
         price: product.price,
+        costPrice: product.costPrice ?? null,
+        packagingCost: product.packagingCost ?? null,
         currency: product.currency,
         status: product.status,
         stock: product.stock,
@@ -303,6 +308,75 @@ export default function EditProductPage(): JSX.Element {
                 </Select>
               </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Себестоимость</label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.costPrice ?? ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      costPrice: e.target.value ? parseInt(e.target.value) || null : null,
+                    })
+                  }
+                  placeholder="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">В копейках</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Упаковка</label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.packagingCost ?? ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      packagingCost: e.target.value ? parseInt(e.target.value) || null : null,
+                    })
+                  }
+                  placeholder="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">В копейках</p>
+              </div>
+            </div>
+
+            {/* Computed profit and margin */}
+            {(formData.costPrice !== null || formData.packagingCost !== null) && (
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-md">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-600">
+                    Прибыль с единицы
+                  </label>
+                  <p className="text-lg font-semibold">
+                    {formatPrice(
+                      (formData.price ?? 0) -
+                        (formData.costPrice ?? 0) -
+                        (formData.packagingCost ?? 0),
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-600">Маржа %</label>
+                  <p className="text-lg font-semibold">
+                    {(formData.price ?? 0) > 0
+                      ? (
+                          (((formData.price ?? 0) -
+                            (formData.costPrice ?? 0) -
+                            (formData.packagingCost ?? 0)) /
+                            (formData.price ?? 0)) *
+                          100
+                        ).toFixed(1)
+                      : '0.0'}
+                    %
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>

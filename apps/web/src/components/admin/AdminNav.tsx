@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, Package, ShoppingBag, FolderTree, Tag, Megaphone, BarChart3, FlaskConical, Menu, X, Store, Repeat } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, FolderTree, Tag, Megaphone, BarChart3, FlaskConical, Menu, X, Store, Repeat, Warehouse } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useState } from 'react';
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/orders', label: 'Заказы', icon: ShoppingBag },
   { href: '/admin/products', label: 'Товары', icon: Package },
+  { href: '/admin/warehouse', label: 'Склад', icon: Warehouse },
   { href: '/admin/categories', label: 'Категории', icon: FolderTree },
   { href: '/admin/tags', label: 'Теги', icon: Tag },
   { href: '/admin/subscriptions', label: 'Подписки', icon: Repeat },
