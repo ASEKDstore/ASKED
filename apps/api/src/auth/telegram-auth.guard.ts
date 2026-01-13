@@ -106,42 +106,27 @@ export class TelegramAuthGuard implements CanActivate {
 
       // CRITICAL: Upsert user in database SYNCHRONOUSLY
       // This MUST run on every authenticated request and MUST NOT fail silently
+      // If upsert fails, the request MUST fail with 500 to reveal the real Prisma error
       // Use ModuleRef for lazy loading to avoid requiring UsersModule in all modules that use this guard
       const telegramId = user.id.toString();
       
-      try {
-        const usersService = this.moduleRef.get(UsersService, { strict: false });
-        if (!usersService) {
-          // UsersService not available - this is a critical error
-          this.logger.error(
-            `CRITICAL: UsersService not available in TelegramAuthGuard context - user upsert FAILED for telegramId=${telegramId}`
-          );
-          // Don't fail auth, but log the error loudly
-        } else {
-          // Execute upsert SYNCHRONOUSLY - await it to ensure it completes
-          // If this fails, we want to see it in logs, but don't fail authentication
-          try {
-            const upsertedUser = await usersService.upsertByTelegramData(user);
-            // Log successful upsert
-            this.logger.debug(
-              `TG user upserted: telegramId=${upsertedUser.telegramId}, username=${upsertedUser.username || 'null'}, userId=${upsertedUser.id}`
-            );
-          } catch (upsertError) {
-            // Log error LOUDLY - this is critical and should not be silent
-            this.logger.error(
-              `CRITICAL: Failed to upsert user in TelegramAuthGuard: telegramId=${telegramId}`,
-              upsertError instanceof Error ? upsertError.stack : String(upsertError)
-            );
-            // Don't fail authentication, but ensure error is visible
-          }
-        }
-      } catch (error) {
-        // ModuleRef.get may throw if service not found - log CRITICAL error
+      const usersService = this.moduleRef.get(UsersService, { strict: false });
+      if (!usersService) {
+        // UsersService not available - this is a critical error that should fail the request
         this.logger.error(
-          `CRITICAL: Could not get UsersService in TelegramAuthGuard: telegramId=${telegramId}`,
-          error instanceof Error ? error.stack : String(error)
+          `CRITICAL: UsersService not available in TelegramAuthGuard context - user upsert FAILED for telegramId=${telegramId}`
         );
+        throw new Error(`UsersService not available - cannot upsert user ${telegramId}`);
       }
+
+      // Execute upsert SYNCHRONOUSLY - if this fails, rethrow to reveal the real Prisma error
+      // DO NOT catch and swallow - we need to see the actual error in production logs
+      const upsertedUser = await usersService.upsertByTelegramData(user);
+      
+      // Log successful upsert
+      this.logger.debug(
+        `TG user upserted: telegramId=${upsertedUser.telegramId}, username=${upsertedUser.username || 'null'}, userId=${upsertedUser.id}`
+      );
 
       return true;
     } catch (error) {

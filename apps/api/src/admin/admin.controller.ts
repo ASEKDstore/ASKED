@@ -130,6 +130,12 @@ export class AdminController {
     };
   }
 
+  @Get('debug/users-count')
+  async getUsersCount(): Promise<{ count: number }> {
+    const count = await this.prisma.user.count();
+    return { count };
+  }
+
   @Get('dashboard/summary')
   async getDashboardSummary(): Promise<{
     todayOrders: number;
