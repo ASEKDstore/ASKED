@@ -73,6 +73,12 @@ enum InventoryMovementSourceType {
   PURCHASE
 }
 
+enum PurchaseStatus {
+  DRAFT
+  POSTED
+  CANCELED
+}
+
 enum AppEventType {
   APP_OPEN
   PAGE_VIEW
@@ -146,6 +152,7 @@ model Product {
   orderItems         OrderItem[]
   labProducts        LabProduct[]
   inventoryMovements InventoryMovement[]
+  PurchaseItem       PurchaseItem[]
 
   @@index([sku])
   @@map("products")
@@ -467,4 +474,33 @@ model InventoryMovement {
   @@index([sourceType, sourceId])
   @@index([type, createdAt])
   @@map("inventory_movements")
+}
+
+model Purchase {
+  id        String         @id @default(cuid())
+  supplier  String?
+  comment   String?
+  status    PurchaseStatus @default(DRAFT)
+  postedAt  DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  items     PurchaseItem[]
+
+  @@index([status, createdAt])
+  @@index([postedAt])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id         String   @id @default(cuid())
+  purchaseId String
+  productId  String
+  qty        Int
+  unitCost   Int // Cost per unit in cents
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([purchaseId])
+  @@index([productId])
+  @@map("purchase_items")
 }

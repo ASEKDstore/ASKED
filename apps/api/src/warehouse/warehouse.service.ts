@@ -32,6 +32,8 @@ export class WarehouseService {
       costPrice: number | null;
       packagingCost: number | null;
       price: number;
+      unitProfit: number | null;
+      marginPercent: number | null;
     }>
   > {
     const products = await this.prisma.product.findMany({
@@ -48,6 +50,13 @@ export class WarehouseService {
     const stocks = await Promise.all(
       products.map(async (product) => {
         const currentStock = await this.getCurrentStock(product.id);
+        const unitProfit =
+          product.costPrice !== null || product.packagingCost !== null
+            ? product.price - (product.costPrice ?? 0) - (product.packagingCost ?? 0)
+            : null;
+        const marginPercent =
+          unitProfit !== null && product.price > 0 ? (unitProfit / product.price) * 100 : null;
+
         return {
           productId: product.id,
           title: product.title,
@@ -56,11 +65,114 @@ export class WarehouseService {
           costPrice: product.costPrice,
           packagingCost: product.packagingCost,
           price: product.price,
+          unitProfit,
+          marginPercent,
         };
       }),
     );
 
     return stocks;
+  }
+
+  /**
+   * Get movements history with filters
+   */
+  async getMovementsHistory(params: {
+    from?: Date;
+    to?: Date;
+    productId?: string;
+    type?: 'IN' | 'OUT' | 'ADJUST';
+    sourceType?: 'ORDER' | 'MANUAL' | 'PURCHASE';
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    items: Array<{
+      id: string;
+      productId: string;
+      productTitle: string;
+      quantity: number;
+      type: 'IN' | 'OUT' | 'ADJUST';
+      sourceType: 'ORDER' | 'MANUAL' | 'PURCHASE';
+      sourceId: string | null;
+      note: string | null;
+      createdAt: Date;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const page = params.page ?? 1;
+    const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 20));
+    const skip = (page - 1) * pageSize;
+
+    const where: {
+      productId?: string;
+      type?: 'IN' | 'OUT' | 'ADJUST';
+      sourceType?: 'ORDER' | 'MANUAL' | 'PURCHASE';
+      createdAt?: {
+        gte?: Date;
+        lte?: Date;
+      };
+    } = {};
+
+    if (params.productId) {
+      where.productId = params.productId;
+    }
+
+    if (params.type) {
+      where.type = params.type;
+    }
+
+    if (params.sourceType) {
+      where.sourceType = params.sourceType;
+    }
+
+    if (params.from || params.to) {
+      where.createdAt = {};
+      if (params.from) {
+        where.createdAt.gte = params.from;
+      }
+      if (params.to) {
+        where.createdAt.lte = params.to;
+      }
+    }
+
+    const [movements, total] = await Promise.all([
+      this.prisma.inventoryMovement.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          product: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      }),
+      this.prisma.inventoryMovement.count({ where }),
+    ]);
+
+    const items = movements.map((movement) => ({
+      id: movement.id,
+      productId: movement.productId,
+      productTitle: movement.product.title,
+      quantity: movement.quantity,
+      type: movement.type as 'IN' | 'OUT' | 'ADJUST',
+      sourceType: movement.sourceType as 'ORDER' | 'MANUAL' | 'PURCHASE',
+      sourceId: movement.sourceId,
+      note: movement.note,
+      createdAt: movement.createdAt,
+    }));
+
+    return {
+      items,
+      total,
+      page,
+      pageSize,
+    };
   }
 
   /**
