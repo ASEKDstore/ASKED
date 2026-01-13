@@ -475,5 +475,105 @@ export class WarehouseService {
       createdAt: new Date(),
     };
   }
+
+  /**
+   * Get inventory lots with filters
+   */
+  async getLots(params: {
+    productId?: string;
+    from?: Date;
+    to?: Date;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    items: Array<{
+      id: string;
+      productId: string;
+      purchaseId: string | null;
+      unitCost: number;
+      qtyReceived: number;
+      qtyRemaining: number;
+      receivedAt: Date;
+      createdAt: Date;
+      purchase?: {
+        id: string;
+        supplier: string | null;
+        postedAt: Date | null;
+      } | null;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const page = params.page ?? 1;
+    const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 20));
+    const skip = (page - 1) * pageSize;
+
+    const where: {
+      productId?: string;
+      receivedAt?: {
+        gte?: Date;
+        lte?: Date;
+      };
+    } = {};
+
+    if (params.productId) {
+      where.productId = params.productId;
+    }
+
+    if (params.from || params.to) {
+      where.receivedAt = {};
+      if (params.from) {
+        where.receivedAt.gte = params.from;
+      }
+      if (params.to) {
+        where.receivedAt.lte = params.to;
+      }
+    }
+
+    const [lots, total] = await Promise.all([
+      this.prisma.inventoryLot.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { receivedAt: 'asc' },
+        include: {
+          purchase: {
+            select: {
+              id: true,
+              supplier: true,
+              postedAt: true,
+            },
+          },
+        },
+      }),
+      this.prisma.inventoryLot.count({ where }),
+    ]);
+
+    const items = lots.map((lot) => ({
+      id: lot.id,
+      productId: lot.productId,
+      purchaseId: lot.purchaseId,
+      unitCost: lot.unitCost,
+      qtyReceived: lot.qtyReceived,
+      qtyRemaining: lot.qtyRemaining,
+      receivedAt: lot.receivedAt,
+      createdAt: lot.createdAt,
+      purchase: lot.purchase
+        ? {
+            id: lot.purchase.id,
+            supplier: lot.purchase.supplier,
+            postedAt: lot.purchase.postedAt,
+          }
+        : null,
+    }));
+
+    return {
+      items,
+      total,
+      page,
+      pageSize,
+    };
+  }
 }
 

@@ -188,7 +188,7 @@ export default function ProfitReportPage(): JSX.Element {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatPrice(data?.cogs ?? 0)}</div>
-            <p className="text-xs text-muted-foreground">COGS</p>
+            <p className="text-xs text-muted-foreground">COGS (FIFO)</p>
           </CardContent>
         </Card>
 
@@ -235,7 +235,7 @@ export default function ProfitReportPage(): JSX.Element {
         <CardHeader>
           <CardTitle>Топ по прибыли</CardTitle>
           <CardDescription>
-            Товары с наибольшей прибылью за период ({data?.orderCount ?? 0} заказов)
+            Товары с наибольшей прибылью за период (FIFO COGS) — {data?.orderCount ?? 0} заказов
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -249,8 +249,7 @@ export default function ProfitReportPage(): JSX.Element {
                     <TableHead>Товар</TableHead>
                     <TableHead className="text-right">Продано</TableHead>
                     <TableHead className="text-right">Выручка</TableHead>
-                    <TableHead className="text-right">Себестоимость</TableHead>
-                    <TableHead className="text-right">Упаковка</TableHead>
+                    <TableHead className="text-right">COGS (FIFO)</TableHead>
                     <TableHead className="text-right">Прибыль</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -260,16 +259,21 @@ export default function ProfitReportPage(): JSX.Element {
                       key={item.productId}
                       className="cursor-pointer hover:bg-gray-50"
                       onClick={() =>
-                        router.push(addTokenToUrl(`/admin/products/${item.productId}/edit`, token))
+                        router.push(
+                          addTokenToUrl(`/admin/products/${item.productId}/edit?tab=lots`, token)
+                        )
                       }
                     >
                       <TableCell className="font-medium">{item.title}</TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>
                       <TableCell className="text-right">{formatPrice(item.revenue)}</TableCell>
                       <TableCell className="text-right">{formatPrice(item.cogs)}</TableCell>
-                      <TableCell className="text-right">{formatPrice(item.packaging)}</TableCell>
-                      <TableCell className="text-right font-semibold text-green-600">
-                        {formatPrice(item.profit)}
+                      <TableCell className="text-right">
+                        <span
+                          className={item.profit >= 0 ? 'text-green-600 font-semibold' : 'text-red-600'}
+                        >
+                          {formatPrice(item.profit)}
+                        </span>
                       </TableCell>
                     </TableRow>
                   ))}

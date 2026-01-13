@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Plus, X, Save, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, X, Save, ChevronUp, ChevronDown, Package } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 // eslint-disable-next-line import/order
@@ -17,6 +17,8 @@ import { useTelegram } from '@/hooks/useTelegram';
 import { addTokenToUrl, getTokenFromUrl } from '@/lib/admin-nav';
 import { api, type UpdateProductDto } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
+
+import { LotsTab } from './lots-tab';
 
 export default function EditProductPage(): JSX.Element {
   const router = useRouter();
@@ -43,6 +45,7 @@ export default function EditProductPage(): JSX.Element {
   const [imageInputs, setImageInputs] = useState<Array<{ url: string; sort: number }>>([
     { url: '', sort: 0 },
   ]);
+  const [activeTab, setActiveTab] = useState<'edit' | 'lots'>('edit');
 
   // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
   // In dev mode, initData might be null, but we still want to load data
@@ -240,7 +243,30 @@ export default function EditProductPage(): JSX.Element {
 
       <h1 className="text-3xl font-bold mb-8">Редактировать товар</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Tabs */}
+      <div className="border-b mb-6">
+        <div className="flex gap-2">
+          <Button
+            variant={activeTab === 'edit' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('edit')}
+          >
+            Редактирование
+          </Button>
+          <Button
+            variant={activeTab === 'lots' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('lots')}
+            className="gap-2"
+          >
+            <Package className="w-4 h-4" />
+            Партии
+          </Button>
+        </div>
+      </div>
+
+      {activeTab === 'lots' ? (
+        <LotsTab productId={productId} />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6">
         {/* Основное */}
         <Card>
           <CardHeader>
@@ -560,6 +586,7 @@ export default function EditProductPage(): JSX.Element {
           </Button>
         </div>
       </form>
+      )}
     </div>
   );
 }

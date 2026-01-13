@@ -380,6 +380,67 @@ export class WarehouseController {
     return this.purchasesService.cancel(id);
   }
 
+  @Get('lots')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
+  async getLots(
+    @Query('productId') productId?: string,
+    @Query('from') fromStr?: string,
+    @Query('to') toStr?: string,
+    @Query('page') pageStr?: string,
+    @Query('pageSize') pageSizeStr?: string,
+  ): Promise<{
+    items: Array<{
+      id: string;
+      productId: string;
+      purchaseId: string | null;
+      unitCost: number;
+      qtyReceived: number;
+      qtyRemaining: number;
+      receivedAt: string;
+      createdAt: string;
+      purchase?: {
+        id: string;
+        supplier: string | null;
+        postedAt: string | null;
+      } | null;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const from = fromStr ? new Date(fromStr) : undefined;
+    const to = toStr ? new Date(toStr) : undefined;
+    const page = pageStr ? parseInt(pageStr, 10) : undefined;
+    const pageSize = pageSizeStr ? parseInt(pageSizeStr, 10) : undefined;
+
+    const result = await this.warehouseService.getLots({
+      productId,
+      from,
+      to,
+      page,
+      pageSize,
+    });
+
+    return {
+      items: result.items.map((item) => ({
+        ...item,
+        receivedAt: item.receivedAt.toISOString(),
+        createdAt: item.createdAt.toISOString(),
+        purchase: item.purchase
+          ? {
+              ...item.purchase,
+              postedAt: item.purchase.postedAt?.toISOString() ?? null,
+            }
+          : null,
+      })),
+      total: result.total,
+      page: result.page,
+      pageSize: result.pageSize,
+    };
+  }
+
   @Post('writeoffs')
   async createWriteOff(
     @Body()

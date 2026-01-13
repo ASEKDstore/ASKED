@@ -1697,6 +1697,93 @@ export const api = {
     });
   },
 
+  async getWarehouseLots(
+    initData: string | null,
+    params?: {
+      productId?: string;
+      from?: string;
+      to?: string;
+      page?: number;
+      pageSize?: number;
+    },
+  ): Promise<{
+    items: Array<{
+      id: string;
+      productId: string;
+      purchaseId: string | null;
+      unitCost: number;
+      qtyReceived: number;
+      qtyRemaining: number;
+      receivedAt: string;
+      createdAt: string;
+      purchase?: {
+        id: string;
+        supplier: string | null;
+        postedAt: string | null;
+      } | null;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<{
+      items: Array<{
+        id: string;
+        productId: string;
+        purchaseId: string | null;
+        unitCost: number;
+        qtyReceived: number;
+        qtyRemaining: number;
+        receivedAt: string;
+        createdAt: string;
+        purchase?: {
+          id: string;
+          supplier: string | null;
+          postedAt: string | null;
+        } | null;
+      }>;
+      total: number;
+      page: number;
+      pageSize: number;
+    }>(`/admin/warehouse/lots${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      initData,
+      cache: 'no-store',
+    });
+  },
+
+  async createWarehouseWriteOff(
+    initData: string | null,
+    data: { productId: string; qty: number; reason?: string },
+  ): Promise<{
+    id: string;
+    productId: string;
+    qty: number;
+    totalCost: number;
+    createdAt: string;
+  }> {
+    return request<{
+      id: string;
+      productId: string;
+      qty: number;
+      totalCost: number;
+      createdAt: string;
+    }>('/admin/warehouse/writeoffs', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(data),
+    });
+  },
+
   async cancelWarehousePurchase(
     initData: string | null,
     id: string,
