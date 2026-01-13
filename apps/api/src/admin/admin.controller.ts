@@ -136,6 +136,36 @@ export class AdminController {
     return { count };
   }
 
+  @Get('debug/users-latest')
+  async getUsersLatest(): Promise<{
+    users: Array<{
+      telegramId: string;
+      username: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+  }> {
+    const users = await this.prisma.user.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        telegramId: true,
+        username: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      users: users.map((u) => ({
+        telegramId: u.telegramId,
+        username: u.username,
+        createdAt: u.createdAt.toISOString(),
+        updatedAt: u.updatedAt.toISOString(),
+      })),
+    };
+  }
+
   @Get('dashboard/summary')
   async getDashboardSummary(): Promise<{
     todayOrders: number;

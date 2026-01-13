@@ -7,7 +7,7 @@ import { TelegramInitDataService } from './telegram-init-data.service';
  * Core Telegram authentication module
  * Provides TelegramInitDataService and TelegramAuthGuard
  * This module is separate from AuthModule to avoid circular dependencies
- * Uses ModuleRef for lazy loading of UsersService to avoid requiring UsersModule in all consuming modules
+ * PrismaService is available globally via PrismaModule, so no import needed
  */
 @Module({
   providers: [TelegramInitDataService, TelegramAuthGuard],

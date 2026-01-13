@@ -1,10 +1,9 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 
 import { TelegramInitDataService } from './telegram-init-data.service';
 import type { TelegramUser } from './types/telegram-user.interface';
-import { UsersService } from '../users/users.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface AuthenticatedRequest {
   user: TelegramUser;
@@ -25,7 +24,7 @@ export class TelegramAuthGuard implements CanActivate {
   constructor(
     private readonly telegramInitDataService: TelegramInitDataService,
     private readonly configService: ConfigService,
-    private readonly moduleRef: ModuleRef,
+    private readonly prisma: PrismaService,
   ) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN', '');
     
@@ -104,28 +103,36 @@ export class TelegramAuthGuard implements CanActivate {
         lastName: user.last_name,
       };
 
-      // CRITICAL: Upsert user in database SYNCHRONOUSLY
+      // CRITICAL: Upsert user in database SYNCHRONOUSLY using PrismaService directly
       // This MUST run on every authenticated request and MUST NOT fail silently
       // If upsert fails, the request MUST fail with 500 to reveal the real Prisma error
-      // Use ModuleRef for lazy loading to avoid requiring UsersModule in all modules that use this guard
+      // Using PrismaService directly avoids ModuleRef issues and circular dependencies
       const telegramId = user.id.toString();
       
-      const usersService = this.moduleRef.get(UsersService, { strict: false });
-      if (!usersService) {
-        // UsersService not available - this is a critical error that should fail the request
-        this.logger.error(
-          `CRITICAL: UsersService not available in TelegramAuthGuard context - user upsert FAILED for telegramId=${telegramId}`
-        );
-        throw new Error(`UsersService not available - cannot upsert user ${telegramId}`);
-      }
-
-      // Execute upsert SYNCHRONOUSLY - if this fails, rethrow to reveal the real Prisma error
+      // Execute upsert directly via Prisma - if this fails, rethrow to reveal the real Prisma error
       // DO NOT catch and swallow - we need to see the actual error in production logs
-      const upsertedUser = await usersService.upsertByTelegramData(user);
+      const upsertedUser = await this.prisma.user.upsert({
+        where: {
+          telegramId,
+        },
+        update: {
+          username: user.username || null,
+          firstName: user.first_name || null,
+          lastName: user.last_name || null,
+          photoUrl: user.photo_url || null,
+        },
+        create: {
+          telegramId,
+          username: user.username || null,
+          firstName: user.first_name || null,
+          lastName: user.last_name || null,
+          photoUrl: user.photo_url || null,
+        },
+      });
       
       // Log successful upsert
       this.logger.debug(
-        `TG user upserted: telegramId=${upsertedUser.telegramId}, username=${upsertedUser.username || 'null'}, userId=${upsertedUser.id}`
+        `User upserted in guard: telegramId=${upsertedUser.telegramId}, username=${upsertedUser.username || 'null'}, userId=${upsertedUser.id}`
       );
 
       return true;
