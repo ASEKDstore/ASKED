@@ -1,4 +1,4 @@
-import { Controller, Get, Post, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards, Req, Header } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { AdminGuard } from '../auth/admin.guard';
@@ -142,6 +142,9 @@ export class AdminController {
   }
 
   @Get('debug/users-latest')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
   async getUsersLatest(): Promise<{
     users: Array<{
       telegramId: string;
@@ -177,6 +180,9 @@ export class AdminController {
   }
 
   @Get('debug/db')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
   async getDbInfo(): Promise<{
     host: string | null;
     database: string | null;

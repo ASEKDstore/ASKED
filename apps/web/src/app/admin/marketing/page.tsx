@@ -1036,6 +1036,10 @@ function NotificationsTab(): JSX.Element {
     queryKey: ['admin', 'users', searchQuery, currentPage, pageSize],
     queryFn: () => api.getAdminUsers(initData, { search: searchQuery || undefined, page: currentPage, pageSize }),
     enabled: mode === 'targeted',
+    staleTime: 0, // Always consider data stale
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnMount: true, // Refetch on component mount
+    gcTime: 0, // Don't cache in memory (gcTime replaces cacheTime in React Query v5+)
   });
 
   const broadcastMutation = useMutation({

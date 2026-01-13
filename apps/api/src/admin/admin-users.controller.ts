@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Logger, Header } from '@nestjs/common';
 
 import { AdminGuard } from '../auth/admin.guard';
 import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
@@ -14,6 +14,9 @@ export class AdminUsersController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get('count')
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
   async getUserCount(): Promise<{ count: number }> {
     try {
       const count = await this.prisma.user.count();
@@ -25,6 +28,9 @@ export class AdminUsersController {
   }
 
   @Get()
+  @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
   async getUsers(
     @Query('search') search?: string,
     @Query('page') page?: string,

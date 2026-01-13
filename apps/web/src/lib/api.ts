@@ -1289,6 +1289,7 @@ export const api = {
     }>(`/admin/users${queryString ? `?${queryString}` : ''}`, {
       method: 'GET',
       initData,
+      cache: 'no-store', // Force no caching for admin users endpoint
     });
   },
 };
