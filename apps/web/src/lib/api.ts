@@ -1309,6 +1309,8 @@ export const api = {
       costPrice: number | null;
       packagingCost: number | null;
       price: number;
+      unitProfit: number | null;
+      marginPercent: number | null;
     }>;
   }> {
     return request<{
@@ -1320,6 +1322,8 @@ export const api = {
         costPrice: number | null;
         packagingCost: number | null;
         price: number;
+        unitProfit: number | null;
+        marginPercent: number | null;
       }>;
     }>('/admin/warehouse/stock', {
       method: 'GET',
@@ -1431,6 +1435,281 @@ export const api = {
       method: 'POST',
       initData,
       body: JSON.stringify(data),
+    });
+  },
+
+  async getWarehouseMovements(
+    initData: string | null,
+    params?: {
+      from?: string;
+      to?: string;
+      productId?: string;
+      type?: 'IN' | 'OUT' | 'ADJUST';
+      sourceType?: 'ORDER' | 'MANUAL' | 'PURCHASE';
+      page?: number;
+      pageSize?: number;
+    },
+  ): Promise<{
+    items: Array<{
+      id: string;
+      productId: string;
+      productTitle: string;
+      quantity: number;
+      type: 'IN' | 'OUT' | 'ADJUST';
+      sourceType: 'ORDER' | 'MANUAL' | 'PURCHASE';
+      sourceId: string | null;
+      note: string | null;
+      createdAt: string;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<{
+      items: Array<{
+        id: string;
+        productId: string;
+        productTitle: string;
+        quantity: number;
+        type: 'IN' | 'OUT' | 'ADJUST';
+        sourceType: 'ORDER' | 'MANUAL' | 'PURCHASE';
+        sourceId: string | null;
+        note: string | null;
+        createdAt: string;
+      }>;
+      total: number;
+      page: number;
+      pageSize: number;
+    }>(`/admin/warehouse/movements${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      initData,
+      cache: 'no-store',
+    });
+  },
+
+  async getWarehousePurchases(
+    initData: string | null,
+    params?: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+      status?: 'DRAFT' | 'POSTED' | 'CANCELED';
+    },
+  ): Promise<{
+    items: Array<{
+      id: string;
+      supplier: string | null;
+      comment: string | null;
+      status: 'DRAFT' | 'POSTED' | 'CANCELED';
+      postedAt: string | null;
+      createdAt: string;
+      updatedAt: string;
+      itemsCount: number;
+      totalCost: number;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<{
+      items: Array<{
+        id: string;
+        supplier: string | null;
+        comment: string | null;
+        status: 'DRAFT' | 'POSTED' | 'CANCELED';
+        postedAt: string | null;
+        createdAt: string;
+        updatedAt: string;
+        itemsCount: number;
+        totalCost: number;
+      }>;
+      total: number;
+      page: number;
+      pageSize: number;
+    }>(`/admin/warehouse/purchases${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+      initData,
+      cache: 'no-store',
+    });
+  },
+
+  async getWarehousePurchase(
+    initData: string | null,
+    id: string,
+  ): Promise<{
+    id: string;
+    supplier: string | null;
+    comment: string | null;
+    status: 'DRAFT' | 'POSTED' | 'CANCELED';
+    postedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    items: Array<{
+      id: string;
+      productId: string;
+      product: {
+        id: string;
+        title: string;
+        sku: string | null;
+      };
+      qty: number;
+      unitCost: number;
+    }>;
+  }> {
+    return request<{
+      id: string;
+      supplier: string | null;
+      comment: string | null;
+      status: 'DRAFT' | 'POSTED' | 'CANCELED';
+      postedAt: string | null;
+      createdAt: string;
+      updatedAt: string;
+      items: Array<{
+        id: string;
+        productId: string;
+        product: {
+          id: string;
+          title: string;
+          sku: string | null;
+        };
+        qty: number;
+        unitCost: number;
+      }>;
+    }>(`/admin/warehouse/purchases/${id}`, {
+      method: 'GET',
+      initData,
+      cache: 'no-store',
+    });
+  },
+
+  async createWarehousePurchase(
+    initData: string | null,
+    data: {
+      supplier?: string;
+      comment?: string;
+      items: Array<{
+        productId: string;
+        qty: number;
+        unitCost: number;
+      }>;
+    },
+  ): Promise<{
+    id: string;
+    supplier: string | null;
+    comment: string | null;
+    status: 'DRAFT';
+    createdAt: string;
+    items: Array<{
+      id: string;
+      productId: string;
+      qty: number;
+      unitCost: number;
+    }>;
+  }> {
+    return request<{
+      id: string;
+      supplier: string | null;
+      comment: string | null;
+      status: 'DRAFT';
+      createdAt: string;
+      items: Array<{
+        id: string;
+        productId: string;
+        qty: number;
+        unitCost: number;
+      }>;
+    }>('/admin/warehouse/purchases', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateWarehousePurchase(
+    initData: string | null,
+    id: string,
+    data: {
+      supplier?: string;
+      comment?: string;
+      items?: Array<{
+        productId: string;
+        qty: number;
+        unitCost: number;
+      }>;
+    },
+  ): Promise<{
+    id: string;
+    supplier: string | null;
+    comment: string | null;
+    status: 'DRAFT' | 'POSTED' | 'CANCELED';
+    updatedAt: string;
+  }> {
+    return request<{
+      id: string;
+      supplier: string | null;
+      comment: string | null;
+      status: 'DRAFT' | 'POSTED' | 'CANCELED';
+      updatedAt: string;
+    }>(`/admin/warehouse/purchases/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(data),
+    });
+  },
+
+  async postWarehousePurchase(
+    initData: string | null,
+    id: string,
+    options?: { updateCostPrice?: boolean },
+  ): Promise<{
+    id: string;
+    status: 'POSTED';
+    postedAt: string;
+    movementsCreated: number;
+  }> {
+    return request<{
+      id: string;
+      status: 'POSTED';
+      postedAt: string;
+      movementsCreated: number;
+    }>(`/admin/warehouse/purchases/${id}/post`, {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(options || {}),
+    });
+  },
+
+  async cancelWarehousePurchase(
+    initData: string | null,
+    id: string,
+  ): Promise<{
+    id: string;
+    status: 'CANCELED';
+  }> {
+    return request<{
+      id: string;
+      status: 'CANCELED';
+    }>(`/admin/warehouse/purchases/${id}/cancel`, {
+      method: 'POST',
+      initData,
     });
   },
 };

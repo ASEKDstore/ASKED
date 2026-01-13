@@ -379,5 +379,39 @@ export class WarehouseController {
   }> {
     return this.purchasesService.cancel(id);
   }
+
+  @Post('writeoffs')
+  async createWriteOff(
+    @Body()
+    body: {
+      productId: string;
+      qty: number;
+      reason?: string;
+    },
+  ): Promise<{
+    id: string;
+    productId: string;
+    qty: number;
+    totalCost: number;
+    createdAt: string;
+  }> {
+    if (!body.productId) {
+      throw new BadRequestException('productId is required');
+    }
+    if (!body.qty || body.qty <= 0) {
+      throw new BadRequestException('Quantity must be positive');
+    }
+
+    const writeOff = await this.warehouseService.createWriteOff(
+      body.productId,
+      body.qty,
+      body.reason,
+    );
+
+    return {
+      ...writeOff,
+      createdAt: writeOff.createdAt.toISOString(),
+    };
+  }
 }
 

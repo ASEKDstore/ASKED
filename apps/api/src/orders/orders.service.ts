@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,16 +20,23 @@ export class OrdersService {
   async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<OrderDto> {
     const { items, customerName, customerPhone, customerAddress, comment, channel = 'AS' } = createOrderDto;
 
-    // Atomic stock decrement and order creation within a single transaction
+    // Atomic FIFO allocation and order creation within a single transaction
     const order = await this.prisma.$transaction(async (tx) => {
-      // Validate products, calculate total, and prepare order items
+      // Validate products, calculate total, and check stock
       let totalAmount = 0;
-      const orderItemsData = [];
-      const productUpdates: Array<{ id: string; stock: number; title: string }> = [];
+      const orderItemsData: Array<{
+        productId: string;
+        titleSnapshot: string;
+        priceSnapshot: number;
+        salePriceAtTime: number;
+        costPriceAtTime: number | null;
+        packagingCostAtTime: number | null;
+        qty: number;
+        cogsTotal: number;
+      }> = [];
 
-      // First pass: validate and prepare
+      // First pass: validate products and check stock
       for (const item of items) {
-        // Lock product row for update to prevent race conditions
         const product = await tx.product.findUnique({
           where: { id: item.productId },
         });
@@ -42,21 +49,21 @@ export class OrdersService {
           throw new BadRequestException(`Product ${product.title} is not available for ordering`);
         }
 
-        if (product.stock < item.qty) {
+        // Check stock using InventoryMovement sum (FIFO-based)
+        const currentStock = await tx.inventoryMovement.aggregate({
+          where: { productId: item.productId },
+          _sum: { quantity: true },
+        });
+
+        const availableStock = currentStock._sum.quantity ?? 0;
+        if (availableStock < item.qty) {
           throw new BadRequestException(
-            `Not enough stock for product ${product.title}. Available: ${product.stock}, requested: ${item.qty}`,
+            `Not enough stock for product ${product.title}. Available: ${availableStock}, requested: ${item.qty}`,
           );
         }
 
         const itemTotal = product.price * item.qty;
         totalAmount += itemTotal;
-
-        const newStock = product.stock - item.qty;
-        productUpdates.push({
-          id: product.id,
-          stock: newStock,
-          title: product.title,
-        });
 
         orderItemsData.push({
           productId: product.id,
@@ -66,17 +73,7 @@ export class OrdersService {
           costPriceAtTime: product.costPrice ?? null,
           packagingCostAtTime: product.packagingCost ?? null,
           qty: item.qty,
-        });
-      }
-
-      // Second pass: atomically decrement stock for all products
-      for (const update of productUpdates) {
-        await tx.product.update({
-          where: { id: update.id },
-          data: {
-            stock: update.stock,
-            // Note: We don't change status here. Products with stock = 0 are excluded from catalog via stock > 0 filter
-          },
+          cogsTotal: 0, // Will be calculated during FIFO allocation
         });
       }
 
@@ -95,7 +92,7 @@ export class OrdersService {
       const seq = counter.value;
       const number = `№${seq.toString().padStart(5, '0')}/${channel}`;
 
-      // Create order with items
+      // Create order with items (without cogsTotal first, will update after FIFO allocation)
       const createdOrder = await tx.order.create({
         data: {
           userId,
@@ -111,7 +108,16 @@ export class OrdersService {
           comment: comment || null,
           paymentMethod: 'MANAGER',
           items: {
-            create: orderItemsData,
+            create: orderItemsData.map((item) => ({
+              productId: item.productId,
+              titleSnapshot: item.titleSnapshot,
+              priceSnapshot: item.priceSnapshot,
+              salePriceAtTime: item.salePriceAtTime,
+              costPriceAtTime: item.costPriceAtTime,
+              packagingCostAtTime: item.packagingCostAtTime,
+              qty: item.qty,
+              cogsTotal: null, // Will be set after FIFO allocation
+            })),
           },
         },
         include: {
@@ -119,6 +125,83 @@ export class OrdersService {
           user: true,
         },
       });
+
+      // Second pass: FIFO allocation for each order item
+      for (let i = 0; i < createdOrder.items.length; i++) {
+        const orderItem = createdOrder.items[i];
+        const requestedQty = orderItemsData[i].qty;
+        let remainingNeeded = requestedQty;
+        let totalCogs = 0;
+
+        // Fetch lots for this product ordered by receivedAt ASC (FIFO) where qtyRemaining > 0
+        const lots = await tx.inventoryLot.findMany({
+          where: {
+            productId: orderItem.productId,
+            qtyRemaining: { gt: 0 },
+          },
+          orderBy: { receivedAt: 'asc' },
+        });
+
+        if (lots.length === 0) {
+          throw new ConflictException(
+            `No available lots for product ${orderItem.titleSnapshot}. This should not happen if stock check passed.`,
+          );
+        }
+
+        // Allocate qty across lots FIFO
+        const allocations = [];
+        for (const lot of lots) {
+          if (remainingNeeded <= 0) break;
+
+          const take = Math.min(remainingNeeded, lot.qtyRemaining);
+          const allocationCogs = take * lot.unitCost;
+          totalCogs += allocationCogs;
+
+          // Decrease lot remaining
+          await tx.inventoryLot.update({
+            where: { id: lot.id },
+            data: {
+              qtyRemaining: {
+                decrement: take,
+              },
+            },
+          });
+
+          // Create allocation record
+          const allocation = await tx.lotAllocation.create({
+            data: {
+              lotId: lot.id,
+              orderItemId: orderItem.id,
+              qty: take,
+              unitCost: lot.unitCost,
+            },
+          });
+          allocations.push(allocation);
+
+          remainingNeeded -= take;
+        }
+
+        if (remainingNeeded > 0) {
+          throw new ConflictException(
+            `Not enough stock in lots for product ${orderItem.titleSnapshot}. Needed: ${requestedQty}, allocated: ${requestedQty - remainingNeeded}`,
+          );
+        }
+
+        // Update order item with calculated COGS
+        await tx.orderItem.update({
+          where: { id: orderItem.id },
+          data: {
+            cogsTotal: totalCogs,
+            profitTotal:
+              orderItem.salePriceAtTime * orderItem.qty -
+              totalCogs -
+              (orderItem.packagingCostAtTime ?? 0) * orderItem.qty,
+          },
+        });
+
+        // Update orderItemsData for later use
+        orderItemsData[i].cogsTotal = totalCogs;
+      }
 
       // Create inventory movements (OUT) for each order item
       for (const itemData of orderItemsData) {
@@ -133,7 +216,20 @@ export class OrdersService {
         });
       }
 
-      return createdOrder;
+      // Reload order with updated items
+      const updatedOrder = await tx.order.findUnique({
+        where: { id: createdOrder.id },
+        include: {
+          items: true,
+          user: true,
+        },
+      });
+
+      if (!updatedOrder) {
+        throw new Error('Order not found after creation');
+      }
+
+      return updatedOrder;
     });
 
     const orderDto = this.mapToDto(order);

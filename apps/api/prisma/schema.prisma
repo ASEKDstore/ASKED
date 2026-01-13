@@ -71,6 +71,8 @@ enum InventoryMovementSourceType {
   ORDER
   MANUAL
   PURCHASE
+  RETURN
+  WRITE_OFF
 }
 
 enum PurchaseStatus {
@@ -153,6 +155,7 @@ model Product {
   labProducts        LabProduct[]
   inventoryMovements InventoryMovement[]
   PurchaseItem       PurchaseItem[]
+  InventoryLot       InventoryLot[]
 
   @@index([sku])
   @@map("products")
@@ -226,17 +229,20 @@ model OrderCounter {
 }
 
 model OrderItem {
-  id                  String  @id @default(cuid())
+  id                  String          @id @default(cuid())
   orderId             String
   productId           String
   titleSnapshot       String
   priceSnapshot       Int
   salePriceAtTime     Int // Snapshot of product.price at order time
-  costPriceAtTime     Int? // Snapshot of product.costPrice at order time
+  costPriceAtTime     Int? // Snapshot of product.costPrice at order time (legacy, kept for backward compatibility)
   packagingCostAtTime Int? // Snapshot of product.packagingCost at order time
   qty                 Int
-  order               Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product             Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  cogsTotal           Int? // FIFO-based total COGS for this order item (sum of lot allocations)
+  profitTotal         Int? // Optional stored profit (revenue - cogs - packaging)
+  order               Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product             Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  lotAllocations      LotAllocation[]
 
   @@map("order_items")
 }
@@ -477,14 +483,15 @@ model InventoryMovement {
 }
 
 model Purchase {
-  id        String         @id @default(cuid())
-  supplier  String?
-  comment   String?
-  status    PurchaseStatus @default(DRAFT)
-  postedAt  DateTime?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  items     PurchaseItem[]
+  id           String         @id @default(cuid())
+  supplier     String?
+  comment      String?
+  status       PurchaseStatus @default(DRAFT)
+  postedAt     DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  items        PurchaseItem[]
+  InventoryLot InventoryLot[]
 
   @@index([status, createdAt])
   @@index([postedAt])
@@ -503,4 +510,39 @@ model PurchaseItem {
   @@index([purchaseId])
   @@index([productId])
   @@map("purchase_items")
+}
+
+model InventoryLot {
+  id           String          @id @default(cuid())
+  productId    String
+  purchaseId   String? // Nullable for manual lots or write-offs
+  unitCost     Int // Cost per unit in cents
+  qtyReceived  Int
+  qtyRemaining Int
+  receivedAt   DateTime // When purchase was posted or lot created
+  createdAt    DateTime        @default(now())
+  product      Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  purchase     Purchase?       @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  allocations  LotAllocation[]
+
+  @@index([productId, receivedAt])
+  @@index([productId, qtyRemaining])
+  @@map("inventory_lots")
+}
+
+model LotAllocation {
+  id          String       @id @default(cuid())
+  lotId       String
+  orderItemId String? // For sales
+  writeOffId  String? // For write-offs
+  qty         Int
+  unitCost    Int // Snapshot of lot.unitCost at allocation time
+  createdAt   DateTime     @default(now())
+  lot         InventoryLot @relation(fields: [lotId], references: [id], onDelete: Restrict)
+  orderItem   OrderItem?   @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@index([lotId])
+  @@index([orderItemId])
+  @@index([writeOffId])
+  @@map("lot_allocations")
 }

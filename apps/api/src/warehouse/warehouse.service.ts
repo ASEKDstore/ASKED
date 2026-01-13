@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -176,7 +176,7 @@ export class WarehouseService {
   }
 
   /**
-   * Calculate profit analytics for a given period
+   * Calculate profit analytics for a given period using FIFO-based COGS
    * Only includes orders with deletedAt = null
    * By default, only counts DONE orders (completed orders)
    */
@@ -251,7 +251,8 @@ export class WarehouseService {
     for (const order of orders) {
       for (const item of order.items) {
         const itemRevenue = item.salePriceAtTime * item.qty;
-        const itemCogs = (item.costPriceAtTime ?? 0) * item.qty;
+        // Use FIFO-based cogsTotal if available, otherwise fall back to snapshot
+        const itemCogs = item.cogsTotal ?? (item.costPriceAtTime ?? 0) * item.qty;
         const itemPackaging = (item.packagingCostAtTime ?? 0) * item.qty;
 
         revenue += itemRevenue;
@@ -351,6 +352,127 @@ export class WarehouseService {
       productId: movement.productId,
       quantity: movement.quantity,
       createdAt: movement.createdAt,
+    };
+  }
+
+  /**
+   * Create a write-off (loss/damage) with FIFO lot consumption
+   */
+  async createWriteOff(
+    productId: string,
+    qty: number,
+    reason?: string,
+  ): Promise<{
+    id: string;
+    productId: string;
+    qty: number;
+    totalCost: number;
+    createdAt: Date;
+  }> {
+    if (qty <= 0) {
+      throw new BadRequestException('Write-off quantity must be positive');
+    }
+
+    // Verify product exists
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new BadRequestException(`Product with id ${productId} not found`);
+    }
+
+    // Check available stock
+    const currentStock = await this.getCurrentStock(productId);
+    if (currentStock < qty) {
+      throw new BadRequestException(
+        `Not enough stock for write-off. Available: ${currentStock}, requested: ${qty}`,
+      );
+    }
+
+    // Create write-off in transaction with FIFO allocation
+    const result = await this.prisma.$transaction(async (tx) => {
+      let remainingNeeded = qty;
+      let totalCost = 0;
+      const writeOffId = `writeoff_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+      // Fetch lots for this product ordered by receivedAt ASC (FIFO) where qtyRemaining > 0
+      const lots = await tx.inventoryLot.findMany({
+        where: {
+          productId,
+          qtyRemaining: { gt: 0 },
+        },
+        orderBy: { receivedAt: 'asc' },
+      });
+
+      if (lots.length === 0) {
+        throw new BadRequestException(
+          `No available lots for product ${product.title}. This should not happen if stock check passed.`,
+        );
+      }
+
+      // Allocate qty across lots FIFO
+      for (const lot of lots) {
+        if (remainingNeeded <= 0) break;
+
+        const take = Math.min(remainingNeeded, lot.qtyRemaining);
+        const allocationCost = take * lot.unitCost;
+        totalCost += allocationCost;
+
+        // Decrease lot remaining
+        await tx.inventoryLot.update({
+          where: { id: lot.id },
+          data: {
+            qtyRemaining: {
+              decrement: take,
+            },
+          },
+        });
+
+        // Create allocation record
+        await tx.lotAllocation.create({
+          data: {
+            lotId: lot.id,
+            writeOffId,
+            qty: take,
+            unitCost: lot.unitCost,
+          },
+        });
+
+        remainingNeeded -= take;
+      }
+
+      if (remainingNeeded > 0) {
+        throw new BadRequestException(
+          `Not enough stock in lots for write-off. Needed: ${qty}, allocated: ${qty - remainingNeeded}`,
+        );
+      }
+
+      // Create inventory movement (OUT)
+      const movement = await tx.inventoryMovement.create({
+        data: {
+          productId,
+          quantity: -qty, // Negative for OUT
+          type: 'OUT',
+          sourceType: 'WRITE_OFF',
+          sourceId: writeOffId,
+          note: reason || null,
+        },
+      });
+
+      return {
+        id: writeOffId,
+        movementId: movement.id,
+        totalCost,
+      };
+    });
+
+    return {
+      id: result.id,
+      productId,
+      qty,
+      totalCost: result.totalCost,
+      createdAt: new Date(),
     };
   }
 }

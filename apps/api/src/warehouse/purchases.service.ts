@@ -348,6 +348,7 @@ export class PurchasesService {
     }
 
     // Post purchase in a transaction
+    const postedAt = new Date();
     const result = await this.prisma.$transaction(async (tx) => {
       // Create inventory movements (IN) for each item
       const movements = await Promise.all(
@@ -364,12 +365,28 @@ export class PurchasesService {
         ),
       );
 
+      // Create FIFO lots for each purchase item
+      const lots = await Promise.all(
+        purchase.items.map((item) =>
+          tx.inventoryLot.create({
+            data: {
+              productId: item.productId,
+              purchaseId: purchase.id,
+              unitCost: item.unitCost,
+              qtyReceived: item.qty,
+              qtyRemaining: item.qty,
+              receivedAt: postedAt,
+            },
+          }),
+        ),
+      );
+
       // Update purchase status
       const updated = await tx.purchase.update({
         where: { id },
         data: {
           status: 'POSTED',
-          postedAt: new Date(),
+          postedAt,
         },
       });
 
@@ -395,6 +412,7 @@ export class PurchasesService {
       return {
         purchase: updated,
         movementsCount: movements.length,
+        lotsCount: lots.length,
       };
     });
 
