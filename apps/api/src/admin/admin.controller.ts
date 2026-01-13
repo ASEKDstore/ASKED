@@ -132,8 +132,13 @@ export class AdminController {
 
   @Get('debug/users-count')
   async getUsersCount(): Promise<{ count: number }> {
-    const count = await this.prisma.user.count();
-    return { count };
+    try {
+      const count = await this.prisma.user.count();
+      return { count };
+    } catch (error) {
+      // Never 500 - return error info instead
+      return { count: -1 };
+    }
   }
 
   @Get('debug/users-latest')
@@ -145,25 +150,65 @@ export class AdminController {
       updatedAt: string;
     }>;
   }> {
-    const users = await this.prisma.user.findMany({
-      take: 10,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        telegramId: true,
-        username: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    try {
+      const users = await this.prisma.user.findMany({
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          telegramId: true,
+          username: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
 
-    return {
-      users: users.map((u) => ({
-        telegramId: u.telegramId,
-        username: u.username,
-        createdAt: u.createdAt.toISOString(),
-        updatedAt: u.updatedAt.toISOString(),
-      })),
-    };
+      return {
+        users: users.map((u) => ({
+          telegramId: u.telegramId,
+          username: u.username,
+          createdAt: u.createdAt.toISOString(),
+          updatedAt: u.updatedAt.toISOString(),
+        })),
+      };
+    } catch (error) {
+      // Never 500 - return empty array instead
+      return { users: [] };
+    }
+  }
+
+  @Get('debug/db')
+  async getDbInfo(): Promise<{
+    host: string | null;
+    database: string | null;
+    hasConnection: boolean;
+  }> {
+    try {
+      // Parse DATABASE_URL to extract host and database (mask password)
+      const dbUrl = process.env.DATABASE_URL;
+      if (!dbUrl) {
+        return { host: null, database: null, hasConnection: false };
+      }
+
+      // Format: postgresql://user:password@host:port/database
+      const url = new URL(dbUrl);
+      const host = url.hostname;
+      const database = url.pathname.replace('/', '');
+
+      // Test connection by doing a simple query
+      await this.prisma.user.count();
+
+      return {
+        host,
+        database,
+        hasConnection: true,
+      };
+    } catch (error) {
+      return {
+        host: null,
+        database: null,
+        hasConnection: false,
+      };
+    }
   }
 
   @Get('dashboard/summary')

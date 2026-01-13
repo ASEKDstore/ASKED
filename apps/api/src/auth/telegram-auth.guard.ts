@@ -46,17 +46,20 @@ export class TelegramAuthGuard implements CanActivate {
       isDevAdmin?: boolean;
     }>();
 
-    // TEMP DEV ADMIN ACCESS - remove after Telegram WebApp enabled
-    // If dev admin is already authenticated, skip Telegram auth
-    if (request.isDevAdmin === true) {
-      return true;
-    }
-
     // Header name MUST be exactly: "x-telegram-init-data"
     // Express normalizes headers to lowercase, so this is sufficient
     const initDataHeader = request.headers['x-telegram-init-data'];
 
+    // CRITICAL: Always check for initData first, even if isDevAdmin is true
+    // This ensures real Telegram users are always upserted when initData is present
     if (!initDataHeader) {
+      // No initData header - check if dev admin bypass is allowed
+      if (request.isDevAdmin === true) {
+        // TEMP DEV ADMIN ACCESS - allow bypass but log it
+        this.logger.warn('DEV ADMIN BYPASS used (no initData) - user upsert skipped');
+        return true;
+      }
+      // Not dev admin and no initData - require authentication
       throw new UnauthorizedException('Authentication required. Please open the app from Telegram');
     }
 

@@ -4,6 +4,7 @@ import { CurrentTelegramUser } from './auth/decorators/current-telegram-user.dec
 import { TelegramAuthGuard } from './auth/telegram-auth.guard';
 import type { TelegramUser } from './auth/types/telegram-user.interface';
 import { AppService } from './app.service';
+import { PrismaService } from './prisma/prisma.service';
 import { UsersService } from './users/users.service';
 
 @Controller()
@@ -11,6 +12,7 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly usersService: UsersService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Get()
@@ -61,6 +63,26 @@ export class AppController {
     return {
       telegramId: user.telegramId,
       username: user.username,
+    };
+  }
+
+  @Get('debug/whoami')
+  @UseGuards(TelegramAuthGuard)
+  async getWhoami(
+    @CurrentTelegramUser() telegramUser: TelegramUser | undefined,
+  ): Promise<{
+    telegramId: string | null;
+    usersCount: number;
+  }> {
+    // Get telegramId from request (set by guard)
+    const telegramId = telegramUser?.id.toString() || null;
+
+    // Get current users count after upsert (should be >= 1 if upsert worked)
+    const usersCount = await this.prisma.user.count();
+
+    return {
+      telegramId,
+      usersCount,
     };
   }
 }
