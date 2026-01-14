@@ -109,6 +109,8 @@ export class ProductsService {
       currency: product.currency,
       status: product.status as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
       stock: product.stock,
+      averageRating: product.averageRating,
+      reviewsCount: product.reviewsCount,
       images: product.images.map((img) => ({
         id: img.id,
         url: img.url,
@@ -170,6 +172,8 @@ export class ProductsService {
       currency: product.currency,
       status: product.status as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
       stock: product.stock,
+      averageRating: product.averageRating,
+      reviewsCount: product.reviewsCount,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       images: product.images.map((img) => ({
@@ -286,6 +290,8 @@ export class ProductsService {
       currency: p.currency,
       status: p.status as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
       stock: p.stock,
+      averageRating: p.averageRating,
+      reviewsCount: p.reviewsCount,
       images: p.images.map((img) => ({
         id: img.id,
         url: img.url,

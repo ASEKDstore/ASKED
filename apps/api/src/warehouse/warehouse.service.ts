@@ -1,10 +1,15 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { FifoAllocationService } from './fifo-allocation.service';
 
 @Injectable()
 export class WarehouseService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly fifoAllocationService: FifoAllocationService;
+
+  constructor(private readonly prisma: PrismaService) {
+    this.fifoAllocationService = new FifoAllocationService(prisma);
+  }
 
   /**
    * Calculate current stock for a product by summing all inventory movements
@@ -391,62 +396,18 @@ export class WarehouseService {
     }
 
     // Create write-off in transaction with FIFO allocation
+    const writeOffId = `writeoff_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const result = await this.prisma.$transaction(async (tx) => {
-      let remainingNeeded = qty;
-      let totalCost = 0;
-      const writeOffId = `writeoff_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      // Use FIFO allocation service
+      const allocationResult = await this.fifoAllocationService.allocateLots(
+        tx,
+        productId,
+        qty,
+        null, // No order item ID for write-offs
+        writeOffId,
+      );
 
-      // Fetch lots for this product ordered by receivedAt ASC (FIFO) where qtyRemaining > 0
-      const lots = await tx.inventoryLot.findMany({
-        where: {
-          productId,
-          qtyRemaining: { gt: 0 },
-        },
-        orderBy: { receivedAt: 'asc' },
-      });
-
-      if (lots.length === 0) {
-        throw new BadRequestException(
-          `No available lots for product ${product.title}. This should not happen if stock check passed.`,
-        );
-      }
-
-      // Allocate qty across lots FIFO
-      for (const lot of lots) {
-        if (remainingNeeded <= 0) break;
-
-        const take = Math.min(remainingNeeded, lot.qtyRemaining);
-        const allocationCost = take * lot.unitCost;
-        totalCost += allocationCost;
-
-        // Decrease lot remaining
-        await tx.inventoryLot.update({
-          where: { id: lot.id },
-          data: {
-            qtyRemaining: {
-              decrement: take,
-            },
-          },
-        });
-
-        // Create allocation record
-        await tx.lotAllocation.create({
-          data: {
-            lotId: lot.id,
-            writeOffId,
-            qty: take,
-            unitCost: lot.unitCost,
-          },
-        });
-
-        remainingNeeded -= take;
-      }
-
-      if (remainingNeeded > 0) {
-        throw new BadRequestException(
-          `Not enough stock in lots for write-off. Needed: ${qty}, allocated: ${qty - remainingNeeded}`,
-        );
-      }
+      const totalCost = allocationResult.totalCogs;
 
       // Create inventory movement (OUT)
       const movement = await tx.inventoryMovement.create({

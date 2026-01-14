@@ -9,6 +9,7 @@ export const orderItemDtoSchema = z.object({
   costPriceAtTime: z.number().nullable(),
   packagingCostAtTime: z.number().nullable(),
   qty: z.number(),
+  cogsTotal: z.number().nullable().optional(), // FIFO-based COGS
 });
 
 export const orderDtoSchema = z.object({

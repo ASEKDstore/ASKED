@@ -12,6 +12,7 @@ export const createOrderSchema = z.object({
   comment: z.string().optional(),
   items: z.array(createOrderItemSchema).min(1),
   channel: z.enum(['AS', 'LAB']).optional().default('AS'),
+  idempotencyKey: z.string().optional(), // Optional idempotency key for retry safety
 });
 
 export type CreateOrderDto = z.infer<typeof createOrderSchema>;

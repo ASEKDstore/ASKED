@@ -1,0 +1,14 @@
+// Test Prisma schema using SQLite for faster tests
+datasource db {
+  provider = "sqlite"
+  url      = env("TEST_DATABASE_URL")
+}
+
+// Same generator and models as main schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Include all models from main schema (will be copied)
+// For now, we'll use the same schema file but with different datasource
+

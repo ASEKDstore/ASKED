@@ -14,6 +14,7 @@ import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { PromosModule } from './promos/promos.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { UsersModule } from './users/users.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
@@ -30,6 +31,7 @@ import { WarehouseModule } from './warehouse/warehouse.module';
     UsersModule,
     ProductsModule,
     OrdersModule,
+    ReviewsModule,
     AdminModule,
     BannersModule,
     PromosModule,

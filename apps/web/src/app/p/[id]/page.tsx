@@ -1,13 +1,18 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { HEADER_HEIGHT_PX } from '@/components/Header';
+import { AddReviewSheet } from '@/components/reviews/AddReviewSheet';
+import { ReviewsList } from '@/components/reviews/ReviewsList';
+import { StarRating } from '@/components/reviews/StarRating';
 import { Button } from '@/components/ui/button';
+import { useTelegram } from '@/hooks/useTelegram';
 import { api } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
 import { getMainImageUrl, normalizeImageUrl } from '@/lib/image-utils';
@@ -18,6 +23,9 @@ export default function ProductPage(): JSX.Element {
   const router = useRouter();
   const productId = params.id as string;
   const addItem = useCartStore((state) => state.addItem);
+  const { initData } = useTelegram();
+  const queryClient = useQueryClient();
+  const [isAddReviewOpen, setIsAddReviewOpen] = useState(false);
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['product', productId],
@@ -28,6 +36,12 @@ export default function ProductPage(): JSX.Element {
   const { data: similarProducts, isLoading: isLoadingSimilar } = useQuery({
     queryKey: ['product', productId, 'similar'],
     queryFn: () => api.getSimilarProducts(productId, 8),
+    enabled: !!productId && !!product,
+  });
+
+  const { data: reviews, isLoading: isLoadingReviews } = useQuery({
+    queryKey: ['reviews', productId],
+    queryFn: () => api.getProductReviews(productId, { page: 1, pageSize: 20 }),
     enabled: !!productId && !!product,
   });
 
@@ -159,6 +173,17 @@ export default function ProductPage(): JSX.Element {
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold mb-4">{product.title}</h1>
+            {/* Rating summary */}
+            {(product.averageRating > 0 || product.reviewsCount > 0) && (
+              <div className="flex items-center gap-3 mb-4">
+                <StarRating rating={product.averageRating} size="md" />
+                <span className="text-sm text-gray-600">
+                  {product.reviewsCount > 0
+                    ? `${product.reviewsCount} ${product.reviewsCount === 1 ? 'отзыв' : product.reviewsCount < 5 ? 'отзыва' : 'отзывов'}`
+                    : 'Нет отзывов'}
+                </span>
+              </div>
+            )}
             {product.description && (
               <p className="text-gray-600 mb-4">{product.description}</p>
             )}
@@ -211,6 +236,33 @@ export default function ProductPage(): JSX.Element {
         </div>
       </div>
 
+      {/* Reviews Section */}
+      <div className="mt-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Отзывы</h2>
+          {initData && (
+            <Button
+              variant="outline"
+              onClick={() => setIsAddReviewOpen(true)}
+            >
+              Оставить отзыв
+            </Button>
+          )}
+        </div>
+
+        {isLoadingReviews ? (
+          <div className="text-center py-8 text-gray-500">
+            Загрузка отзывов...
+          </div>
+        ) : reviews && reviews.items.length > 0 ? (
+          <ReviewsList reviews={reviews.items} />
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            Пока нет отзывов. Станьте первым!
+          </div>
+        )}
+      </div>
+
       {/* Similar Products Section */}
       {similarProducts && similarProducts.length > 0 && (
         <div className="mt-12">
@@ -260,6 +312,19 @@ export default function ProductPage(): JSX.Element {
             </div>
           )}
         </div>
+      )}
+
+      {/* Add Review Sheet */}
+      {product && (
+        <AddReviewSheet
+          productId={product.id}
+          isOpen={isAddReviewOpen}
+          onClose={() => setIsAddReviewOpen(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
+            queryClient.invalidateQueries({ queryKey: ['product', productId] });
+          }}
+        />
       )}
     </div>
   );

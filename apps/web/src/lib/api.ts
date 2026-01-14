@@ -222,6 +222,8 @@ export interface Product {
   currency: string;
   status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
   stock: number;
+  averageRating: number;
+  reviewsCount: number;
   images: Array<{ id: string; url: string; sort: number }>;
   categories: Array<{ id: string; name: string; slug: string }>;
   tags: Array<{ id: string; name: string; slug: string }>;
@@ -438,6 +440,51 @@ export interface CreateOrderDto {
   items: Array<{ productId: string; qty: number }>;
 }
 
+export interface ReviewMedia {
+  id: string;
+  type: 'IMAGE' | 'VIDEO';
+  url: string;
+  createdAt: Date;
+}
+
+export interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  orderId: string | null;
+  rating: number;
+  text: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: Date;
+  updatedAt: Date;
+  media: ReviewMedia[];
+  user?: {
+    id: string;
+    username: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    photoUrl: string | null;
+  };
+}
+
+export interface ReviewsListResponse {
+  items: Review[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateReviewDto {
+  productId: string;
+  orderId?: string;
+  rating: number;
+  text?: string;
+  media?: Array<{ type: 'IMAGE' | 'VIDEO'; url: string }>;
+}
+
 export interface Order {
   id: string;
   userId: string;
@@ -632,6 +679,29 @@ export const api = {
   async getSimilarProducts(id: string, limit: number = 8): Promise<Product[]> {
     return request<Product[]>(`/products/${id}/similar?limit=${limit}`, {
       method: 'GET',
+    });
+  },
+
+  async getProductReviews(productId: string, params?: { page?: number; pageSize?: number }): Promise<ReviewsListResponse> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const query = searchParams.toString();
+    return request<ReviewsListResponse>(`/products/${productId}/reviews${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  async createReview(initData: string | null, review: CreateReviewDto): Promise<Review> {
+    return request<Review>('/reviews', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(review),
     });
   },
 

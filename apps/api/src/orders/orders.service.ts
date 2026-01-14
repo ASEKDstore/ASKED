@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ConflictException }
 
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { FifoAllocationService } from '../warehouse/fifo-allocation.service';
 
 import type { CreateOrderDto } from './dto/create-order.dto';
 import type { OrderQueryDto } from './dto/order-query.dto';
@@ -11,14 +12,34 @@ import { TelegramBotService } from './telegram-bot.service';
 
 @Injectable()
 export class OrdersService {
+  private readonly fifoAllocationService: FifoAllocationService;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegramBotService: TelegramBotService,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) {
+    this.fifoAllocationService = new FifoAllocationService(prisma);
+  }
 
   async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<OrderDto> {
-    const { items, customerName, customerPhone, customerAddress, comment, channel = 'AS' } = createOrderDto;
+    const { items, customerName, customerPhone, customerAddress, comment, channel = 'AS', idempotencyKey } = createOrderDto;
+
+    // Check idempotency: if idempotencyKey provided and order exists, return existing order
+    if (idempotencyKey) {
+      const existingOrder = await this.prisma.order.findUnique({
+        where: { idempotencyKey },
+        include: {
+          items: true,
+          user: true,
+        },
+      });
+
+      if (existingOrder) {
+        // Return existing order without consuming lots again
+        return this.mapToDto(existingOrder);
+      }
+    }
 
     // Atomic FIFO allocation and order creation within a single transaction
     const order = await this.prisma.$transaction(async (tx) => {
@@ -100,6 +121,7 @@ export class OrdersService {
           channel,
           seq,
           number,
+          idempotencyKey: idempotencyKey || null,
           totalAmount,
           currency: 'RUB',
           customerName,
@@ -130,62 +152,17 @@ export class OrdersService {
       for (let i = 0; i < createdOrder.items.length; i++) {
         const orderItem = createdOrder.items[i];
         const requestedQty = orderItemsData[i].qty;
-        let remainingNeeded = requestedQty;
-        let totalCogs = 0;
 
-        // Fetch lots for this product ordered by receivedAt ASC (FIFO) where qtyRemaining > 0
-        const lots = await tx.inventoryLot.findMany({
-          where: {
-            productId: orderItem.productId,
-            qtyRemaining: { gt: 0 },
-          },
-          orderBy: { receivedAt: 'asc' },
-        });
+        // Use FIFO allocation service
+        const allocationResult = await this.fifoAllocationService.allocateLots(
+          tx,
+          orderItem.productId,
+          requestedQty,
+          orderItem.id,
+          null, // No write-off ID for orders
+        );
 
-        if (lots.length === 0) {
-          throw new ConflictException(
-            `No available lots for product ${orderItem.titleSnapshot}. This should not happen if stock check passed.`,
-          );
-        }
-
-        // Allocate qty across lots FIFO
-        const allocations = [];
-        for (const lot of lots) {
-          if (remainingNeeded <= 0) break;
-
-          const take = Math.min(remainingNeeded, lot.qtyRemaining);
-          const allocationCogs = take * lot.unitCost;
-          totalCogs += allocationCogs;
-
-          // Decrease lot remaining
-          await tx.inventoryLot.update({
-            where: { id: lot.id },
-            data: {
-              qtyRemaining: {
-                decrement: take,
-              },
-            },
-          });
-
-          // Create allocation record
-          const allocation = await tx.lotAllocation.create({
-            data: {
-              lotId: lot.id,
-              orderItemId: orderItem.id,
-              qty: take,
-              unitCost: lot.unitCost,
-            },
-          });
-          allocations.push(allocation);
-
-          remainingNeeded -= take;
-        }
-
-        if (remainingNeeded > 0) {
-          throw new ConflictException(
-            `Not enough stock in lots for product ${orderItem.titleSnapshot}. Needed: ${requestedQty}, allocated: ${requestedQty - remainingNeeded}`,
-          );
-        }
+        const totalCogs = allocationResult.totalCogs;
 
         // Update order item with calculated COGS
         await tx.orderItem.update({
@@ -525,7 +502,11 @@ export class OrdersService {
         productId: item.productId,
         titleSnapshot: item.titleSnapshot,
         priceSnapshot: item.priceSnapshot,
+        salePriceAtTime: item.salePriceAtTime,
+        costPriceAtTime: item.costPriceAtTime,
+        packagingCostAtTime: item.packagingCostAtTime,
         qty: item.qty,
+        cogsTotal: item.cogsTotal ?? null,
       })),
     };
   }

@@ -21,7 +21,7 @@ export function Header(): JSX.Element {
   const { unreadCount } = useUnreadNotifications();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  
+
   // Note: error and isAuthError are available from useUnreadNotifications
   // but not used in UI to avoid showing auth errors to users
   // They are logged in dev mode via API client
