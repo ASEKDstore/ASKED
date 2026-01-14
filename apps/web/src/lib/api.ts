@@ -682,6 +682,21 @@ export const api = {
     });
   },
 
+  async getReviews(params?: { page?: number; pageSize?: number }): Promise<ReviewsListResponse> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const query = searchParams.toString();
+    return request<ReviewsListResponse>(`/reviews${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
   async getProductReviews(productId: string, params?: { page?: number; pageSize?: number }): Promise<ReviewsListResponse> {
     const searchParams = new URLSearchParams();
     if (params) {

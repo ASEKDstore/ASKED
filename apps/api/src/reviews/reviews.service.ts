@@ -209,6 +209,64 @@ export class ReviewsService {
   }
 
   /**
+   * Get all approved reviews (public)
+   */
+  async findAllApproved(query: ReviewQueryDto): Promise<ReviewsListResponse> {
+    const { page, pageSize, rating, withMedia } = query;
+
+    const where: {
+      status: 'APPROVED';
+      rating?: number;
+      media?: { some: {} };
+    } = {
+      status: 'APPROVED',
+    };
+
+    // Filter by rating if provided
+    if (rating !== undefined) {
+      where.rating = rating;
+    }
+
+    // Filter by media presence if provided
+    if (withMedia === true) {
+      where.media = { some: {} };
+    }
+
+    const [reviews, total] = await Promise.all([
+      this.prisma.review.findMany({
+        where,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          media: true,
+          reply: true,
+          user: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              photoUrl: true,
+            },
+          },
+        },
+      }),
+      this.prisma.review.count({ where }),
+    ]);
+
+    return {
+      items: reviews.map((r) => this.mapToListItemDto(r)),
+      meta: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    };
+  }
+
+  /**
    * Get user's reviews
    */
   async findByUser(userId: string, query: ReviewQueryDto): Promise<ReviewsListResponse> {

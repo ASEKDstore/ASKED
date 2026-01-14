@@ -17,6 +17,12 @@ export class ReviewsController {
     private readonly usersService: UsersService,
   ) {}
 
+  @Get()
+  async findAll(@Query() query: unknown): Promise<ReviewsListResponse> {
+    const reviewQuery = reviewQuerySchema.parse(query);
+    return this.reviewsService.findAllApproved(reviewQuery);
+  }
+
   @Post()
   @UseGuards(TelegramAuthGuard)
   @HttpCode(HttpStatus.CREATED)
