@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -19,7 +19,7 @@ export class OrdersService {
     private readonly telegramBotService: TelegramBotService,
     private readonly notificationsService: NotificationsService,
   ) {
-    this.fifoAllocationService = new FifoAllocationService(prisma);
+    this.fifoAllocationService = new FifoAllocationService();
   }
 
   async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<OrderDto> {

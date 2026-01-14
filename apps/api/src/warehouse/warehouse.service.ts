@@ -8,7 +8,7 @@ export class WarehouseService {
   private readonly fifoAllocationService: FifoAllocationService;
 
   constructor(private readonly prisma: PrismaService) {
-    this.fifoAllocationService = new FifoAllocationService(prisma);
+    this.fifoAllocationService = new FifoAllocationService();
   }
 
   /**

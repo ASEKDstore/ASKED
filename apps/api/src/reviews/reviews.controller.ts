@@ -1,9 +1,7 @@
-import { Controller, Post, Get, Body, Query, Param, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
-import type { Request } from 'express';
+import { Controller, Post, Get, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 
 import { CurrentTelegramUser } from '../auth/decorators/current-telegram-user.decorator';
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
-import type { AuthenticatedRequest } from '../auth/telegram-auth.guard';
 import type { TelegramUser } from '../auth/types/telegram-user.interface';
 import { UsersService } from '../users/users.service';
 
@@ -23,7 +21,6 @@ export class ReviewsController {
   @UseGuards(TelegramAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   async create(
-    @Req() req: Request & AuthenticatedRequest,
     @CurrentTelegramUser() telegramUser: TelegramUser,
     @Body() body: unknown,
   ): Promise<ReviewDto> {

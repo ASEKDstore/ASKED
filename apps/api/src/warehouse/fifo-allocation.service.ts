@@ -1,14 +1,11 @@
 import { ConflictException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
-import { PrismaService } from '../prisma/prisma.service';
-
 /**
  * Service for FIFO lot allocation logic
  * Extracted for testability and reuse across order creation and write-offs
  */
 export class FifoAllocationService {
-  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Allocate lots FIFO for a given quantity

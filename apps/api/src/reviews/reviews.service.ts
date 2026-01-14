@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { PrismaClient } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -346,8 +347,6 @@ export class ReviewsService {
         throw new BadRequestException('Review is already approved');
       }
 
-      const oldStatus = review.status;
-
       // Update review status
       const updatedReview = await tx.review.update({
         where: { id: reviewId },
@@ -369,10 +368,8 @@ export class ReviewsService {
         },
       });
 
-      // Recalculate product rating if status changed to APPROVED
-      if (oldStatus !== 'APPROVED') {
-        await this.recalculateProductRating(review.productId, tx);
-      }
+      // Recalculate product rating since status changed to APPROVED
+      await this.recalculateProductRating(review.productId, tx);
 
       return this.mapToDto(updatedReview);
     });
@@ -560,7 +557,10 @@ export class ReviewsService {
    * Recalculate product average rating and counts from approved reviews
    * Uses Prisma aggregate/groupBy for efficiency
    */
-  private async recalculateProductRating(productId: string, tx?: PrismaService): Promise<void> {
+  private async recalculateProductRating(
+    productId: string,
+    tx?: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'> | PrismaService,
+  ): Promise<void> {
     const prisma = tx || this.prisma;
 
     // Get rating breakdown using groupBy

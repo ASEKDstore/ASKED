@@ -64,6 +64,8 @@ export class AdminProductsService {
       currency: product.currency,
       status: product.status as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
       stock: product.stock,
+      averageRating: product.averageRating,
+      reviewsCount: product.reviewsCount,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       images: product.images.map((img) => ({
@@ -125,6 +127,8 @@ export class AdminProductsService {
       currency: product.currency,
       status: product.status as 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
       stock: product.stock,
+      averageRating: product.averageRating,
+      reviewsCount: product.reviewsCount,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       images: product.images.map((img) => ({
