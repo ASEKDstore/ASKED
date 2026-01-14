@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, UseGuards, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 
 import { CurrentTelegramUser } from '../auth/decorators/current-telegram-user.decorator';
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
@@ -12,6 +12,8 @@ import { ReviewsService } from './reviews.service';
 
 @Controller('reviews')
 export class ReviewsController {
+  private readonly logger = new Logger(ReviewsController.name);
+
   constructor(
     private readonly reviewsService: ReviewsService,
     private readonly usersService: UsersService,
@@ -19,8 +21,13 @@ export class ReviewsController {
 
   @Get()
   async findAll(@Query() query: unknown): Promise<ReviewsListResponse> {
-    const reviewQuery = reviewQuerySchema.parse(query);
-    return this.reviewsService.findAllApproved(reviewQuery);
+    try {
+      const reviewQuery = reviewQuerySchema.parse(query);
+      return await this.reviewsService.findAllApproved(reviewQuery);
+    } catch (error) {
+      this.logger.error(`GET /reviews failed: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
+      throw error;
+    }
   }
 
   @Post()
