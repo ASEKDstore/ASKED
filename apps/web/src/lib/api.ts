@@ -57,11 +57,13 @@ export interface ApiError {
 
 export class ApiClientError extends Error {
   statusCode?: number;
+  responseBody?: unknown;
 
-  constructor(message: string, statusCode?: number) {
+  constructor(message: string, statusCode?: number, responseBody?: unknown) {
     super(message);
     this.name = 'ApiClientError';
     this.statusCode = statusCode;
+    this.responseBody = responseBody;
   }
 }
 
@@ -161,8 +163,25 @@ async function request<T>(
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      const errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+      // Try to parse error as JSON first, fallback to text
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      let responseBody: unknown = undefined;
+      
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          responseBody = await response.json();
+          if (typeof responseBody === 'object' && responseBody !== null) {
+            const errorObj = responseBody as { message?: string; error?: string };
+            errorMessage = errorObj.message || errorObj.error || errorMessage;
+          }
+        } else {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          errorMessage = errorText || errorMessage;
+        }
+      } catch {
+        // If parsing fails, use default error message
+      }
       
       // Log auth errors in dev mode for debugging
       if (process.env.NODE_ENV === 'development' && (response.status === 401 || response.status === 403)) {
@@ -178,7 +197,8 @@ async function request<T>(
       
       throw new ApiClientError(
         `[${response.status}] ${errorMessage}`,
-        response.status
+        response.status,
+        responseBody
       );
     }
 

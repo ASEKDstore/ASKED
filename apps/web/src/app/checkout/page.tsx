@@ -21,6 +21,7 @@ export default function CheckoutPage(): JSX.Element {
   const { initData, isTelegram, webApp } = useTelegram();
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
+  const removeItem = useCartStore((state) => state.removeItem);
   const total = useCartStore((state) => state.getTotal());
   const itemCount = useCartStore((state) => state.getItemCount());
 
@@ -308,16 +309,50 @@ export default function CheckoutPage(): JSX.Element {
                       Ок
                     </motion.button>
                   </div>
-                ) : (
-                  <div className="text-sm text-red-300">
-                    <p className="font-semibold mb-1">Ошибка оформления заказа</p>
-                    <p className="text-red-300/80">
-                      {createOrderMutation.error instanceof Error
-                        ? createOrderMutation.error.message
-                        : 'Попробуйте позже'}
-                    </p>
-                  </div>
-                )}
+                ) : (() => {
+                  const error = createOrderMutation.error as ApiClientError | undefined;
+                  const errorBody = error?.responseBody as { code?: string; productId?: string; productTitle?: string; available?: number; requested?: number } | undefined;
+                  const isOutOfStock = error?.statusCode === 409 && errorBody?.code === 'OUT_OF_STOCK';
+                  
+                  return isOutOfStock ? (
+                    <div className="text-sm">
+                      <p className="font-semibold text-white mb-2">Товара нет в наличии</p>
+                      <p className="text-white/70 leading-relaxed mb-4">
+                        {errorBody?.productTitle}: доступно {errorBody?.available ?? 0}, в корзине {errorBody?.requested ?? 0}
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <motion.button
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => router.push('/cart')}
+                          className="rounded-full px-4 py-2 bg-white/10 hover:bg-white/15 text-white text-sm backdrop-blur-xl border border-white/10 transition-colors"
+                        >
+                          Вернуться в корзину
+                        </motion.button>
+                        {errorBody?.productId && (
+                          <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => {
+                              removeItem(errorBody.productId!);
+                              createOrderMutation.reset();
+                            }}
+                            className="rounded-full px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-white text-sm backdrop-blur-xl border border-red-500/30 transition-colors"
+                          >
+                            Удалить товар
+                          </motion.button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-red-300">
+                      <p className="font-semibold mb-1">Ошибка оформления заказа</p>
+                      <p className="text-red-300/80">
+                        {error instanceof Error
+                          ? error.message
+                          : 'Попробуйте позже'}
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </form>

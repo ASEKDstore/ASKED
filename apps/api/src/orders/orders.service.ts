@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -78,9 +78,13 @@ export class OrdersService {
 
         const availableStock = currentStock._sum.quantity ?? 0;
         if (availableStock < item.qty) {
-          throw new BadRequestException(
-            `Not enough stock for product ${product.title}. Available: ${availableStock}, requested: ${item.qty}`,
-          );
+          throw new ConflictException({
+            code: 'OUT_OF_STOCK',
+            productId: product.id,
+            productTitle: product.title,
+            available: availableStock,
+            requested: item.qty,
+          });
         }
 
         const itemTotal = product.price * item.qty;
