@@ -2,7 +2,6 @@
 
 import { Play } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
 
 import type { ReviewMedia } from '@/lib/api';
 import { normalizeImageUrl } from '@/lib/image-utils';
