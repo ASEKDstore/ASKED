@@ -1,0 +1,15 @@
+-- AlterTable: Add rating fields for product reviews
+ALTER TABLE "products" ADD COLUMN "averageRating" DOUBLE PRECISION NOT NULL DEFAULT 0;
+
+ALTER TABLE "products" ADD COLUMN "reviewsCount" INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE "products" ADD COLUMN "rating1Count" INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE "products" ADD COLUMN "rating2Count" INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE "products" ADD COLUMN "rating3Count" INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE "products" ADD COLUMN "rating4Count" INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE "products" ADD COLUMN "rating5Count" INTEGER NOT NULL DEFAULT 0;
+
