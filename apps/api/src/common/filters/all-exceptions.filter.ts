@@ -43,6 +43,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
       this.logger.warn(`${request.method} ${request.url} - ${status} - ${errorMessage}`);
     }
 
+    // For 4xx errors (client errors), preserve structured response body if present
+    if (status < 500 && exception instanceof HttpException) {
+      const exceptionResponse = exception.getResponse();
+      if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+        const responseObj = exceptionResponse as Record<string, unknown>;
+        // If response has a 'code' field, it's a structured business error (e.g., OUT_OF_STOCK)
+        // Preserve the original response body for structured errors
+        if ('code' in responseObj) {
+          response.status(status).json(exceptionResponse);
+          return;
+        }
+      }
+    }
+
     // Sanitize error response for production (don't leak stack traces)
     const errorResponse: {
       statusCode: number;

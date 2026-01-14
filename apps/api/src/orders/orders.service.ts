@@ -80,6 +80,7 @@ export class OrdersService {
         if (availableStock < item.qty) {
           throw new ConflictException({
             code: 'OUT_OF_STOCK',
+            message: 'Товара нет в наличии',
             productId: product.id,
             productTitle: product.title,
             available: availableStock,
