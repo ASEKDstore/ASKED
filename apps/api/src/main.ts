@@ -2,12 +2,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ZodExceptionFilter } from './common/filters/zod-exception.filter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
-  app.useGlobalFilters(new ZodExceptionFilter());
+  // Order matters: ZodExceptionFilter must be first to catch Zod errors specifically
+  // AllExceptionsFilter catches everything else (including unhandled errors)
+  app.useGlobalFilters(new ZodExceptionFilter(), new AllExceptionsFilter());
 
   app.useGlobalPipes(
     new ValidationPipe({
