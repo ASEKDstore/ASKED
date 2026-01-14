@@ -90,6 +90,17 @@ enum AppEventType {
   PURCHASE
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReviewMediaType {
+  IMAGE
+  VIDEO
+}
+
 model User {
   id            String             @id @default(cuid())
   telegramId    String             @unique
@@ -102,6 +113,7 @@ model User {
   admin         Admin?
   orders        Order[]
   notifications UserNotification[]
+  reviews       Review[]
 
   @@map("users")
 }
@@ -146,6 +158,13 @@ model Product {
   currency           String              @default("RUB")
   status             ProductStatus       @default(DRAFT)
   stock              Int                 @default(0)
+  averageRating      Float               @default(0) // Average rating from approved reviews (0-5)
+  reviewsCount       Int                 @default(0) // Count of approved reviews
+  rating1Count       Int                 @default(0) // Count of approved reviews with rating 1
+  rating2Count       Int                 @default(0) // Count of approved reviews with rating 2
+  rating3Count       Int                 @default(0) // Count of approved reviews with rating 3
+  rating4Count       Int                 @default(0) // Count of approved reviews with rating 4
+  rating5Count       Int                 @default(0) // Count of approved reviews with rating 5
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   categories         ProductCategory[]
@@ -156,6 +175,7 @@ model Product {
   inventoryMovements InventoryMovement[]
   PurchaseItem       PurchaseItem[]
   InventoryLot       InventoryLot[]
+  reviews            Review[]
 
   @@index([sku])
   @@map("products")
@@ -200,6 +220,7 @@ model Order {
   channel         OrderChannel  @default(AS)
   seq             Int?
   number          String?       @unique
+  idempotencyKey  String?       @unique // Client-provided idempotency key for retry safety
   totalAmount     Int
   currency        String        @default("RUB")
   customerName    String
@@ -213,9 +234,11 @@ model Order {
   deletedBy       String? // Admin user ID who deleted the order (optional)
   user            User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   items           OrderItem[]
+  reviews         Review[]
 
   @@index([channel, seq])
   @@index([number])
+  @@index([idempotencyKey])
   @@index([deletedAt])
   @@map("orders")
 }
@@ -545,4 +568,51 @@ model LotAllocation {
   @@index([orderItemId])
   @@index([writeOffId])
   @@map("lot_allocations")
+}
+
+model Review {
+  id        String          @id @default(cuid())
+  productId String
+  userId    String
+  orderId   String? // Optional, for verified purchase
+  rating    Int // 1-5
+  text      String?
+  status    ReviewStatus    @default(PENDING)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order     Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  media     ReviewMedia[]
+  reply     ReviewReply?
+
+  @@unique([productId, userId]) // One review per product per user
+  @@index([productId, status, createdAt])
+  @@index([userId])
+  @@index([status, createdAt])
+  @@map("reviews")
+}
+
+model ReviewMedia {
+  id        String          @id @default(cuid())
+  reviewId  String
+  type      ReviewMediaType // IMAGE | VIDEO
+  url       String
+  createdAt DateTime        @default(now())
+  review    Review          @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@map("review_media")
+}
+
+model ReviewReply {
+  id        String   @id @default(cuid())
+  reviewId  String   @unique
+  adminId   String?  // Optional admin user ID
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_replies")
 }
