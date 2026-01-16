@@ -751,6 +751,27 @@ export const api = {
     });
   },
 
+  async createLabOrder(
+    initData: string | null,
+    order: {
+      clothingType: string | null;
+      size: string | null;
+      colorChoice: string | null;
+      customColor: string | null;
+      placement: string | null;
+      description: string;
+      attachmentUrl?: string | null;
+      customerName?: string;
+      customerPhone?: string;
+    }
+  ): Promise<Order> {
+    return request<Order>('/orders/lab', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(order),
+    });
+  },
+
   async getMyOrders(initData: string | null): Promise<OrdersListResponse> {
     return request<OrdersListResponse>('/public/orders/my', {
       method: 'GET',

@@ -12,3 +12,4 @@ generator client {
 // Include all models from main schema (will be copied)
 // For now, we'll use the same schema file but with different datasource
 
+

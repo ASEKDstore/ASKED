@@ -24,15 +24,16 @@ interface OrderData {
 // Clothing types with images
 const CLOTHING_TYPES = [
   { id: 'hoodie', label: 'Худи', image: '/lab/hudi.png' },
+  { id: 'custom', label: 'Своё', icon: '✨' },
 ];
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-// Limited colors: black, white, gray
+// Limited colors: black, white, gray (circles only, no images)
 const COLORS = [
-  { id: 'black', label: 'Черный', value: '#000000', image: '/assets/hoodies/hoodie-black.svg' },
-  { id: 'white', label: 'Белый', value: '#FFFFFF', image: '/assets/hoodies/hoodie-white.svg' },
-  { id: 'gray', label: 'Серый', value: '#808080', image: '/assets/hoodies/hoodie-gray.svg' },
+  { id: 'black', label: 'Черный', value: '#000000' },
+  { id: 'white', label: 'Белый', value: '#FFFFFF' },
+  { id: 'gray', label: 'Серый', value: '#808080' },
 ];
 
 // Placement options with images
@@ -387,8 +388,44 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
     );
   }
 
+  // Disable manual scrolling between steps - only allow programmatic scroll
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement;
+      // Allow scrolling inside textareas/inputs
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        return;
+      }
+      // Prevent step navigation by wheel - only allow auto-scroll
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const target = e.target as HTMLElement;
+      // Allow scrolling inside textareas/inputs
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        return;
+      }
+      // Prevent step navigation by touch - only allow auto-scroll
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, []);
+
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" ref={containerRef as React.RefObject<HTMLDivElement>}>
       {/* Steps Container */}
       <div className="relative">
         {/* Step 1: Clothing Type */}
@@ -405,32 +442,54 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
                 Выбери базу — остальное мы доведём до идеала.
               </p>
             </div>
-            <div className="flex justify-center">
-              {CLOTHING_TYPES.map((type) => (
-                <motion.button
-                  key={type.id}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleStepComplete(0, type.id)}
-                  className={`rounded-[20px] p-6 bg-black/30 backdrop-blur-xl border transition-all
-                            ${orderData.clothingType === type.id
-                              ? 'border-white/30 bg-white/10 shadow-[0_8px_24px_rgba(255,255,255,0.1)]'
-                              : 'border-white/10 hover:border-white/20 hover:bg-black/35'
-                            }`}
-                >
-                  {type.image && (
-                    <div className="w-16 h-16 mx-auto mb-3 relative">
-                      <Image
-                        src={type.image}
-                        alt={type.label}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                  )}
-                  <div className="text-white font-medium text-base">{type.label}</div>
-                </motion.button>
-              ))}
+            <div className="grid grid-cols-2 gap-4">
+              {CLOTHING_TYPES.map((type) => {
+                const Icon = type.icon;
+                return (
+                  <motion.button
+                    key={type.id}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleStepComplete(0, type.id)}
+                    className={`rounded-[20px] p-6 bg-black/30 backdrop-blur-xl border transition-all
+                              ${orderData.clothingType === type.id
+                                ? 'border-white/30 bg-white/10 shadow-[0_8px_24px_rgba(255,255,255,0.1)]'
+                                : 'border-white/10 hover:border-white/20 hover:bg-black/35'
+                              }`}
+                  >
+                    {type.image ? (
+                      <div className="w-16 h-16 mx-auto mb-3 relative">
+                        <Image
+                          src={type.image}
+                          alt={type.label}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    ) : (
+                      Icon && <div className="text-4xl mb-3">{Icon}</div>
+                    )}
+                    <div className="text-white font-medium text-base">{type.label}</div>
+                  </motion.button>
+                );
+              })}
             </div>
+            {orderData.clothingType === 'custom' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4"
+              >
+                <textarea
+                  value={customBaseDescription}
+                  onChange={(e) => setCustomBaseDescription(e.target.value)}
+                  placeholder="Опиши базу..."
+                  className="w-full min-h-[100px] rounded-[16px] p-4 bg-black/30 backdrop-blur-xl
+                           border border-white/10 text-white placeholder-white/40
+                           focus:outline-none focus:border-white/30 focus:bg-black/35
+                           resize-none text-sm"
+                />
+              </motion.div>
+            )}
           </div>
         </StepBlock>
 
@@ -483,24 +542,14 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleStepComplete(2, color.id)}
-                    className={`relative rounded-[20px] w-24 h-24 p-3 bg-black/30 backdrop-blur-xl border-2
-                              transition-all flex items-center justify-center
+                    className={`relative rounded-full w-16 h-16 flex items-center justify-center
+                              transition-all border-2
                               ${orderData.colorChoice === color.id
                                 ? 'border-white shadow-[0_0_0_4px_rgba(255,255,255,0.2)] scale-105'
                                 : 'border-white/20 hover:border-white/40'
                               }`}
+                    style={{ backgroundColor: color.value }}
                   >
-                    {color.image && (
-                      <div className="w-full h-full relative">
-                        <Image
-                          src={color.image}
-                          alt={color.label}
-                          fill
-                          className="object-contain"
-                          sizes="96px"
-                        />
-                      </div>
-                    )}
                     {orderData.colorChoice === color.id && (
                       <motion.div
                         initial={{ scale: 0 }}
@@ -545,13 +594,13 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
                             }`}
                 >
                   {placement.image && (
-                    <div className="w-16 h-16 mx-auto mb-3 relative">
+                    <div className="w-24 h-24 md:w-28 md:h-28 mx-auto mb-3 relative">
                       <Image
                         src={placement.image}
                         alt={placement.label}
                         fill
                         className="object-contain"
-                        sizes="64px"
+                        sizes="112px"
                       />
                     </div>
                   )}

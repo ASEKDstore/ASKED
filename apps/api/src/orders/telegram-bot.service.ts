@@ -134,6 +134,147 @@ export class TelegramBotService {
     this.logger.log(`✅ Message sent successfully to chat ${chatId}`);
   }
 
+  async notifyNewLabOrder(
+    order: OrderDto,
+    wizardData: {
+      clothingType: string | null;
+      size: string | null;
+      colorChoice: string | null;
+      customColor: string | null;
+      placement: string | null;
+      description: string;
+      attachmentUrl?: string | null;
+    },
+    buyerInfo?: { username?: string; firstName?: string; lastName?: string; telegramId?: string },
+  ): Promise<void> {
+    this.logger.log(
+      `📤 Preparing to send LAB order notification: orderId=${order.id}, hasToken=${!!this.botToken}`,
+    );
+
+    if (!this.botToken) {
+      this.logger.warn(`⚠️ TELEGRAM_BOT_TOKEN not configured - skipping LAB order notification`);
+      return;
+    }
+
+    try {
+      const buyerName =
+        buyerInfo?.firstName && buyerInfo?.lastName
+          ? `${buyerInfo.firstName} ${buyerInfo.lastName}`
+          : buyerInfo?.firstName || buyerInfo?.username || 'Не указано';
+
+      const buyerUsername = buyerInfo?.username ? `@${buyerInfo.username}` : '';
+      const buyerTelegramId = buyerInfo?.telegramId ? ` (ID: ${buyerInfo.telegramId})` : '';
+
+      // Format clothing type
+      const clothingTypeText =
+        wizardData.clothingType === 'custom' ? 'Своё' : wizardData.clothingType === 'hoodie' ? 'Худи' : wizardData.clothingType || 'Не указано';
+
+      // Format color
+      const colorText =
+        wizardData.colorChoice === 'black'
+          ? 'Черный'
+          : wizardData.colorChoice === 'white'
+            ? 'Белый'
+            : wizardData.colorChoice === 'gray'
+              ? 'Серый'
+              : wizardData.colorChoice || 'Не указано';
+
+      // Format placement
+      const placementText =
+        wizardData.placement === 'front'
+          ? 'Фронт'
+          : wizardData.placement === 'back'
+            ? 'Спина'
+            : wizardData.placement === 'sleeve'
+              ? 'Рукав'
+              : wizardData.placement === 'individual'
+                ? 'Индивидуально'
+                : wizardData.placement || 'Не указано';
+
+      // Build media links
+      const mediaLinks = wizardData.attachmentUrl ? [`📎 ${wizardData.attachmentUrl}`] : [];
+
+      // Build message with required format
+      const orderNumber = order.number || order.id.slice(0, 8);
+      const message = `Сестренка, у нас новая темка нарисовалась
+
+*${orderNumber}*
+
+*Что кастомим:* ${clothingTypeText}${wizardData.clothingType === 'custom' && wizardData.description ? `\n${wizardData.description}` : ''}
+*Цвет:* ${colorText}
+*Место:* ${placementText}
+*Идея клиента:* ${wizardData.description}
+${mediaLinks.length > 0 ? `\n*Медиа:*\n${mediaLinks.join('\n')}` : ''}
+${buyerInfo ? `\n👤 *Клиент:* ${buyerName}${buyerUsername ? ` ${buyerUsername}` : ''}${buyerTelegramId}` : ''}`;
+
+      // Build inline keyboard
+      const keyboard = {
+        inline_keyboard: [
+          [
+            {
+              text: 'Открыть заказ',
+              url: `${this.adminPanelUrl}/admin/orders/${order.id}`,
+            },
+          ],
+          [
+            {
+              text: 'Открыть админку',
+              url: `${this.adminPanelUrl}/admin`,
+            },
+          ],
+        ],
+      };
+
+      const sendPromises: Promise<void>[] = [];
+
+      // 1. Send to ADMIN_TG_ID (DM) if configured
+      if (this.adminTgId) {
+        this.logger.log(`📡 Sending LAB order notification to admin DM (${this.adminTgId})`);
+        sendPromises.push(
+          this.sendMessage(this.adminTgId, message, {
+            parseMode: 'Markdown',
+            replyMarkup: keyboard,
+          }).catch((error) => {
+            this.logger.error(`❌ Failed to send to admin DM:`, error);
+          }),
+        );
+      }
+
+      // 2. Send to admin chat (DB config or ENV fallback)
+      sendPromises.push(
+        this.sendToAdminChat(message, {
+          parseMode: 'Markdown',
+          replyMarkup: keyboard,
+        }).catch(() => {
+          // Already logged in sendToAdminChat
+        }),
+      );
+
+      // 3. Legacy: Send to TELEGRAM_ADMIN_CHAT_ID if configured
+      if (this.adminChatId && this.adminChatId !== this.adminChatIdNew) {
+        this.logger.log(`📡 Sending LAB order notification to legacy admin chat (${this.adminChatId})`);
+        sendPromises.push(
+          this.sendMessage(this.adminChatId, message, {
+            parseMode: 'Markdown',
+            replyMarkup: keyboard,
+          }).catch((error) => {
+            this.logger.error(`❌ Failed to send to legacy admin chat:`, error);
+          }),
+        );
+      }
+
+      if (sendPromises.length === 0) {
+        this.logger.warn(`⚠️ No admin chat IDs configured - skipping LAB order notification`);
+        return;
+      }
+
+      await Promise.all(sendPromises);
+      this.logger.log(`✅ LAB order ${order.id} notification sent successfully`);
+    } catch (error) {
+      this.logger.error(`❌ Failed to send LAB order notification for order ${order.id}:`, error);
+    }
+  }
+
   async notifyNewOrder(order: OrderDto, buyerInfo?: { username?: string; firstName?: string; lastName?: string; telegramId?: string }): Promise<void> {
     this.logger.log(
       `📤 Preparing to send order notification: orderId=${order.id}, hasToken=${!!this.botToken}, adminTgId=${!!this.adminTgId}, adminChatId=${!!this.adminChatIdNew}, legacyChatId=${!!this.adminChatId}`,

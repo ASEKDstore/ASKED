@@ -28,6 +28,18 @@ import {
   createLabProductMediaSchema,
   updateLabProductMediaSchema,
 } from './dto/lab-product.dto';
+import type {
+  LabWorkDto,
+  LabWorkMediaDto,
+  LabWorksListResponse,
+} from './dto/lab-work.dto';
+import {
+  labWorkQuerySchema,
+  createLabWorkSchema,
+  updateLabWorkSchema,
+  createLabWorkMediaSchema,
+  updateLabWorkMediaSchema,
+} from './dto/lab-work.dto';
 
 @Controller('admin/lab-products')
 @UseGuards(DevAdminAuthGuard, AdminGuard)
@@ -79,6 +91,59 @@ export class AdminLabController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMedia(@Param('id') id: string): Promise<void> {
     return this.labService.deleteMedia(id);
+  }
+}
+
+@Controller('admin/lab/works')
+@UseGuards(DevAdminAuthGuard, AdminGuard)
+export class AdminLabWorksController {
+  constructor(private readonly labService: LabService) {}
+
+  @Get()
+  async findAll(@Query() query: any): Promise<LabWorksListResponse> {
+    const validatedQuery = labWorkQuerySchema.parse(query);
+    return this.labService.findAllWorks(validatedQuery);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<LabWorkDto> {
+    return this.labService.findOneWork(id);
+  }
+
+  @Post()
+  async create(@Body() body: any): Promise<LabWorkDto> {
+    const createDto = createLabWorkSchema.parse(body);
+    return this.labService.createWork(createDto);
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() body: any): Promise<LabWorkDto> {
+    const updateDto = updateLabWorkSchema.parse(body);
+    return this.labService.updateWork(id, updateDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async delete(@Param('id') id: string): Promise<void> {
+    return this.labService.deleteWork(id);
+  }
+
+  @Post(':id/media')
+  async addMedia(@Param('id') labWorkId: string, @Body() body: any): Promise<LabWorkMediaDto> {
+    const createDto = createLabWorkMediaSchema.parse(body);
+    return this.labService.addWorkMedia(labWorkId, createDto);
+  }
+
+  @Patch('media/:id')
+  async updateMedia(@Param('id') id: string, @Body() body: any): Promise<LabWorkMediaDto> {
+    const updateDto = updateLabWorkMediaSchema.parse(body);
+    return this.labService.updateWorkMedia(id, updateDto);
+  }
+
+  @Delete('media/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteMedia(@Param('id') id: string): Promise<void> {
+    return this.labService.deleteWorkMedia(id);
   }
 }
 

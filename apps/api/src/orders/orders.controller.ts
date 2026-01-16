@@ -8,6 +8,7 @@ import { AppEventsService } from '../analytics/app-events.service';
 import { UsersService } from '../users/users.service';
 
 import { createOrderSchema } from './dto/create-order.dto';
+import { createLabOrderSchema } from './dto/create-lab-order.dto';
 import type { OrderDto } from './dto/order.dto';
 import type { OrdersListResponse } from './dto/order.dto';
 import { OrdersService } from './orders.service';
@@ -79,6 +80,57 @@ export class OrdersController {
     console.log(`Order ${order.id} created successfully for user ${telegramUser.id}`);
 
     // Return 201 with order id
+    return order;
+  }
+
+  @Post('lab')
+  @UseGuards(TelegramAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async createLabOrder(
+    @Req() req: Request & AuthenticatedRequest,
+    @Body() body: any,
+  ): Promise<OrderDto> {
+    const createLabOrderDto = createLabOrderSchema.parse(body);
+
+    const telegramUser = req.user;
+    if (!telegramUser) {
+      throw new Error('User not authenticated');
+    }
+
+    // Upsert user
+    const user = await this.usersService.upsertByTelegramData(telegramUser);
+    const userId = user.id;
+
+    // Prepare user data for notification
+    const userData = {
+      username: telegramUser.username,
+      firstName: telegramUser.first_name,
+      lastName: telegramUser.last_name,
+      telegramId: telegramUser.id.toString(),
+    };
+
+    // Create LAB order
+    const order = await this.ordersService.createLabOrder(userId, createLabOrderDto);
+
+    // Send LAB-specific notification
+    void this.telegramBotService
+      .notifyNewLabOrder(
+        order,
+        {
+          clothingType: createLabOrderDto.clothingType,
+          size: createLabOrderDto.size,
+          colorChoice: createLabOrderDto.colorChoice,
+          customColor: createLabOrderDto.customColor,
+          placement: createLabOrderDto.placement,
+          description: createLabOrderDto.description,
+          attachmentUrl: createLabOrderDto.attachmentUrl || null,
+        },
+        userData,
+      )
+      .catch((error) => {
+        console.error('Failed to send LAB order notification:', error);
+      });
+
     return order;
   }
 

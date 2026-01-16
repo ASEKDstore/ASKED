@@ -41,7 +41,7 @@ export default function LabPage(): JSX.Element {
     setShowOrderFlow(true);
   };
 
-  const handleOrderComplete = (data: {
+  const handleOrderComplete = async (data: {
     clothingType: string | null;
     size: string | null;
     colorChoice: string | null;
@@ -50,11 +50,46 @@ export default function LabPage(): JSX.Element {
     description: string;
     attachment: File | null;
   }) => {
-    // TODO: Send order to backend API
-    console.log('Order submitted:', data);
-    // For now, just close the flow
-    setShowOrderFlow(false);
-    // Show success message or navigate
+    try {
+      // Upload attachment if provided
+      let attachmentUrl: string | null = null;
+      if (data.attachment) {
+        // TODO: Implement file upload to storage (S3, Cloudinary, etc.)
+        // For now, we'll skip attachment upload
+        console.warn('Attachment upload not yet implemented');
+      }
+
+      // Get user info from Telegram
+      const telegramUser = webApp?.initDataUnsafe?.user;
+      const customerName = telegramUser
+        ? `${telegramUser.first_name || ''} ${telegramUser.last_name || ''}`.trim() || telegramUser.username || 'Не указано'
+        : 'Не указано';
+      const customerPhone = telegramUser?.username ? `@${telegramUser.username}` : 'Не указано';
+
+      // Send LAB order to backend
+      await api.createLabOrder(initData, {
+        clothingType: data.clothingType,
+        size: data.size,
+        colorChoice: data.colorChoice,
+        customColor: data.customColor,
+        placement: data.placement,
+        description: data.description,
+        attachmentUrl,
+        customerName,
+        customerPhone,
+      });
+
+      // Close flow - success screen is shown in LabOrderFlow
+      setShowOrderFlow(false);
+    } catch (error) {
+      console.error('Failed to submit LAB order:', error);
+      // Show error to user
+      try {
+        webApp?.showAlert?.('Не удалось отправить заказ. Попробуйте позже.');
+      } catch {
+        alert('Не удалось отправить заказ. Попробуйте позже.');
+      }
+    }
   };
 
   const handleCloseOrderFlow = () => {

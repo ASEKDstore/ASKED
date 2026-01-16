@@ -101,6 +101,17 @@ enum ReviewMediaType {
   VIDEO
 }
 
+enum LabWorkStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LabWorkMediaType {
+  IMAGE
+  VIDEO
+}
+
 model User {
   id            String             @id @default(cuid())
   telegramId    String             @unique
@@ -571,18 +582,18 @@ model LotAllocation {
 }
 
 model Review {
-  id        String          @id @default(cuid())
+  id        String        @id @default(cuid())
   productId String
   userId    String
   orderId   String? // Optional, for verified purchase
   rating    Int // 1-5
   text      String?
-  status    ReviewStatus    @default(PENDING)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  order     Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  status    ReviewStatus  @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  product   Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order     Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
   media     ReviewMedia[]
   reply     ReviewReply?
 
@@ -608,11 +619,41 @@ model ReviewMedia {
 model ReviewReply {
   id        String   @id @default(cuid())
   reviewId  String   @unique
-  adminId   String?  // Optional admin user ID
+  adminId   String? // Optional admin user ID
   text      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
   @@map("review_replies")
+}
+
+// LAB Ready Custom Works
+model LabWork {
+  id          String         @id @default(cuid())
+  title       String
+  slug        String?        @unique
+  description String?        @db.Text
+  ratingAvg   Float          @default(0)
+  ratingCount Int            @default(0)
+  status      LabWorkStatus  @default(DRAFT)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  media       LabWorkMedia[]
+
+  @@index([status, createdAt])
+  @@index([slug])
+  @@map("lab_works")
+}
+
+model LabWorkMedia {
+  id        String           @id @default(cuid())
+  labWorkId String
+  type      LabWorkMediaType
+  url       String
+  sort      Int              @default(0)
+  labWork   LabWork          @relation(fields: [labWorkId], references: [id], onDelete: Cascade)
+
+  @@index([labWorkId, sort])
+  @@map("lab_work_media")
 }

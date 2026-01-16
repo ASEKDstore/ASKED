@@ -13,6 +13,16 @@ import type {
   UpdateLabProductMediaDto,
 } from './dto/lab-product.dto';
 import type { PublicLabProductDto } from './dto/public-lab-product.dto';
+import type {
+  LabWorkDto,
+  LabWorkMediaDto,
+  LabWorksListResponse,
+  CreateLabWorkDto,
+  UpdateLabWorkDto,
+  LabWorkQueryDto,
+  CreateLabWorkMediaDto,
+  UpdateLabWorkMediaDto,
+} from './dto/lab-work.dto';
 
 @Injectable()
 export class LabService {
@@ -322,7 +332,268 @@ export class LabService {
       ctaUrl: product.ctaUrl,
     }));
   }
+
+  // ========== LAB WORKS METHODS ==========
+
+  async findAllWorks(query: LabWorkQueryDto): Promise<LabWorksListResponse> {
+    const { q, status, page, pageSize } = query;
+
+    const where: any = {};
+
+    if (q) {
+      where.OR = [
+        { title: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    if (status) {
+      where.status = status;
+    }
+
+    const total = await this.prisma.labWork.count({ where });
+    const works = await this.prisma.labWork.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        media: {
+          orderBy: { sort: 'asc' },
+        },
+      },
+    });
+
+    const items = works.map((work) => ({
+      id: work.id,
+      title: work.title,
+      slug: work.slug,
+      description: work.description,
+      ratingAvg: work.ratingAvg,
+      ratingCount: work.ratingCount,
+      status: work.status as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
+      createdAt: work.createdAt.toISOString(),
+      updatedAt: work.updatedAt.toISOString(),
+      media: work.media.map((m) => ({
+        id: m.id,
+        labWorkId: m.labWorkId,
+        type: m.type as 'IMAGE' | 'VIDEO',
+        url: m.url,
+        sort: m.sort,
+      })),
+    }));
+
+    return { items, total, page, pageSize };
+  }
+
+  async findOneWork(id: string): Promise<LabWorkDto> {
+    const work = await this.prisma.labWork.findUnique({
+      where: { id },
+      include: {
+        media: {
+          orderBy: { sort: 'asc' },
+        },
+      },
+    });
+
+    if (!work) {
+      throw new NotFoundException(`LabWork with id ${id} not found`);
+    }
+
+    return {
+      id: work.id,
+      title: work.title,
+      slug: work.slug,
+      description: work.description,
+      ratingAvg: work.ratingAvg,
+      ratingCount: work.ratingCount,
+      status: work.status as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
+      createdAt: work.createdAt.toISOString(),
+      updatedAt: work.updatedAt.toISOString(),
+      media: work.media.map((m) => ({
+        id: m.id,
+        labWorkId: m.labWorkId,
+        type: m.type as 'IMAGE' | 'VIDEO',
+        url: m.url,
+        sort: m.sort,
+      })),
+    };
+  }
+
+  async findOneWorkBySlug(slug: string): Promise<LabWorkDto> {
+    const work = await this.prisma.labWork.findUnique({
+      where: { slug },
+      include: {
+        media: {
+          orderBy: { sort: 'asc' },
+        },
+      },
+    });
+
+    if (!work) {
+      throw new NotFoundException(`LabWork with slug ${slug} not found`);
+    }
+
+    return this.findOneWork(work.id);
+  }
+
+  async createWork(createDto: CreateLabWorkDto): Promise<LabWorkDto> {
+    const work = await this.prisma.labWork.create({
+      data: {
+        title: createDto.title,
+        slug: createDto.slug ?? null,
+        description: createDto.description ?? null,
+        ratingAvg: createDto.ratingAvg ?? 0,
+        ratingCount: createDto.ratingCount ?? 0,
+        status: createDto.status ?? 'DRAFT',
+      },
+      include: {
+        media: true,
+      },
+    });
+
+    return this.findOneWork(work.id);
+  }
+
+  async updateWork(id: string, updateDto: UpdateLabWorkDto): Promise<LabWorkDto> {
+    const existing = await this.prisma.labWork.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`LabWork with id ${id} not found`);
+    }
+
+    await this.prisma.labWork.update({
+      where: { id },
+      data: {
+        ...(updateDto.title !== undefined ? { title: updateDto.title } : {}),
+        ...(updateDto.slug !== undefined ? { slug: updateDto.slug ?? null } : {}),
+        ...(updateDto.description !== undefined ? { description: updateDto.description ?? null } : {}),
+        ...(updateDto.ratingAvg !== undefined ? { ratingAvg: updateDto.ratingAvg } : {}),
+        ...(updateDto.ratingCount !== undefined ? { ratingCount: updateDto.ratingCount } : {}),
+        ...(updateDto.status !== undefined ? { status: updateDto.status } : {}),
+      },
+    });
+
+    return this.findOneWork(id);
+  }
+
+  async deleteWork(id: string): Promise<void> {
+    const existing = await this.prisma.labWork.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`LabWork with id ${id} not found`);
+    }
+
+    await this.prisma.labWork.delete({
+      where: { id },
+    });
+  }
+
+  async addWorkMedia(labWorkId: string, createDto: CreateLabWorkMediaDto): Promise<LabWorkMediaDto> {
+    const work = await this.prisma.labWork.findUnique({
+      where: { id: labWorkId },
+    });
+
+    if (!work) {
+      throw new NotFoundException(`LabWork with id ${labWorkId} not found`);
+    }
+
+    const media = await this.prisma.labWorkMedia.create({
+      data: {
+        labWorkId,
+        type: createDto.type,
+        url: createDto.url,
+        sort: createDto.sort ?? 0,
+      },
+    });
+
+    return {
+      id: media.id,
+      labWorkId: media.labWorkId,
+      type: media.type as 'IMAGE' | 'VIDEO',
+      url: media.url,
+      sort: media.sort,
+    };
+  }
+
+  async updateWorkMedia(id: string, updateDto: UpdateLabWorkMediaDto): Promise<LabWorkMediaDto> {
+    const existing = await this.prisma.labWorkMedia.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`LabWorkMedia with id ${id} not found`);
+    }
+
+    const media = await this.prisma.labWorkMedia.update({
+      where: { id },
+      data: {
+        ...(updateDto.type !== undefined ? { type: updateDto.type } : {}),
+        ...(updateDto.url !== undefined ? { url: updateDto.url } : {}),
+        ...(updateDto.sort !== undefined ? { sort: updateDto.sort } : {}),
+      },
+    });
+
+    return {
+      id: media.id,
+      labWorkId: media.labWorkId,
+      type: media.type as 'IMAGE' | 'VIDEO',
+      url: media.url,
+      sort: media.sort,
+    };
+  }
+
+  async deleteWorkMedia(id: string): Promise<void> {
+    const existing = await this.prisma.labWorkMedia.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`LabWorkMedia with id ${id} not found`);
+    }
+
+    await this.prisma.labWorkMedia.delete({
+      where: { id },
+    });
+  }
+
+  async findAllPublicWorks(): Promise<LabWorkDto[]> {
+    const works = await this.prisma.labWork.findMany({
+      where: { status: 'PUBLISHED' },
+      orderBy: [{ createdAt: 'desc' }],
+      take: 50,
+      include: {
+        media: {
+          orderBy: { sort: 'asc' },
+        },
+      },
+    });
+
+    return works.map((work) => ({
+      id: work.id,
+      title: work.title,
+      slug: work.slug,
+      description: work.description,
+      ratingAvg: work.ratingAvg,
+      ratingCount: work.ratingCount,
+      status: work.status as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
+      createdAt: work.createdAt.toISOString(),
+      updatedAt: work.updatedAt.toISOString(),
+      media: work.media.map((m) => ({
+        id: m.id,
+        labWorkId: m.labWorkId,
+        type: m.type as 'IMAGE' | 'VIDEO',
+        url: m.url,
+        sort: m.sort,
+      })),
+    }));
+  }
 }
+
 
 
 

@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FifoAllocationService } from '../warehouse/fifo-allocation.service';
 
 import type { CreateOrderDto } from './dto/create-order.dto';
+import type { CreateLabOrderDto } from './dto/create-lab-order.dto';
 import type { OrderQueryDto } from './dto/order-query.dto';
 import type { OrderDto, OrdersListResponse } from './dto/order.dto';
 import type { UpdateOrderStatusDto } from './dto/update-order-status.dto';
