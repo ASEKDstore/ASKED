@@ -70,19 +70,6 @@ export type CreateLabWorkMediaDto = z.infer<typeof createLabWorkMediaSchema>;
 export type UpdateLabWorkMediaDto = z.infer<typeof updateLabWorkMediaSchema>;
 export type LabWorkQueryDto = z.infer<typeof labWorkQuerySchema>;
 
-// Export schemas for validation
-export {
-  labWorkSchema,
-  labWorkMediaSchema,
-  createLabWorkSchema,
-  updateLabWorkSchema,
-  createLabWorkMediaSchema,
-  updateLabWorkMediaSchema,
-  labWorkQuerySchema,
-  labWorkStatusSchema,
-  labWorkMediaTypeSchema,
-};
-
 export interface LabWorksListResponse {
   items: LabWorkDto[];
   total: number;

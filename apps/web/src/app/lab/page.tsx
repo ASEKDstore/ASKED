@@ -11,6 +11,8 @@ import { LabProductsCarousel } from '@/components/lab/LabProductsCarousel';
 import { LabSplash } from '@/components/lab/LabSplash';
 import { PortfolioSection } from '@/components/portfolio/PortfolioSection';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
+import { useTelegram } from '@/hooks/useTelegram';
+import { api } from '@/lib/api';
 
 // Use local background image
 const BG_IMAGE_URL = '/home-bg.jpg';
@@ -23,6 +25,7 @@ interface ProgressData {
 }
 
 export default function LabPage(): JSX.Element {
+  const { initData, webApp } = useTelegram();
   const [showSplash, setShowSplash] = useState(true);
   const [showOrderFlow, setShowOrderFlow] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
@@ -52,7 +55,7 @@ export default function LabPage(): JSX.Element {
   }) => {
     try {
       // Upload attachment if provided
-      let attachmentUrl: string | null = null;
+      const attachmentUrl: string | null = null;
       if (data.attachment) {
         // TODO: Implement file upload to storage (S3, Cloudinary, etc.)
         // For now, we'll skip attachment upload
@@ -84,11 +87,8 @@ export default function LabPage(): JSX.Element {
     } catch (error) {
       console.error('Failed to submit LAB order:', error);
       // Show error to user
-      try {
-        webApp?.showAlert?.('Не удалось отправить заказ. Попробуйте позже.');
-      } catch {
-        alert('Не удалось отправить заказ. Попробуйте позже.');
-      }
+      console.error('Failed to submit LAB order:', error);
+      alert('Не удалось отправить заказ. Попробуйте позже.');
     }
   };
 

@@ -140,6 +140,7 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
     description: '',
     attachment: null,
   });
+  const [customBaseDescription, setCustomBaseDescription] = useState('');
   const [highlightedStep, setHighlightedStep] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -347,6 +348,42 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
     onComplete(orderData);
   };
 
+  // Disable manual scrolling between steps - only allow programmatic scroll
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement;
+      // Allow scrolling inside textareas/inputs
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        return;
+      }
+      // Prevent step navigation by wheel - only allow auto-scroll
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const target = e.target as HTMLElement;
+      // Allow scrolling inside textareas/inputs
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        return;
+      }
+      // Prevent step navigation by touch - only allow auto-scroll
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, []);
+
   // Success screen
   if (isSubmitted) {
     return (
@@ -387,42 +424,6 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
       </motion.div>
     );
   }
-
-  // Disable manual scrolling between steps - only allow programmatic scroll
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      const target = e.target as HTMLElement;
-      // Allow scrolling inside textareas/inputs
-      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
-        return;
-      }
-      // Prevent step navigation by wheel - only allow auto-scroll
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const target = e.target as HTMLElement;
-      // Allow scrolling inside textareas/inputs
-      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
-        return;
-      }
-      // Prevent step navigation by touch - only allow auto-scroll
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-
-    return () => {
-      container.removeEventListener('wheel', handleWheel);
-      container.removeEventListener('touchmove', handleTouchMove);
-    };
-  }, []);
 
   return (
     <div className="relative w-full" ref={containerRef as React.RefObject<HTMLDivElement>}>

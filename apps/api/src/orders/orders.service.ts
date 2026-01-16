@@ -516,4 +516,128 @@ export class OrdersService {
       })),
     };
   }
+
+  async createLabOrder(userId: string | null, createLabOrderDto: CreateLabOrderDto): Promise<OrderDto> {
+    const {
+      clothingType,
+      size,
+      colorChoice,
+      customColor,
+      placement,
+      description,
+      attachmentUrl,
+      customerName,
+      customerPhone,
+      idempotencyKey,
+    } = createLabOrderDto;
+
+    // Check idempotency
+    if (idempotencyKey) {
+      const existingOrder = await this.prisma.order.findUnique({
+        where: { idempotencyKey },
+        include: {
+          items: true,
+          user: true,
+        },
+      });
+
+      if (existingOrder) {
+        return this.mapToDto(existingOrder);
+      }
+    }
+
+    // Create LAB order with wizard data in comment
+    const wizardData = {
+      clothingType: clothingType || 'hoodie',
+      size: size || null,
+      colorChoice: colorChoice || null,
+      customColor: customColor || null,
+      placement: placement || null,
+      description,
+      attachmentUrl: attachmentUrl || null,
+    };
+
+    // Format comment with wizard data
+    const commentLines = [
+      '=== LAB ЗАКАЗ ===',
+      `Что кастомим: ${wizardData.clothingType === 'custom' ? 'Своё' : 'Худи'}`,
+      wizardData.size ? `Размер: ${wizardData.size}` : null,
+      wizardData.colorChoice
+        ? `Цвет: ${wizardData.colorChoice === 'black' ? 'Черный' : wizardData.colorChoice === 'white' ? 'Белый' : 'Серый'}`
+        : null,
+      wizardData.placement
+        ? `Место: ${
+            wizardData.placement === 'front'
+              ? 'Фронт'
+              : wizardData.placement === 'back'
+                ? 'Спина'
+                : wizardData.placement === 'sleeve'
+                  ? 'Рукав'
+                  : 'Индивидуально'
+          }`
+        : null,
+      `Идея клиента: ${wizardData.description}`,
+      wizardData.attachmentUrl ? `Медиа: ${wizardData.attachmentUrl}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    // Create order with channel=LAB
+    const order = await this.prisma.$transaction(async (tx) => {
+      // Get or create order counter for LAB channel
+      const counter = await tx.orderCounter.upsert({
+        where: { channel: 'LAB' },
+        update: { value: { increment: 1 } },
+        create: { channel: 'LAB', value: 1 },
+      });
+
+      const seq = counter.value;
+      const number = `№${String(seq).padStart(5, '0')}/LAB`;
+
+      // Create order with LAB channel
+      const createdOrder = await tx.order.create({
+        data: {
+          userId: userId || null,
+          status: 'NEW',
+          channel: 'LAB',
+          seq,
+          number,
+          idempotencyKey: idempotencyKey || null,
+          totalAmount: 0, // LAB orders have no items, total is 0
+          currency: 'RUB',
+          customerName: customerName || 'Не указано',
+          customerPhone: customerPhone || 'Не указано',
+          comment: commentLines,
+        },
+      });
+
+      return createdOrder;
+    });
+
+    // Reload order
+    const fullOrder = await this.prisma.order.findUnique({
+      where: { id: order.id },
+      include: {
+        items: true,
+        user: true,
+      },
+    });
+
+    if (!fullOrder) {
+      throw new Error('Order not found after creation');
+    }
+
+    const orderDto = this.mapToDto(fullOrder);
+
+    // Create ORDER_CREATED notification
+    if (userId && orderDto.number) {
+      void this.notificationsService
+        .createOrderNotification('ORDER_CREATED', userId, orderDto.id, orderDto.number)
+        .catch((error) => {
+          console.error('Failed to create order notification:', error);
+        });
+    }
+
+    return orderDto;
+  }
 }
