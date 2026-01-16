@@ -67,3 +67,4 @@ export function StarRating({ rating, size = 'md', interactive = false, onRatingC
   );
 }
 
+

@@ -9,6 +9,7 @@ import { ArtistCard } from '@/components/lab/ArtistCard';
 import { LabOrderFlow } from '@/components/lab/LabOrderFlow';
 import { LabProductsCarousel } from '@/components/lab/LabProductsCarousel';
 import { LabSplash } from '@/components/lab/LabSplash';
+import { PortfolioSection } from '@/components/portfolio/PortfolioSection';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 // Use local background image
@@ -190,6 +191,11 @@ export default function LabPage(): JSX.Element {
               {/* How It Works Section */}
               <div className="w-full" style={{ paddingBottom: 'clamp(32px, 8vw, 48px)' }}>
                 <CustomSteps />
+              </div>
+
+              {/* Portfolio Section */}
+              <div className="w-full" style={{ paddingBottom: 'clamp(32px, 8vw, 48px)' }}>
+                <PortfolioSection onOrderClick={handleOrderClick} />
               </div>
 
               {/* Bottom Spacing */}

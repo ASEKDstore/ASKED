@@ -59,7 +59,7 @@ export function LabSplash({ onComplete }: LabSplashProps): JSX.Element {
                 inset: 0;
                 display: grid;
                 place-items: center;
-                background-image: url('/home-bg.jpg');
+                background-image: url('/splash-bg.jpg');
                 background-size: cover;
                 background-position: center;
                 background-repeat: no-repeat;
@@ -189,6 +189,7 @@ export function LabSplash({ onComplete }: LabSplashProps): JSX.Element {
     </AnimatePresence>
   );
 }
+
 
 
 

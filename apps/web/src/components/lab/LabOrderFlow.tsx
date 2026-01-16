@@ -5,8 +5,6 @@ import {
   ArrowRight,
   Check,
   Image as ImageIcon,
-  Palette,
-  Sparkles,
   Upload,
   X,
 } from 'lucide-react';
@@ -26,26 +24,23 @@ interface OrderData {
 // Clothing types with images
 const CLOTHING_TYPES = [
   { id: 'hoodie', label: 'Худи', image: '/lab/hudi.png' },
-  { id: 'tshirt', label: 'Футболка', image: '/lab/t-short.png' },
-  { id: 'custom', label: 'Свой вариант', icon: Sparkles },
 ];
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-// Limited colors: black, white, gray, custom
+// Limited colors: black, white, gray
 const COLORS = [
-  { id: 'black', label: 'Черный', value: '#000000' },
-  { id: 'white', label: 'Белый', value: '#FFFFFF' },
-  { id: 'gray', label: 'Серый', value: '#808080' },
-  { id: 'custom', label: 'Свой цвет', value: null },
+  { id: 'black', label: 'Черный', value: '#000000', image: '/assets/hoodies/hoodie-black.svg' },
+  { id: 'white', label: 'Белый', value: '#FFFFFF', image: '/assets/hoodies/hoodie-white.svg' },
+  { id: 'gray', label: 'Серый', value: '#808080', image: '/assets/hoodies/hoodie-gray.svg' },
 ];
 
-// Placement options with icons
+// Placement options with images
 const PLACEMENTS = [
-  { id: 'front', label: 'Фронт', icon: '⬆️' },
-  { id: 'back', label: 'Спина', icon: '⬇️' },
-  { id: 'sleeve', label: 'Рукав', icon: '↔️' },
-  { id: 'individual', label: 'Индивидуально', icon: '📍' },
+  { id: 'front', label: 'Фронт', image: '/assets/placements/front.png' },
+  { id: 'back', label: 'Спина', image: '/assets/placements/back.png' },
+  { id: 'sleeve', label: 'Рукав', image: '/assets/placements/sleeve.png' },
+  { id: 'individual', label: 'Индивидуально', image: '/assets/placements/individual.png' },
 ];
 
 const STEP_LABELS = [
@@ -136,7 +131,7 @@ function StepBlock({ stepIndex, isVisible, isHighlighted, stepRefs, children }: 
 
 export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps): JSX.Element {
   const [orderData, setOrderData] = useState<OrderData>({
-    clothingType: null,
+    clothingType: 'hoodie', // Auto-select hoodie by default
     size: null,
     colorChoice: null,
     customColor: null,
@@ -260,6 +255,7 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
 
   // Auto-scroll when steps become visible
   useEffect(() => {
+    // Auto-proceed from step 1 (hoodie is pre-selected)
     if (isStep1Complete && !orderData.size) {
       scrollToStepWithRetry(1);
     }
@@ -311,15 +307,12 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
     } else if (stepIndex === 1) {
       setOrderData((prev) => ({ ...prev, size: value }));
     } else if (stepIndex === 2) {
-      setOrderData((prev) => ({ ...prev, colorChoice: value, customColor: value === 'custom' ? null : null }));
+      setOrderData((prev) => ({ ...prev, colorChoice: value }));
     } else if (stepIndex === 3) {
       setOrderData((prev) => ({ ...prev, placement: value }));
     }
   };
 
-  const handleCustomColorChange = (color: string) => {
-    setOrderData((prev) => ({ ...prev, customColor: color }));
-  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -412,36 +405,31 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
                 Выбери базу — остальное мы доведём до идеала.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {CLOTHING_TYPES.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <motion.button
-                    key={type.id}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleStepComplete(0, type.id)}
-                    className={`rounded-[20px] p-6 bg-black/30 backdrop-blur-xl border transition-all
-                              ${orderData.clothingType === type.id
-                                ? 'border-white/30 bg-white/10 shadow-[0_8px_24px_rgba(255,255,255,0.1)]'
-                                : 'border-white/10 hover:border-white/20 hover:bg-black/35'
-                              }`}
-                  >
-                    {type.image ? (
-                      <div className="w-16 h-16 mx-auto mb-3 relative">
-                        <Image
-                          src={type.image}
-                          alt={type.label}
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                    ) : (
-                      Icon && <Icon className="w-8 h-8 mx-auto mb-3 text-white" />
-                    )}
-                    <div className="text-white font-medium text-base">{type.label}</div>
-                  </motion.button>
-                );
-              })}
+            <div className="flex justify-center">
+              {CLOTHING_TYPES.map((type) => (
+                <motion.button
+                  key={type.id}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleStepComplete(0, type.id)}
+                  className={`rounded-[20px] p-6 bg-black/30 backdrop-blur-xl border transition-all
+                            ${orderData.clothingType === type.id
+                              ? 'border-white/30 bg-white/10 shadow-[0_8px_24px_rgba(255,255,255,0.1)]'
+                              : 'border-white/10 hover:border-white/20 hover:bg-black/35'
+                            }`}
+                >
+                  {type.image && (
+                    <div className="w-16 h-16 mx-auto mb-3 relative">
+                      <Image
+                        src={type.image}
+                        alt={type.label}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  )}
+                  <div className="text-white font-medium text-base">{type.label}</div>
+                </motion.button>
+              ))}
             </div>
           </div>
         </StepBlock>
@@ -495,24 +483,25 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleStepComplete(2, color.id)}
-                    className={`relative rounded-full w-16 h-16 flex items-center justify-center
-                              transition-all border-2
+                    className={`relative rounded-[20px] w-24 h-24 p-3 bg-black/30 backdrop-blur-xl border-2
+                              transition-all flex items-center justify-center
                               ${orderData.colorChoice === color.id
                                 ? 'border-white shadow-[0_0_0_4px_rgba(255,255,255,0.2)] scale-105'
                                 : 'border-white/20 hover:border-white/40'
                               }`}
-                    style={
-                      color.value
-                        ? { backgroundColor: color.value }
-                        : {
-                            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-                          }
-                    }
                   >
-                    {color.id === 'custom' && (
-                      <Palette className="w-6 h-6 text-white" />
+                    {color.image && (
+                      <div className="w-full h-full relative">
+                        <Image
+                          src={color.image}
+                          alt={color.label}
+                          fill
+                          className="object-contain"
+                          sizes="96px"
+                        />
+                      </div>
                     )}
-                    {orderData.colorChoice === color.id && color.id !== 'custom' && (
+                    {orderData.colorChoice === color.id && (
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -526,23 +515,6 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
                 </div>
               ))}
             </div>
-            {orderData.colorChoice === 'custom' && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-6"
-              >
-                <input
-                  type="color"
-                  value={orderData.customColor || '#000000'}
-                  onChange={(e) => handleCustomColorChange(e.target.value)}
-                  className="w-full h-12 rounded-[16px] bg-black/30 backdrop-blur-xl border border-white/10 cursor-pointer"
-                />
-                <p className="text-white/50 text-sm text-center mt-2">
-                  Или введите код цвета: {orderData.customColor || '#000000'}
-                </p>
-              </motion.div>
-            )}
           </div>
         </StepBlock>
 
@@ -572,7 +544,17 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
                               : 'border-white/10 hover:border-white/20 hover:bg-black/35'
                             }`}
                 >
-                  <div className="text-3xl mb-3">{placement.icon}</div>
+                  {placement.image && (
+                    <div className="w-16 h-16 mx-auto mb-3 relative">
+                      <Image
+                        src={placement.image}
+                        alt={placement.label}
+                        fill
+                        className="object-contain"
+                        sizes="64px"
+                      />
+                    </div>
+                  )}
                   <div className="text-white font-medium text-base">{placement.label}</div>
                 </motion.button>
               ))}

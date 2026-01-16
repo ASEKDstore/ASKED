@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Back placement icon - arrow down with hoodie silhouette -->
+  <circle cx="60" cy="60" r="55" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  <!-- Hoodie back silhouette -->
+  <path d="M40 35 L40 75 C40 85 45 90 50 90 L70 90 C75 90 80 85 80 75 L80 35 C80 30 75 25 70 25 L50 25 C45 25 40 30 40 35 Z" fill="rgba(255,255,255,0.8)" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+  <!-- Arrow down -->
+  <path d="M60 100 L55 90 L60 95 L65 90 Z" fill="rgba(255,255,255,0.9)" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+  <line x1="60" y1="95" x2="60" y2="85" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round"/>
+</svg>
+

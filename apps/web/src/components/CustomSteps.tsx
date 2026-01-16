@@ -170,30 +170,30 @@ export function CustomSteps(): JSX.Element {
                 variants={cardVariants}
                 whileHover={{ y: -4, transition: { duration: 0.2 } }}
                 whileTap={{ scale: 0.99 }}
-                className="relative rounded-[24px] bg-black/30 backdrop-blur-xl 
-                         border border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.3)]
-                         p-6 md:p-8 transition-all duration-200"
+                className="relative rounded-[18px] bg-black/20 backdrop-blur-lg 
+                         border border-white/8 shadow-[0_4px_16px_rgba(0,0,0,0.2)]
+                         p-3 md:p-4 transition-all duration-200"
               >
                 {/* Step Number */}
-                <div className="text-[clamp(32px, 8vw, 48px)] font-bold text-white/20 mb-4 tracking-tight">
+                <div className="text-sm font-bold text-white/15 mb-3 tracking-tight">
                   {step.number}
                 </div>
 
                 {/* Icon */}
-                <div className="mb-4">
-                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/10 
-                                flex items-center justify-center backdrop-blur-md">
-                    <Icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
+                <div className="mb-3">
+                  <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/8 
+                                flex items-center justify-center backdrop-blur-sm">
+                    <Icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
                   </div>
                 </div>
 
                 {/* Title */}
-                <h3 className="text-[clamp(18px, 4.5vw, 22px)] font-bold text-white mb-2 tracking-tight">
+                <h3 className="text-[clamp(16px, 4vw, 20px)] font-bold text-white mb-2 tracking-tight">
                   {step.title}
                 </h3>
 
                 {/* Description */}
-                <p className="text-[clamp(14px, 3.5vw, 15px)] text-white/75 leading-relaxed">
+                <p className="text-[clamp(13px, 3vw, 14px)] text-white/70 leading-relaxed">
                   {step.description}
                 </p>
               </motion.div>

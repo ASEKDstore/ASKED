@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Sleeve placement icon - horizontal arrows with sleeve silhouette -->
+  <circle cx="60" cy="60" r="55" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  <!-- Sleeve silhouette -->
+  <path d="M30 40 L30 80 C30 85 32 90 37 90 L47 90 C52 90 55 85 55 80 L55 40 C55 35 52 30 47 30 L37 30 C32 30 30 35 30 40 Z" fill="rgba(255,255,255,0.8)" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+  <!-- Horizontal arrows -->
+  <path d="M20 60 L30 55 L25 60 L30 65 Z" fill="rgba(255,255,255,0.9)" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+  <line x1="25" y1="60" x2="30" y2="60" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M100 60 L90 55 L95 60 L90 65 Z" fill="rgba(255,255,255,0.9)" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+  <line x1="95" y1="60" x2="90" y2="60" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round"/>
+</svg>
+

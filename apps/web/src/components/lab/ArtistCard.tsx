@@ -118,14 +118,14 @@ export function ArtistCard({ onOrderClick }: ArtistCardProps): JSX.Element {
       }}
       className="relative w-full max-w-[95vw] mx-auto px-4 mb-12"
     >
-      {/* Glass Card Container - overflow visible to allow mascot to extend outside */}
-      <div className="relative overflow-visible rounded-[28px] bg-black/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/10">
-        <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6 p-6 md:p-8 min-h-[320px] md:min-h-[400px]">
+      {/* Glass Card Container */}
+      <div className="relative overflow-hidden rounded-[28px] bg-black/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-white/10">
+        <div className="relative flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-8 p-6 md:p-8 min-h-[320px] lg:min-h-[400px]">
           {/* Content Section (Left) */}
-          <div className="flex-1 space-y-4 z-10 sm:pr-[140px] md:pr-[180px] lg:pr-[220px]">
+          <div className="flex-1 space-y-4 z-10 lg:max-w-[55%]">
             {/* Kicker */}
             <div className="text-[clamp(11px,2.5vw,12px)] font-semibold tracking-[0.15em] uppercase text-white/70">
-              ХУДОЖНИК
+              Анастасия Морок
             </div>
 
             {/* Title */}
@@ -134,7 +134,7 @@ export function ArtistCard({ onOrderClick }: ArtistCardProps): JSX.Element {
             </h2>
 
             {/* Bio */}
-            <p className="text-[clamp(14px,3.5vw,16px)] text-white/75 leading-relaxed max-w-md">
+            <p className="text-[clamp(14px,3.5vw,16px)] text-white/75 leading-relaxed">
               Каждая вещь — это история. Мы превращаем твои идеи в реальность, создавая кастомные изделия, которых нет ни у кого.
             </p>
 
@@ -154,14 +154,14 @@ export function ArtistCard({ onOrderClick }: ArtistCardProps): JSX.Element {
             </div>
           </div>
 
-          {/* Mascot Section (Right/Bottom) - Large hero element that overflows */}
+          {/* Mascot Section (Right) - Large hero element */}
           <div className="relative flex-shrink-0
-                        w-[clamp(180px,42vw,300px)] h-[clamp(180px,42vw,300px)]
-                        md:absolute
-                        md:right-[clamp(-32px,-7vw,-16px)]
-                        md:bottom-[clamp(-48px,-8vw,-24px)]
-                        self-center md:self-auto
-                        pointer-events-none">
+                        w-full lg:w-auto
+                        h-[clamp(240px,50vw,400px)] lg:h-[clamp(300px,45vh,450px)]
+                        max-w-[clamp(280px,60vw,420px)] lg:max-w-[clamp(350px,40vw,500px)]
+                        self-center lg:self-auto
+                        pointer-events-none
+                        lg:flex-1 lg:max-w-[45%]">
             {/* Soft Glow behind mascot */}
             <motion.div
               initial={glowInitial}
@@ -176,10 +176,10 @@ export function ArtistCard({ onOrderClick }: ArtistCardProps): JSX.Element {
             <motion.div
               initial={shadowInitial}
               animate={shadowControls}
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[65%] z-0"
+              className="absolute bottom-0 left-1/2 lg:left-auto lg:right-0 -translate-x-1/2 lg:translate-x-0 translate-y-[65%] z-0"
               style={{
-                width: 'clamp(120px, 28vw, 220px)',
-                height: 'clamp(28px, 7vw, 52px)',
+                width: 'clamp(160px, 35vw, 280px)',
+                height: 'clamp(36px, 8vw, 64px)',
                 borderRadius: '50%',
                 background: 'rgba(0, 0, 0, 0.4)',
                 filter: 'blur(40px)',
@@ -191,14 +191,14 @@ export function ArtistCard({ onOrderClick }: ArtistCardProps): JSX.Element {
             <motion.div
               initial={mascotInitial}
               animate={mascotControls}
-              className="relative w-full h-full z-10"
+              className="relative w-full h-full z-10 flex items-center justify-center lg:justify-end"
             >
               <Image
                 src="/lab/mascot.png"
                 alt="ASKED LAB Artist"
                 fill
                 className="object-contain drop-shadow-2xl"
-                sizes="(max-width: 768px) 180px, 300px"
+                sizes="(max-width: 1024px) 280px, 420px"
                 unoptimized
                 priority
                 onError={() => setImageError(true)}
@@ -216,6 +216,7 @@ export function ArtistCard({ onOrderClick }: ArtistCardProps): JSX.Element {
     </motion.div>
   );
 }
+
 
 
 
