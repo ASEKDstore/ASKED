@@ -638,6 +638,58 @@ export interface CreateLabProductDto {
   ctaUrl?: string | null;
 }
 
+export interface LabWorkMedia {
+  id: string;
+  labWorkId: string;
+  type: 'IMAGE' | 'VIDEO';
+  url: string;
+  sort: number;
+}
+
+export interface LabWork {
+  id: string;
+  title: string;
+  slug: string | null;
+  description: string | null;
+  ratingAvg: number;
+  ratingCount: number;
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  createdAt: string;
+  updatedAt: string;
+  media: LabWorkMedia[];
+}
+
+export interface LabWorksListResponse {
+  items: LabWork[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface CreateLabWorkDto {
+  title: string;
+  slug?: string | null;
+  description?: string | null;
+  ratingAvg?: number;
+  ratingCount?: number;
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+}
+
+export interface UpdateLabWorkDto {
+  title?: string;
+  slug?: string | null;
+  description?: string | null;
+  ratingAvg?: number;
+  ratingCount?: number;
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+}
+
+export interface CreateLabWorkMediaDto {
+  type: 'IMAGE' | 'VIDEO';
+  url: string;
+  sort?: number;
+}
+
 export const api = {
   async getMe(initData: string | null): Promise<User> {
     return request<User>('/users/me', {
@@ -1923,6 +1975,114 @@ export const api = {
     }>(`/admin/warehouse/purchases/${id}/cancel`, {
       method: 'POST',
       initData,
+    });
+  },
+
+  // Admin Lab Works
+  async getAdminLabWorks(
+    initData: string | null,
+    query?: { q?: string; status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'; page?: number; pageSize?: number }
+  ): Promise<LabWorksListResponse> {
+    const searchParams = new URLSearchParams();
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = searchParams.toString();
+    return request<LabWorksListResponse>(
+      `/admin/lab/works${queryString ? `?${queryString}` : ''}`,
+      {
+        method: 'GET',
+        initData,
+      }
+    );
+  },
+
+  async getAdminLabWork(initData: string | null, id: string): Promise<LabWork> {
+    return request<LabWork>(`/admin/lab/works/${id}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async createAdminLabWork(initData: string | null, work: CreateLabWorkDto): Promise<LabWork> {
+    return request<LabWork>('/admin/lab/works', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(work),
+    });
+  },
+
+  async updateAdminLabWork(initData: string | null, id: string, work: UpdateLabWorkDto): Promise<LabWork> {
+    return request<LabWork>(`/admin/lab/works/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(work),
+    });
+  },
+
+  async deleteAdminLabWork(initData: string | null, id: string): Promise<void> {
+    return request<void>(`/admin/lab/works/${id}`, {
+      method: 'DELETE',
+      initData,
+    });
+  },
+
+  async publishAdminLabWork(initData: string | null, id: string): Promise<LabWork> {
+    return request<LabWork>(`/admin/lab/works/${id}/publish`, {
+      method: 'POST',
+      initData,
+    });
+  },
+
+  async archiveAdminLabWork(initData: string | null, id: string): Promise<LabWork> {
+    return request<LabWork>(`/admin/lab/works/${id}/archive`, {
+      method: 'POST',
+      initData,
+    });
+  },
+
+  async addLabWorkMedia(initData: string | null, labWorkId: string, media: CreateLabWorkMediaDto): Promise<LabWorkMedia> {
+    return request<LabWorkMedia>(`/admin/lab/works/${labWorkId}/media`, {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(media),
+    });
+  },
+
+  async reorderLabWorkMedia(initData: string | null, labWorkId: string, mediaIds: string[]): Promise<LabWorkMedia[]> {
+    return request<LabWorkMedia[]>(`/admin/lab/works/${labWorkId}/media/reorder`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify({ mediaIds }),
+    });
+  },
+
+  async deleteLabWorkMedia(initData: string | null, labWorkId: string, mediaId: string): Promise<void> {
+    return request<void>(`/admin/lab/works/${labWorkId}/media/${mediaId}`, {
+      method: 'DELETE',
+      initData,
+    });
+  },
+
+  // Public Lab Works
+  async getLabWorks(limit?: number): Promise<LabWork[]> {
+    const searchParams = new URLSearchParams();
+    if (limit !== undefined) {
+      searchParams.append('limit', String(limit));
+    }
+    const queryString = searchParams.toString();
+    return request<LabWork[]>(`/lab/works${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  async getLabWork(id: string): Promise<LabWork> {
+    return request<LabWork>(`/lab/works/${id}`, {
+      method: 'GET',
     });
   },
 };

@@ -30,7 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useTelegram } from '@/hooks/useTelegram';
 import { getTokenFromUrl } from '@/lib/admin-nav';
-import { api, ApiClientError, type LabProduct, type CreateLabProductDto } from '@/lib/api';
+import { api, ApiClientError, type LabProduct, type CreateLabProductDto, type LabWork, type CreateLabWorkDto, type CreateLabWorkMediaDto } from '@/lib/api';
 
 function formatError(error: unknown): string {
   if (error instanceof ApiClientError) {
@@ -598,6 +598,472 @@ function LabProductsTab(): JSX.Element {
   );
 }
 
+function LabWorksTab(): JSX.Element {
+  const { initData } = useTelegram();
+  const queryClient = useQueryClient();
+  const token = getTokenFromUrl();
+  const isDevMode = !!token;
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingWork, setEditingWork] = useState<LabWork | null>(null);
+  const [deletingWork, setDeletingWork] = useState<LabWork | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [formData, setFormData] = useState<CreateLabWorkDto>({
+    title: '',
+    slug: '',
+    description: '',
+    ratingAvg: 0,
+    ratingCount: 0,
+    status: 'DRAFT',
+  });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['admin', 'lab-works', initData, searchQuery, statusFilter],
+    queryFn: () =>
+      api.getAdminLabWorks(initData, {
+        q: searchQuery || undefined,
+        status: statusFilter !== 'All' ? (statusFilter as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED') : undefined,
+        page: 1,
+        pageSize: 100,
+      }),
+    enabled: !!initData || isDevMode,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: CreateLabWorkDto) => api.createAdminLabWork(initData, data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'lab-works'] });
+      setDialogOpen(false);
+      resetForm();
+      setErrorMessage(null);
+    },
+    onError: (error: Error) => {
+      setErrorMessage(formatError(error));
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateLabWorkDto }) =>
+      api.updateAdminLabWork(initData, id, data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'lab-works'] });
+      setDialogOpen(false);
+      setEditingWork(null);
+      resetForm();
+      setErrorMessage(null);
+    },
+    onError: (error: Error) => {
+      setErrorMessage(formatError(error));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.deleteAdminLabWork(initData, id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'lab-works'] });
+      setDeleteDialogOpen(false);
+      setDeletingWork(null);
+    },
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: (id: string) => api.publishAdminLabWork(initData, id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'lab-works'] });
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: (id: string) => api.archiveAdminLabWork(initData, id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'lab-works'] });
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      slug: '',
+      description: '',
+      ratingAvg: 0,
+      ratingCount: 0,
+      status: 'DRAFT',
+    });
+    setEditingWork(null);
+  };
+
+  const handleCreate = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const handleEdit = (work: LabWork) => {
+    setEditingWork(work);
+    setFormData({
+      title: work.title,
+      slug: work.slug || '',
+      description: work.description || '',
+      ratingAvg: work.ratingAvg,
+      ratingCount: work.ratingCount,
+      status: work.status,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleDelete = (work: LabWork) => {
+    setDeletingWork(work);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    const submitData: CreateLabWorkDto = {
+      title: formData.title,
+      slug: formData.slug || null,
+      description: formData.description || null,
+      ratingAvg: formData.ratingAvg,
+      ratingCount: formData.ratingCount,
+      status: formData.status,
+    };
+
+    if (editingWork) {
+      updateMutation.mutate({ id: editingWork.id, data: submitData });
+    } else {
+      createMutation.mutate(submitData);
+    }
+  };
+
+  const confirmDelete = () => {
+    if (deletingWork) {
+      deleteMutation.mutate(deletingWork.id);
+    }
+  };
+
+  const statusLabels: Record<string, string> = {
+    DRAFT: 'Черновик',
+    PUBLISHED: 'Опубликовано',
+    ARCHIVED: 'Архив',
+  };
+
+  const statusVariants: Record<string, 'default' | 'secondary' | 'destructive'> = {
+    DRAFT: 'secondary',
+    PUBLISHED: 'default',
+    ARCHIVED: 'destructive',
+  };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <p className="mt-4 text-gray-600">Загрузка работ...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        {formatError(error)}
+      </Alert>
+    );
+  }
+
+  const labWorks: LabWork[] = data?.items || [];
+  const total = data?.total || 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Готовые работы</h2>
+        <Button onClick={handleCreate}>
+          <Plus className="w-4 h-4 mr-2" />
+          Создать работу
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Фильтры</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Поиск по названию..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-48 border border-gray-300 rounded-lg px-3 py-2"
+            >
+              <option value="All">Все статусы</option>
+              <option value="DRAFT">Черновик</option>
+              <option value="PUBLISHED">Опубликовано</option>
+              <option value="ARCHIVED">Архив</option>
+            </select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {errorMessage && (
+        <Alert variant="destructive">{errorMessage}</Alert>
+      )}
+
+      {labWorks.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FlaskConical className="w-16 h-16 text-gray-400 mb-4" />
+            <p className="text-gray-600 text-lg mb-2">Работы отсутствуют</p>
+            <Button onClick={handleCreate}>
+              <Plus className="w-4 h-4 mr-2" />
+              Создать работу
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Список работ</CardTitle>
+            <CardDescription>Всего работ: {total}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Rating</TableHead>
+                  <TableHead>Media</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead className="text-right">Действия</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {labWorks.map((work) => (
+                  <TableRow key={work.id}>
+                    <TableCell className="font-medium">{work.title}</TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariants[work.status] || 'secondary'}>
+                        {statusLabels[work.status] || work.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {work.ratingAvg > 0 ? `${work.ratingAvg.toFixed(1)} (${work.ratingCount})` : '-'}
+                    </TableCell>
+                    <TableCell>{work.media?.length || 0}</TableCell>
+                    <TableCell>
+                      {work.updatedAt
+                        ? new Date(work.updatedAt).toLocaleDateString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                          })
+                        : '-'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(work)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Edit
+                        </Button>
+                        {work.status !== 'PUBLISHED' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => publishMutation.mutate(work.id)}
+                            disabled={publishMutation.isPending}
+                          >
+                            Publish
+                          </Button>
+                        )}
+                        {work.status !== 'ARCHIVED' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => archiveMutation.mutate(work.id)}
+                            disabled={archiveMutation.isPending}
+                          >
+                            Archive
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(work)}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingWork ? 'Редактировать работу' : 'Создать работу'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingWork
+                ? 'Измените данные работы'
+                : 'Заполните данные для новой работы'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            {errorMessage && (
+              <Alert variant="destructive" className="mb-4">
+                {errorMessage}
+              </Alert>
+            )}
+            <div className="space-y-4 py-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Название работы"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Slug</label>
+                <Input
+                  value={formData.slug || ''}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                  placeholder="slug-url"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <Textarea
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Описание"
+                  rows={4}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Rating Avg</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value={formData.ratingAvg}
+                    onChange={(e) =>
+                      setFormData({ ...formData, ratingAvg: parseFloat(e.target.value) || 0 })
+                    }
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Rating Count</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.ratingCount}
+                    onChange={(e) =>
+                      setFormData({ ...formData, ratingCount: parseInt(e.target.value) || 0 })
+                    }
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      status: e.target.value as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
+                    })
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  <option value="DRAFT">Черновик</option>
+                  <option value="PUBLISHED">Опубликовано</option>
+                  <option value="ARCHIVED">Архив</option>
+                </select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setDialogOpen(false);
+                  resetForm();
+                }}
+              >
+                Отмена
+              </Button>
+              <Button
+                type="submit"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {createMutation.isPending || updateMutation.isPending
+                  ? 'Сохранение...'
+                  : editingWork
+                    ? 'Сохранить'
+                    : 'Создать'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Удалить работу?</DialogTitle>
+            <DialogDescription>
+              Вы уверены, что хотите удалить работу &quot;{deletingWork?.title}&quot;?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Отмена
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function AdminLabPage(): JSX.Element {
   return (
     <div className="container mx-auto px-4 py-8">
@@ -606,9 +1072,13 @@ export default function AdminLabPage(): JSX.Element {
       <Tabs defaultValue="products" className="w-full">
         <TabsList>
           <TabsTrigger value="products">Карточки</TabsTrigger>
+          <TabsTrigger value="works">Готовые работы</TabsTrigger>
         </TabsList>
         <TabsContent value="products">
           <LabProductsTab />
+        </TabsContent>
+        <TabsContent value="works">
+          <LabWorksTab />
         </TabsContent>
       </Tabs>
     </div>
