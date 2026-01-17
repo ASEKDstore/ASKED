@@ -56,8 +56,8 @@ export const updateLabWorkMediaSchema = z.object({
 });
 
 export const labWorkQuerySchema = z.object({
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(100).default(20),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
   q: z.string().optional(),
   status: labWorkStatusSchema.optional(),
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 
 import { CustomSteps } from '@/components/CustomSteps';
@@ -126,7 +126,7 @@ export default function LabPage(): JSX.Element {
           <div className="relative">
             {/* Wizard Header with Back Button */}
             <div className="sticky top-0 z-30 bg-black/40 backdrop-blur-xl border-b border-white/10">
-              <div className="flex items-center justify-between p-4">
+              <div className="flex items-center p-4">
                 {/* Back Button */}
                 {progress && (
                   <button
@@ -138,14 +138,6 @@ export default function LabPage(): JSX.Element {
                     <span className="text-sm font-medium">Назад</span>
                   </button>
                 )}
-                {/* Close Button */}
-                <button
-                  onClick={handleCloseOrderFlow}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl 
-                           border border-white/10 text-white hover:bg-black/40 transition-colors flex-shrink-0"
-                >
-                  <X className="w-5 h-5" />
-                </button>
               </div>
             </div>
             <LabOrderFlow onComplete={handleOrderComplete} onProgressChange={handleProgressChange} onExit={handleCloseOrderFlow} />

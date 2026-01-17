@@ -23,7 +23,7 @@ interface OrderData {
 
 // Clothing types with images
 const CLOTHING_TYPES = [
-  { id: 'hoodie', label: 'Худи', image: '/lab/hudi.png' },
+  { id: 'hoodie', label: 'Худи', image: '/assets/placements/front.png' },
   { id: 'custom', label: 'Своё', icon: '✨' },
 ];
 
@@ -258,7 +258,11 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
   }, [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete, findScrollContainer]);
 
   // Auto-scroll when steps become visible (only after user completes step)
-  // Removed auto-scroll from step 1 - user must explicitly select clothing type first
+  useEffect(() => {
+    if (isStep1Complete && !orderData.size) {
+      scrollToStepWithRetry(1);
+    }
+  }, [isStep1Complete, orderData.size, scrollToStepWithRetry]);
 
   useEffect(() => {
     if (isStep2Complete && !orderData.colorChoice) {
@@ -494,12 +498,13 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
                               }`}
                   >
                     {type.image ? (
-                      <div className="w-16 h-16 mx-auto mb-3 relative">
+                      <div className="w-24 h-24 md:w-28 md:h-28 mx-auto mb-3 relative">
                         <Image
                           src={type.image}
                           alt={type.label}
                           fill
                           className="object-contain"
+                          sizes="112px"
                         />
                       </div>
                     ) : (
