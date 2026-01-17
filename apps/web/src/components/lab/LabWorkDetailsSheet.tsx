@@ -27,10 +27,25 @@ export function LabWorkDetailsSheet({ labWorkId, isOpen, onClose }: LabWorkDetai
   const [userRating, setUserRating] = useState<number | null>(null);
   const [isRating, setIsRating] = useState(false);
 
+  // Check if user is admin (for bypassing maintenance mode)
+  const adminTgId = process.env.NEXT_PUBLIC_ADMIN_TG_ID;
+  const isAdmin = webApp?.initDataUnsafe?.user?.id?.toString() === adminTgId;
+
+  // Check maintenance status
+  const { data: labStatus } = useQuery({
+    queryKey: ['lab-status'],
+    queryFn: () => api.getLabStatus(),
+    enabled: isOpen,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const isMaintenance = labStatus?.maintenance === true && !isAdmin;
+
   const { data: work, isLoading, error } = useQuery({
     queryKey: ['lab-work', labWorkId],
     queryFn: () => api.getLabWork(labWorkId!),
-    enabled: !!labWorkId && isOpen,
+    enabled: !!labWorkId && isOpen && !isMaintenance,
   });
 
   const rateMutation = useMutation({
@@ -195,7 +210,11 @@ export function LabWorkDetailsSheet({ labWorkId, isOpen, onClose }: LabWorkDetai
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto overscroll-contain">
-            {isLoading ? (
+            {isMaintenance ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <p className="text-white text-lg mb-4">Опаньки, ведутся работы, наберись терпения торопыга</p>
+              </div>
+            ) : isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white/30"></div>
               </div>

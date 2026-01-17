@@ -18,29 +18,14 @@ export function LabWorksCarousel(): JSX.Element {
   const { data: labWorks, isLoading } = useQuery({
     queryKey: ['lab-works'],
     queryFn: () => api.getLabWorks(50),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    placeholderData: (previousData) => previousData,
   });
 
   const publishedWorks = labWorks?.filter((w) => w.status === 'PUBLISHED') || [];
 
-  if (isLoading) {
-    return (
-      <div className="w-full px-4 mb-12">
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="flex-shrink-0 w-[280px] h-[320px] rounded-[24px] bg-black/20 backdrop-blur-xl animate-pulse"
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (publishedWorks.length === 0) {
-    return <div />;
-  }
-
+  // Always render container to prevent flicker
   return (
     <motion.section
       ref={ref}
@@ -71,7 +56,20 @@ export function LabWorksCarousel(): JSX.Element {
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        {publishedWorks.map((work, index) => {
+        {isLoading && (!publishedWorks || publishedWorks.length === 0) ? (
+          // Skeleton placeholders during initial load
+          [1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="flex-shrink-0 w-[280px] h-[320px] rounded-[24px] bg-black/20 backdrop-blur-xl animate-pulse"
+              style={{ scrollSnapAlign: 'start' }}
+            />
+          ))
+        ) : publishedWorks.length === 0 ? (
+          // Empty state - render nothing but keep container
+          null
+        ) : (
+          publishedWorks.map((work, index) => {
           // Use coverUrl if provided, otherwise use first media image
           const coverImageUrl = work.coverUrl || work.media?.find((m) => m.type === 'IMAGE')?.url;
           const hasMultipleMedia = (work.media?.length || 0) > 1;
@@ -149,7 +147,8 @@ export function LabWorksCarousel(): JSX.Element {
                 </div>
             </motion.div>
           );
-        })}
+          })
+        )}
       </div>
 
       {/* Lab Work Details Sheet */}

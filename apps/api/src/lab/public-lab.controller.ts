@@ -25,6 +25,11 @@ export class PublicLabWorksController {
     private readonly prisma: PrismaService,
   ) {}
 
+  @Get('status')
+  async getStatus(): Promise<{ maintenance: boolean }> {
+    return this.labService.getLabStatus();
+  }
+
   @Get()
   async findAll(@Query('limit') limit?: string): Promise<LabWorkDto[]> {
     const limitNum = limit ? parseInt(limit, 10) : undefined;

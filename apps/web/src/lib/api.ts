@@ -2070,6 +2070,12 @@ export const api = {
   },
 
   // Public Lab Works
+  async getLabStatus(): Promise<{ maintenance: boolean }> {
+    return request<{ maintenance: boolean }>('/lab/works/status', {
+      method: 'GET',
+    });
+  },
+
   async getLabWorks(limit?: number): Promise<LabWork[]> {
     const searchParams = new URLSearchParams();
     if (limit !== undefined) {

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -29,7 +30,10 @@ import type {
 
 @Injectable()
 export class LabService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async findAll(query: LabProductQueryDto): Promise<LabProductsListResponse> {
     const { q, isActive, page, pageSize } = query;
@@ -780,6 +784,12 @@ export class LabService {
       ratingCount: result.ratingCount,
       userRating: result.ratings[0]?.rating ?? null,
     };
+  }
+
+  getLabStatus(): { maintenance: boolean } {
+    const maintenanceMode = this.configService.get<string>('LAB_MAINTENANCE_MODE', 'false');
+    const maintenance = maintenanceMode === 'true' || maintenanceMode === '1';
+    return { maintenance };
   }
 }
 
