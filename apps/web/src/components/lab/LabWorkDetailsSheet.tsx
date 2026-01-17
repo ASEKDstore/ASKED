@@ -1,15 +1,14 @@
 'use client';
 
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion, PanInfo } from 'framer-motion';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-
-import { Button } from '@/components/ui/button';
 import { StarRating } from '@/components/reviews/StarRating';
+import { Button } from '@/components/ui/button';
 import { useTelegram } from '@/hooks/useTelegram';
 import { api, type LabWork } from '@/lib/api';
 
@@ -74,12 +73,17 @@ export function LabWorkDetailsSheet({ labWorkId, isOpen, onClose }: LabWorkDetai
       onClose();
     };
 
-    webApp.BackButton.show();
-    webApp.BackButton.onClick(handleBack);
+    const tg = window.Telegram?.WebApp;
+    if (tg?.BackButton) {
+      tg.BackButton.show();
+      tg.BackButton.onClick(handleBack);
+    }
 
     return () => {
-      webApp.BackButton.hide();
-      webApp.BackButton.offClick(handleBack);
+      if (tg?.BackButton) {
+        tg.BackButton.hide();
+        tg.BackButton.offClick(handleBack);
+      }
     };
   }, [isOpen, webApp, onClose]);
 
