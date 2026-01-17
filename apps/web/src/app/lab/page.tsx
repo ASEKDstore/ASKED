@@ -1,6 +1,6 @@
 'use client';
 
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { CustomSteps } from '@/components/CustomSteps';
@@ -8,8 +8,8 @@ import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { ArtistCard } from '@/components/lab/ArtistCard';
 import { LabOrderFlow } from '@/components/lab/LabOrderFlow';
 import { LabProductsCarousel } from '@/components/lab/LabProductsCarousel';
+import { LabWorksCarousel } from '@/components/lab/LabWorksCarousel';
 import { LabSplash } from '@/components/lab/LabSplash';
-import { PortfolioSection } from '@/components/portfolio/PortfolioSection';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 import { useTelegram } from '@/hooks/useTelegram';
 import { api } from '@/lib/api';
@@ -22,6 +22,7 @@ interface ProgressData {
   totalSteps: number;
   stepLabels: string[];
   isStepVisible: (index: number) => boolean;
+  onBack: () => void;
 }
 
 export default function LabPage(): JSX.Element {
@@ -123,30 +124,19 @@ export default function LabPage(): JSX.Element {
           }}
         >
           <div className="relative">
-            {/* Close Button with Progress Indicator */}
+            {/* Wizard Header with Back Button */}
             <div className="sticky top-0 z-30 bg-black/40 backdrop-blur-xl border-b border-white/10">
               <div className="flex items-center justify-between p-4">
-                {/* Progress Indicator */}
+                {/* Back Button */}
                 {progress && (
-                  <div className="flex-1 mr-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-white/70 text-sm">
-                        Шаг {progress.currentStep} из {progress.totalSteps}
-                      </span>
-                    </div>
-                    <div className="flex gap-2">
-                      {[0, 1, 2, 3, 4].map((index) => (
-                        <div
-                          key={index}
-                          className={`flex-1 h-1 rounded-full transition-all ${
-                            progress.isStepVisible(index) && (index < progress.currentStep - 1 || index === progress.currentStep - 1)
-                              ? 'bg-white'
-                              : 'bg-white/20'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  <button
+                    onClick={progress.onBack}
+                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-black/30 backdrop-blur-xl 
+                             border border-white/10 text-white hover:bg-black/40 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span className="text-sm font-medium">Назад</span>
+                  </button>
                 )}
                 {/* Close Button */}
                 <button
@@ -158,7 +148,7 @@ export default function LabPage(): JSX.Element {
                 </button>
               </div>
             </div>
-            <LabOrderFlow onComplete={handleOrderComplete} onProgressChange={handleProgressChange} />
+            <LabOrderFlow onComplete={handleOrderComplete} onProgressChange={handleProgressChange} onExit={handleCloseOrderFlow} />
           </div>
         </div>
       </div>
@@ -228,9 +218,9 @@ export default function LabPage(): JSX.Element {
                 <CustomSteps />
               </div>
 
-              {/* Portfolio Section */}
+              {/* Ready Works Carousel */}
               <div className="w-full" style={{ paddingBottom: 'clamp(32px, 8vw, 48px)' }}>
-                <PortfolioSection onOrderClick={handleOrderClick} />
+                <LabWorksCarousel />
               </div>
 
               {/* Bottom Spacing */}

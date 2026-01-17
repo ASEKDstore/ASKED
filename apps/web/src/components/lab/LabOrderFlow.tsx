@@ -2,6 +2,7 @@
 
 import { motion, useInView } from 'framer-motion';
 import {
+  ArrowLeft,
   ArrowRight,
   Check,
   Image as ImageIcon,
@@ -59,7 +60,9 @@ interface LabOrderFlowProps {
     totalSteps: number;
     stepLabels: string[];
     isStepVisible: (index: number) => boolean;
+    onBack: () => void;
   }) => void;
+  onExit?: () => void;
 }
 
 interface StepBlockProps {
@@ -130,9 +133,9 @@ function StepBlock({ stepIndex, isVisible, isHighlighted, stepRefs, children }: 
   );
 }
 
-export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps): JSX.Element {
+export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderFlowProps): JSX.Element {
   const [orderData, setOrderData] = useState<OrderData>({
-    clothingType: 'hoodie', // Auto-select hoodie by default
+    clothingType: null, // Start fresh - user must select on step 1
     size: null,
     colorChoice: null,
     customColor: null,
@@ -255,13 +258,8 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
     findScrollContainer();
   }, [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete, findScrollContainer]);
 
-  // Auto-scroll when steps become visible
-  useEffect(() => {
-    // Auto-proceed from step 1 (hoodie is pre-selected)
-    if (isStep1Complete && !orderData.size) {
-      scrollToStepWithRetry(1);
-    }
-  }, [isStep1Complete, orderData.size, scrollToStepWithRetry]);
+  // Auto-scroll when steps become visible (only after user completes step)
+  // Removed auto-scroll from step 1 - user must explicitly select clothing type first
 
   useEffect(() => {
     if (isStep2Complete && !orderData.colorChoice) {
@@ -282,9 +280,47 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
   }, [isStep4Complete, orderData.description, scrollToStepWithRetry]);
 
   // Notify parent about progress changes
+  // Step 1 = clothingType not selected
+  // Step 2 = clothingType selected, size not selected
+  // Step 3 = size selected, colorChoice not selected
+  // Step 4 = colorChoice selected, placement not selected
+  // Step 5 = placement selected
   const currentStep = useMemo(() => {
-    return orderData.placement ? 5 : orderData.colorChoice ? 4 : orderData.size ? 3 : orderData.clothingType ? 2 : 1;
+    if (orderData.placement) return 5;
+    if (orderData.colorChoice) return 4;
+    if (orderData.size) return 3;
+    if (orderData.clothingType) return 2;
+    return 1; // Start at step 1 when nothing is selected
   }, [orderData.placement, orderData.colorChoice, orderData.size, orderData.clothingType]);
+
+  // Handle back navigation
+  const handleBack = useCallback(() => {
+    if (currentStep === 1) {
+      // Exit wizard if on step 1
+      if (onExit) {
+        onExit();
+      }
+    } else {
+      // Go to previous step
+      if (currentStep === 2) {
+        // Go back to step 1: clear clothingType
+        setOrderData((prev) => ({ ...prev, clothingType: null }));
+        scrollToStepWithRetry(0);
+      } else if (currentStep === 3) {
+        // Go back to step 2: clear size
+        setOrderData((prev) => ({ ...prev, size: null }));
+        scrollToStepWithRetry(1);
+      } else if (currentStep === 4) {
+        // Go back to step 3: clear colorChoice
+        setOrderData((prev) => ({ ...prev, colorChoice: null }));
+        scrollToStepWithRetry(2);
+      } else if (currentStep === 5) {
+        // Go back to step 4: clear placement
+        setOrderData((prev) => ({ ...prev, placement: null }));
+        scrollToStepWithRetry(3);
+      }
+    }
+  }, [currentStep, scrollToStepWithRetry, onExit]);
 
   useEffect(() => {
     if (onProgressChange) {
@@ -293,9 +329,10 @@ export function LabOrderFlow({ onComplete, onProgressChange }: LabOrderFlowProps
         totalSteps: 5,
         stepLabels: STEP_LABELS,
         isStepVisible,
+        onBack: handleBack,
       });
     }
-  }, [currentStep, isStepVisible, onProgressChange]);
+  }, [currentStep, isStepVisible, onProgressChange, handleBack]);
 
   const handleStepComplete = (stepIndex: number, value: string | null) => {
     // Haptic feedback
