@@ -651,6 +651,7 @@ export interface LabWork {
   title: string;
   slug: string | null;
   description: string | null;
+  coverUrl: string | null;
   ratingAvg: number;
   ratingCount: number;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
@@ -2083,6 +2084,13 @@ export const api = {
   async getLabWork(id: string): Promise<LabWork> {
     return request<LabWork>(`/lab/works/${id}`, {
       method: 'GET',
+    });
+  },
+
+  async rateLabWork(id: string, rating: number): Promise<{ ratingAvg: number; ratingCount: number; userRating: number | null }> {
+    return request<{ ratingAvg: number; ratingCount: number; userRating: number | null }>(`/lab/works/${id}/rate`, {
+      method: 'POST',
+      body: JSON.stringify({ rating }),
     });
   },
 };

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -22,6 +23,8 @@ import type {
   LabWorkQueryDto,
   CreateLabWorkMediaDto,
   UpdateLabWorkMediaDto,
+  RateLabWorkDto,
+  RateLabWorkResponse,
 } from './dto/lab-work.dto';
 
 @Injectable()
@@ -364,24 +367,29 @@ export class LabService {
       },
     });
 
-    const items = works.map((work) => ({
-      id: work.id,
-      title: work.title,
-      slug: work.slug,
-      description: work.description,
-      ratingAvg: work.ratingAvg,
-      ratingCount: work.ratingCount,
-      status: work.status as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
-      createdAt: work.createdAt.toISOString(),
-      updatedAt: work.updatedAt.toISOString(),
-      media: work.media.map((m) => ({
-        id: m.id,
-        labWorkId: m.labWorkId,
-        type: m.type as 'IMAGE' | 'VIDEO',
-        url: m.url,
-        sort: m.sort,
-      })),
-    }));
+    const items = works.map((work) => {
+      // Auto-set coverUrl from first media if not set
+      const coverUrl = work.coverUrl ?? work.media[0]?.url ?? null;
+      return {
+        id: work.id,
+        title: work.title,
+        slug: work.slug,
+        description: work.description,
+        coverUrl,
+        ratingAvg: work.ratingAvg,
+        ratingCount: work.ratingCount,
+        status: work.status as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
+        createdAt: work.createdAt.toISOString(),
+        updatedAt: work.updatedAt.toISOString(),
+        media: work.media.map((m) => ({
+          id: m.id,
+          labWorkId: m.labWorkId,
+          type: m.type as 'IMAGE' | 'VIDEO',
+          url: m.url,
+          sort: m.sort,
+        })),
+      };
+    });
 
     return { items, total, page, pageSize };
   }
@@ -400,11 +408,14 @@ export class LabService {
       throw new NotFoundException(`LabWork with id ${id} not found`);
     }
 
+    // Auto-set coverUrl from first media if not set
+    const coverUrl = work.coverUrl ?? work.media[0]?.url ?? null;
     return {
       id: work.id,
       title: work.title,
       slug: work.slug,
       description: work.description,
+      coverUrl,
       ratingAvg: work.ratingAvg,
       ratingCount: work.ratingCount,
       status: work.status as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
@@ -443,6 +454,7 @@ export class LabService {
         title: createDto.title,
         slug: createDto.slug ?? null,
         description: createDto.description ?? null,
+        coverUrl: createDto.coverUrl ?? null,
         ratingAvg: createDto.ratingAvg ?? 0,
         ratingCount: createDto.ratingCount ?? 0,
         status: createDto.status ?? 'DRAFT',
@@ -470,6 +482,7 @@ export class LabService {
         ...(updateDto.title !== undefined ? { title: updateDto.title } : {}),
         ...(updateDto.slug !== undefined ? { slug: updateDto.slug ?? null } : {}),
         ...(updateDto.description !== undefined ? { description: updateDto.description ?? null } : {}),
+        ...(updateDto.coverUrl !== undefined ? { coverUrl: updateDto.coverUrl ?? null } : {}),
         ...(updateDto.ratingAvg !== undefined ? { ratingAvg: updateDto.ratingAvg } : {}),
         ...(updateDto.ratingCount !== undefined ? { ratingCount: updateDto.ratingCount } : {}),
         ...(updateDto.status !== undefined ? { status: updateDto.status } : {}),
@@ -496,6 +509,7 @@ export class LabService {
   async addWorkMedia(labWorkId: string, createDto: CreateLabWorkMediaDto): Promise<LabWorkMediaDto> {
     const work = await this.prisma.labWork.findUnique({
       where: { id: labWorkId },
+      include: { media: true },
     });
 
     if (!work) {
@@ -510,6 +524,14 @@ export class LabService {
         sort: createDto.sort ?? 0,
       },
     });
+
+    // Auto-set coverUrl from first media if not set
+    if (!work.coverUrl && work.media.length === 0 && createDto.type === 'IMAGE') {
+      await this.prisma.labWork.update({
+        where: { id: labWorkId },
+        data: { coverUrl: createDto.url },
+      });
+    }
 
     return {
       id: media.id,
@@ -573,24 +595,29 @@ export class LabService {
       },
     });
 
-    return works.map((work) => ({
-      id: work.id,
-      title: work.title,
-      slug: work.slug,
-      description: work.description,
-      ratingAvg: work.ratingAvg,
-      ratingCount: work.ratingCount,
-      status: work.status as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
-      createdAt: work.createdAt.toISOString(),
-      updatedAt: work.updatedAt.toISOString(),
-      media: work.media.map((m) => ({
-        id: m.id,
-        labWorkId: m.labWorkId,
-        type: m.type as 'IMAGE' | 'VIDEO',
-        url: m.url,
-        sort: m.sort,
-      })),
-    }));
+    return works.map((work) => {
+      // Auto-set coverUrl from first media if not set
+      const coverUrl = work.coverUrl ?? work.media[0]?.url ?? null;
+      return {
+        id: work.id,
+        title: work.title,
+        slug: work.slug,
+        description: work.description,
+        coverUrl,
+        ratingAvg: work.ratingAvg,
+        ratingCount: work.ratingCount,
+        status: work.status as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED',
+        createdAt: work.createdAt.toISOString(),
+        updatedAt: work.updatedAt.toISOString(),
+        media: work.media.map((m) => ({
+          id: m.id,
+          labWorkId: m.labWorkId,
+          type: m.type as 'IMAGE' | 'VIDEO',
+          url: m.url,
+          sort: m.sort,
+        })),
+      };
+    });
   }
 
   async publishWork(id: string): Promise<LabWorkDto> {
@@ -671,6 +698,88 @@ export class LabService {
       url: m.url,
       sort: m.sort,
     }));
+  }
+
+  // Helper: recalculate rating aggregates from LabWorkRating records
+  private async recalcLabWorkRating(labWorkId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const prisma = tx || this.prisma;
+
+    const ratings = await prisma.labWorkRating.findMany({
+      where: { labWorkId },
+      select: { rating: true },
+    });
+
+    const ratingCount = ratings.length;
+    const ratingAvg = ratingCount > 0
+      ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratingCount
+      : 0;
+
+    await prisma.labWork.update({
+      where: { id: labWorkId },
+      data: {
+        ratingAvg,
+        ratingCount,
+      },
+    });
+  }
+
+  async rateLabWork(labWorkId: string, userId: string, ratingDto: RateLabWorkDto): Promise<RateLabWorkResponse> {
+    // Validate work exists
+    const work = await this.prisma.labWork.findUnique({
+      where: { id: labWorkId },
+    });
+
+    if (!work) {
+      throw new NotFoundException(`LabWork with id ${labWorkId} not found`);
+    }
+
+    // Validate rating range (already validated in DTO, but double-check)
+    if (ratingDto.rating < 1 || ratingDto.rating > 5) {
+      throw new BadRequestException('Rating must be between 1 and 5');
+    }
+
+    // Upsert rating in transaction
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Upsert rating (update if exists, create if not)
+      await tx.labWorkRating.upsert({
+        where: {
+          labWorkId_userId: {
+            labWorkId,
+            userId,
+          },
+        },
+        update: {
+          rating: ratingDto.rating,
+        },
+        create: {
+          labWorkId,
+          userId,
+          rating: ratingDto.rating,
+        },
+      });
+
+      // Recalculate aggregates
+      await this.recalcLabWorkRating(labWorkId, tx);
+
+      // Get updated work with user rating
+      const updatedWork = await tx.labWork.findUnique({
+        where: { id: labWorkId },
+        include: {
+          ratings: {
+            where: { userId },
+            select: { rating: true },
+          },
+        },
+      });
+
+      return updatedWork!;
+    });
+
+    return {
+      ratingAvg: result.ratingAvg,
+      ratingCount: result.ratingCount,
+      userRating: result.ratings[0]?.rating ?? null,
+    };
   }
 }
 

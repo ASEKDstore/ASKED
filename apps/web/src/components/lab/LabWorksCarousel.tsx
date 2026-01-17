@@ -71,7 +71,8 @@ export function LabWorksCarousel(): JSX.Element {
         }}
       >
         {publishedWorks.map((work, index) => {
-          const firstMedia = work.media?.[0];
+          // Use coverUrl if provided, otherwise use first media image
+          const coverImageUrl = work.coverUrl || work.media?.find((m) => m.type === 'IMAGE')?.url;
           const hasMultipleMedia = (work.media?.length || 0) > 1;
 
           return (
@@ -94,10 +95,10 @@ export function LabWorksCarousel(): JSX.Element {
               <Link href={`/lab/works/${work.id}`}>
                 {/* Image */}
                 <div className="relative w-full h-[180px] bg-black/20">
-                  {firstMedia && firstMedia.type === 'IMAGE' && !imageErrors[work.id] ? (
+                  {coverImageUrl && !imageErrors[work.id] ? (
                     <>
                       <Image
-                        src={firstMedia.url}
+                        src={coverImageUrl}
                         alt={work.title}
                         fill
                         className="object-cover"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,14 +10,19 @@ import { useState } from 'react';
 import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { StarRating } from '@/components/reviews/StarRating';
 import { Button } from '@/components/ui/button';
-import { api } from '@/lib/api';
+import { useTelegram } from '@/hooks/useTelegram';
+import { api, type LabWork } from '@/lib/api';
 
 export default function LabWorkPage(): JSX.Element {
   const params = useParams();
   const router = useRouter();
+  const { initData } = useTelegram();
+  const queryClient = useQueryClient();
   const workId = params.id as string;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [isRating, setIsRating] = useState(false);
 
   const { data: work, isLoading, error } = useQuery({
     queryKey: ['lab-work', workId],
@@ -25,8 +30,47 @@ export default function LabWorkPage(): JSX.Element {
     enabled: !!workId,
   });
 
+  const rateMutation = useMutation({
+    mutationFn: (rating: number) => api.rateLabWork(workId, rating),
+    onMutate: async (rating: number) => {
+      setIsRating(true);
+      // Optimistic update
+      await queryClient.cancelQueries({ queryKey: ['lab-work', workId] });
+      const previousWork = queryClient.getQueryData<LabWork>(['lab-work', workId]);
+      if (previousWork) {
+        queryClient.setQueryData<LabWork>(['lab-work', workId], {
+          ...previousWork,
+          ratingAvg: ((previousWork.ratingAvg * previousWork.ratingCount + rating) / (previousWork.ratingCount + 1)),
+          ratingCount: previousWork.ratingCount + (userRating === null ? 1 : 0),
+        });
+      }
+      setUserRating(rating);
+      return { previousWork };
+    },
+    onError: (_err, _rating, context) => {
+      if (context?.previousWork) {
+        queryClient.setQueryData(['lab-work', workId], context.previousWork);
+      }
+      setUserRating(null);
+    },
+    onSuccess: (data) => {
+      setUserRating(data.userRating);
+      queryClient.invalidateQueries({ queryKey: ['lab-work', workId] });
+      queryClient.invalidateQueries({ queryKey: ['lab-works'] });
+    },
+    onSettled: () => {
+      setIsRating(false);
+    },
+  });
+
   const images = work?.media?.filter((m) => m.type === 'IMAGE') || [];
   const mainImage = images[currentImageIndex];
+
+  const handleRatingChange = (rating: number) => {
+    if (!isRating && initData) {
+      rateMutation.mutate(rating);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -182,6 +226,24 @@ export default function LabWorkPage(): JSX.Element {
             )}
             {work.description && (
               <p className="text-gray-600 mb-4 whitespace-pre-wrap">{work.description}</p>
+            )}
+            {/* User rating section */}
+            {initData && (
+              <div className="mb-6 pt-4 border-t">
+                <h3 className="text-sm font-medium mb-2 text-gray-700">Ваша оценка</h3>
+                <StarRating
+                  rating={userRating ?? work.ratingAvg}
+                  size="md"
+                  interactive={!isRating}
+                  onRatingChange={handleRatingChange}
+                />
+                {userRating && (
+                  <p className="text-sm text-gray-500 mt-2">Вы оценили: {userRating} из 5</p>
+                )}
+                {isRating && (
+                  <p className="text-sm text-gray-500 mt-2">Сохранение...</p>
+                )}
+              </div>
             )}
           </div>
 

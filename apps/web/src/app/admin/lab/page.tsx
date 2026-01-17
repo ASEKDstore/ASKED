@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FlaskConical, Plus, Edit, X, Search, Image as ImageIcon } from 'lucide-react';
+import { FlaskConical, Plus, Edit, X, Search, Image as ImageIcon, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
@@ -682,6 +682,26 @@ function LabWorksTab(): JSX.Element {
     },
   });
 
+  const addMediaMutation = useMutation({
+    mutationFn: ({ labWorkId, media }: { labWorkId: string; media: { type: 'IMAGE' | 'VIDEO'; url: string; sort?: number } }) =>
+      api.addLabWorkMedia(initData, labWorkId, media),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'lab-works'] });
+      setNewMediaUrl('');
+    },
+  });
+
+  const deleteMediaMutation = useMutation({
+    mutationFn: ({ labWorkId, mediaId }: { labWorkId: string; mediaId: string }) =>
+      api.deleteLabWorkMedia(initData, labWorkId, mediaId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'lab-works'] });
+    },
+  });
+
+  const [newMediaUrl, setNewMediaUrl] = useState('');
+  const [newMediaType, setNewMediaType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -1011,6 +1031,97 @@ function LabWorksTab(): JSX.Element {
                   <option value="ARCHIVED">Архив</option>
                 </select>
               </div>
+              {editingWork && (
+                <div className="pt-4 border-t">
+                  <h3 className="text-sm font-medium mb-3">Медиа</h3>
+                  <div className="space-y-3 mb-4">
+                    {editingWork.media
+                      ?.sort((a, b) => a.sort - b.sort)
+                      .map((media) => (
+                        <div
+                          key={media.id}
+                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                        >
+                          <div className="flex-shrink-0 w-20 h-20 relative bg-gray-200 rounded">
+                            {media.type === 'IMAGE' ? (
+                              <Image
+                                src={media.url}
+                                alt="Media"
+                                fill
+                                className="object-cover rounded"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                <ImageIcon className="w-8 h-8" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{media.type}</p>
+                            <p className="text-xs text-gray-500 truncate">{media.url}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (editingWork) {
+                                deleteMediaMutation.mutate({
+                                  labWorkId: editingWork.id,
+                                  mediaId: media.id,
+                                });
+                              }
+                            }}
+                            disabled={deleteMediaMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    {(!editingWork.media || editingWork.media.length === 0) && (
+                      <p className="text-sm text-gray-500 text-center py-4">Нет медиа</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      type="url"
+                      placeholder="URL медиа"
+                      value={newMediaUrl}
+                      onChange={(e) => setNewMediaUrl(e.target.value)}
+                      className="flex-1"
+                    />
+                    <select
+                      value={newMediaType}
+                      onChange={(e) => setNewMediaType(e.target.value as 'IMAGE' | 'VIDEO')}
+                      className="border border-gray-300 rounded-lg px-3 py-2"
+                    >
+                      <option value="IMAGE">Изображение</option>
+                      <option value="VIDEO">Видео</option>
+                    </select>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (editingWork && newMediaUrl) {
+                          addMediaMutation.mutate({
+                            labWorkId: editingWork.id,
+                            media: {
+                              type: newMediaType,
+                              url: newMediaUrl,
+                              sort: editingWork.media?.length || 0,
+                            },
+                          });
+                          setNewMediaUrl('');
+                        }
+                      }}
+                      disabled={!newMediaUrl || addMediaMutation.isPending}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Добавить
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button

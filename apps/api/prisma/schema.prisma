@@ -125,6 +125,7 @@ model User {
   orders        Order[]
   notifications UserNotification[]
   reviews       Review[]
+  labWorkRatings LabWorkRating[]
 
   @@map("users")
 }
@@ -634,12 +635,14 @@ model LabWork {
   title       String
   slug        String?        @unique
   description String?        @db.Text
+  coverUrl    String?
   ratingAvg   Float          @default(0)
   ratingCount Int            @default(0)
   status      LabWorkStatus  @default(DRAFT)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   media       LabWorkMedia[]
+  ratings     LabWorkRating[]
 
   @@index([status, createdAt])
   @@index([slug])
@@ -656,4 +659,20 @@ model LabWorkMedia {
 
   @@index([labWorkId, sort])
   @@map("lab_work_media")
+}
+
+model LabWorkRating {
+  id        String   @id @default(cuid())
+  labWorkId String
+  userId    String
+  rating    Int      // 1..5
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  labWork LabWork @relation(fields: [labWorkId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([labWorkId, userId])
+  @@index([labWorkId])
+  @@map("lab_work_ratings")
 }
