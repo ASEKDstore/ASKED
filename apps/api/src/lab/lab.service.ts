@@ -561,11 +561,11 @@ export class LabService {
     });
   }
 
-  async findAllPublicWorks(): Promise<LabWorkDto[]> {
+  async findAllPublicWorks(limit?: number): Promise<LabWorkDto[]> {
     const works = await this.prisma.labWork.findMany({
       where: { status: 'PUBLISHED' },
       orderBy: [{ createdAt: 'desc' }],
-      take: 50,
+      take: limit ?? 50,
       include: {
         media: {
           orderBy: { sort: 'asc' },
@@ -590,6 +590,86 @@ export class LabService {
         url: m.url,
         sort: m.sort,
       })),
+    }));
+  }
+
+  async publishWork(id: string): Promise<LabWorkDto> {
+    const existing = await this.prisma.labWork.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`LabWork with id ${id} not found`);
+    }
+
+    await this.prisma.labWork.update({
+      where: { id },
+      data: { status: 'PUBLISHED' },
+    });
+
+    return this.findOneWork(id);
+  }
+
+  async archiveWork(id: string): Promise<LabWorkDto> {
+    const existing = await this.prisma.labWork.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`LabWork with id ${id} not found`);
+    }
+
+    await this.prisma.labWork.update({
+      where: { id },
+      data: { status: 'ARCHIVED' },
+    });
+
+    return this.findOneWork(id);
+  }
+
+  async reorderWorkMedia(labWorkId: string, mediaIds: string[]): Promise<LabWorkMediaDto[]> {
+    // Verify all media belong to this work
+    const allMedia = await this.prisma.labWorkMedia.findMany({
+      where: { labWorkId },
+    });
+
+    const providedIds = new Set(mediaIds);
+    if (providedIds.size !== mediaIds.length) {
+      throw new BadRequestException('Duplicate media IDs provided');
+    }
+
+    if (providedIds.size !== allMedia.length) {
+      throw new BadRequestException('Media IDs count does not match existing media');
+    }
+
+    for (const mediaId of mediaIds) {
+      const media = allMedia.find((m) => m.id === mediaId);
+      if (!media) {
+        throw new BadRequestException(`Media with id ${mediaId} not found for this work`);
+      }
+    }
+
+    // Update sort order
+    await Promise.all(
+      mediaIds.map((mediaId, index) =>
+        this.prisma.labWorkMedia.update({
+          where: { id: mediaId },
+          data: { sort: index },
+        }),
+      ),
+    );
+
+    const updated = await this.prisma.labWorkMedia.findMany({
+      where: { labWorkId },
+      orderBy: { sort: 'asc' },
+    });
+
+    return updated.map((m) => ({
+      id: m.id,
+      labWorkId: m.labWorkId,
+      type: m.type as 'IMAGE' | 'VIDEO',
+      url: m.url,
+      sort: m.sort,
     }));
   }
 }

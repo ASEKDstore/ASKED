@@ -19,8 +19,10 @@ export class PublicLabWorksController {
   constructor(private readonly labService: LabService) {}
 
   @Get()
-  async findAll(): Promise<LabWorkDto[]> {
-    return this.labService.findAllPublicWorks();
+  async findAll(@Query('limit') limit?: string): Promise<LabWorkDto[]> {
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    const safeLimit = limitNum && !isNaN(limitNum) && limitNum > 0 && limitNum <= 100 ? limitNum : undefined;
+    return this.labService.findAllPublicWorks(safeLimit);
   }
 
   @Get(':id')

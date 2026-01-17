@@ -134,16 +134,31 @@ export class AdminLabWorksController {
     return this.labService.addWorkMedia(labWorkId, createDto);
   }
 
-  @Patch('media/:id')
-  async updateMedia(@Param('id') id: string, @Body() body: any): Promise<LabWorkMediaDto> {
+  @Patch(':id/media/:mediaId')
+  async updateMedia(@Param('mediaId') id: string, @Body() body: any): Promise<LabWorkMediaDto> {
     const updateDto = updateLabWorkMediaSchema.parse(body);
     return this.labService.updateWorkMedia(id, updateDto);
   }
 
-  @Delete('media/:id')
+  @Post(':id/publish')
+  async publish(@Param('id') id: string): Promise<LabWorkDto> {
+    return this.labService.publishWork(id);
+  }
+
+  @Post(':id/archive')
+  async archive(@Param('id') id: string): Promise<LabWorkDto> {
+    return this.labService.archiveWork(id);
+  }
+
+  @Patch(':id/media/reorder')
+  async reorderMedia(@Param('id') labWorkId: string, @Body() body: { mediaIds: string[] }): Promise<LabWorkMediaDto[]> {
+    return this.labService.reorderWorkMedia(labWorkId, body.mediaIds);
+  }
+
+  @Delete(':id/media/:mediaId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteMedia(@Param('id') id: string): Promise<void> {
-    return this.labService.deleteWorkMedia(id);
+  async deleteMedia(@Param('id') labWorkId: string, @Param('mediaId') mediaId: string): Promise<void> {
+    return this.labService.deleteWorkMedia(mediaId);
   }
 }
 
