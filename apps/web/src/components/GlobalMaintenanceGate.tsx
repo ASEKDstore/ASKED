@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
 
 import { MaintenanceScreen } from '@/components/MaintenanceScreen';
+import { getTokenFromUrl } from '@/lib/admin-nav';
 import { api } from '@/lib/api';
 import { isInTelegramWebApp } from '@/lib/telegram';
-import { getTokenFromUrl } from '@/lib/admin-nav';
 
 interface GlobalMaintenanceGateProps {
   children: React.ReactNode;

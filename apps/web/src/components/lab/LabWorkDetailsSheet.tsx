@@ -152,7 +152,7 @@ export function LabWorkDetailsSheet({ labWorkId, isOpen, onClose }: LabWorkDetai
 
   // Reset image index when work changes
   useEffect(() => {
-    if (work) {
+    if (work?.id) {
       setCurrentImageIndex(0);
     }
   }, [work?.id]);
