@@ -713,3 +713,11 @@ model AppSetting {
 
   @@map("app_settings")
 }
+
+model AppSettingsSingleton {
+  id                       String   @id @default("singleton")
+  globalMaintenanceEnabled Boolean  @default(false)
+  updatedAt                DateTime @updatedAt
+
+  @@map("app_settings_singleton")
+}

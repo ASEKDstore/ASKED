@@ -2099,5 +2099,20 @@ export const api = {
       body: JSON.stringify({ rating }),
     });
   },
+
+  // Settings
+  async getMaintenanceStatus(): Promise<{ globalMaintenanceEnabled: boolean }> {
+    return request<{ globalMaintenanceEnabled: boolean }>('/settings/maintenance', {
+      method: 'GET',
+    });
+  },
+
+  async updateMaintenanceStatus(initData: string | null, enabled: boolean): Promise<{ globalMaintenanceEnabled: boolean }> {
+    return request<{ globalMaintenanceEnabled: boolean }>('/admin/settings/maintenance', {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify({ globalMaintenanceEnabled: enabled }),
+    });
+  },
 };
 

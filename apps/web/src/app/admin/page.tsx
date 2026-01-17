@@ -1,10 +1,11 @@
 'use client';
 
-import { Package, ShoppingBag, TrendingUp } from 'lucide-react';
+import { Package, ShoppingBag, TrendingUp, Wrench } from 'lucide-react';
 // eslint-disable-next-line import/order
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTelegram } from '@/hooks/useTelegram';
 import { getTokenFromUrl } from '@/lib/admin-nav';
 import { api } from '@/lib/api';
@@ -14,6 +15,7 @@ export default function AdminDashboardPage(): JSX.Element {
   const { initData } = useTelegram();
   const token = getTokenFromUrl();
   const isDevMode = !!token;
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'dashboard', 'summary', initData],
@@ -22,6 +24,31 @@ export default function AdminDashboardPage(): JSX.Element {
     refetchOnWindowFocus: false,
     staleTime: 30000, // Cache for 30 seconds
   });
+
+  const { data: maintenanceStatus, isLoading: isLoadingMaintenance } = useQuery({
+    queryKey: ['settings', 'maintenance'],
+    queryFn: () => api.getMaintenanceStatus(),
+    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000,
+  });
+
+  const [optimisticEnabled, setOptimisticEnabled] = useState<boolean | null>(null);
+
+  const updateMaintenanceMutation = useMutation({
+    mutationFn: (enabled: boolean) => api.updateMaintenanceStatus(initData, enabled),
+    onMutate: (enabled) => {
+      setOptimisticEnabled(enabled);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings', 'maintenance'] });
+      setOptimisticEnabled(null);
+    },
+    onError: () => {
+      setOptimisticEnabled(null);
+    },
+  });
+
+  const currentMaintenanceEnabled = optimisticEnabled !== null ? optimisticEnabled : maintenanceStatus?.globalMaintenanceEnabled ?? false;
 
   const metrics = [
     {
@@ -99,7 +126,7 @@ export default function AdminDashboardPage(): JSX.Element {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {metrics.map((metric) => {
           const Icon = metric.icon;
           return (
@@ -120,6 +147,59 @@ export default function AdminDashboardPage(): JSX.Element {
           );
         })}
       </div>
+
+      {/* Maintenance Settings */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Wrench className="h-5 w-5 text-muted-foreground" />
+            <CardTitle>Технические работы (глобально)</CardTitle>
+          </div>
+          <CardDescription>
+            Не влияет на LAB и Профиль → Заказы
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <label htmlFor="maintenance-toggle" className="text-sm font-medium cursor-pointer">
+              Показывать экран техработ пользователям
+            </label>
+            <button
+              id="maintenance-toggle"
+              type="button"
+              role="switch"
+              aria-checked={currentMaintenanceEnabled}
+              onClick={() => {
+                updateMaintenanceMutation.mutate(!currentMaintenanceEnabled);
+              }}
+              disabled={isLoadingMaintenance || updateMaintenanceMutation.isPending}
+              className={`
+                relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                ${currentMaintenanceEnabled ? 'bg-primary' : 'bg-gray-300'}
+                disabled:opacity-50 disabled:cursor-not-allowed
+                focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+              `}
+            >
+              <span
+                className={`
+                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                  ${currentMaintenanceEnabled ? 'translate-x-6' : 'translate-x-1'}
+                `}
+              />
+            </button>
+          </div>
+          {(isLoadingMaintenance || updateMaintenanceMutation.isPending) && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {updateMaintenanceMutation.isPending ? 'Обновление...' : 'Загрузка...'}
+            </p>
+          )}
+          {updateMaintenanceMutation.isError && (
+            <p className="text-xs text-destructive mt-2">
+              Ошибка при обновлении. Попробуйте снова.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
