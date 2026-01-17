@@ -65,12 +65,17 @@ bot.command('start', async (ctx: Context) => {
   // Logging for diagnostics
   console.log('[START] User ID:', userId);
   console.log('[START] WEBAPP_URL:', webappUrl);
-  console.log('[START] Sending web_app button');
+  console.log('[START] Sending LAB image and button');
   
-  // Create inline keyboard with web_app button (NOT url button)
-  const keyboard = new InlineKeyboard().webApp('Открыть магазин', webappUrl);
+  // LAB image URL (production URL)
+  const labImageUrl = `${webappUrl}/lab/mascot.png`;
   
-  await ctx.reply('👋 Привет! Я бот ASKED Miniapp.\n\nНажмите кнопку ниже, чтобы открыть магазин:', {
+  // Create inline keyboard with web_app button for LAB mode
+  const keyboard = new InlineKeyboard().webApp('🚀 Открыть LAB', `${webappUrl}/lab`);
+  
+  // Send photo with caption and button
+  await ctx.replyWithPhoto(labImageUrl, {
+    caption: 'Твой кастом почти у тебя в руках!\nПереходи LAB по кнопке ниже.',
     reply_markup: keyboard,
   });
 });
