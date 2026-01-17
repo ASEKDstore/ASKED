@@ -3,9 +3,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion, useInView } from 'framer-motion';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useRef, useState } from 'react';
 
+import { LabWorkDetailsSheet } from '@/components/lab/LabWorkDetailsSheet';
 import { StarRating } from '@/components/reviews/StarRating';
 import { api } from '@/lib/api';
 
@@ -13,6 +13,7 @@ export function LabWorksCarousel(): JSX.Element {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-50px' });
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [selectedWorkId, setSelectedWorkId] = useState<string | null>(null);
 
   const { data: labWorks, isLoading } = useQuery({
     queryKey: ['lab-works'],
@@ -91,10 +92,10 @@ export function LabWorksCarousel(): JSX.Element {
                        overflow-hidden cursor-pointer transition-all duration-200
                        hover:bg-black/35"
               style={{ scrollSnapAlign: 'start' }}
+              onClick={() => setSelectedWorkId(work.id)}
             >
-              <Link href={`/lab/works/${work.id}`}>
-                {/* Image */}
-                <div className="relative w-full h-[180px] bg-black/20">
+              {/* Image */}
+              <div className="relative w-full h-[180px] bg-black/20">
                   {coverImageUrl && !imageErrors[work.id] ? (
                     <>
                       <Image
@@ -146,11 +147,17 @@ export function LabWorksCarousel(): JSX.Element {
                     </div>
                   )}
                 </div>
-              </Link>
             </motion.div>
           );
         })}
       </div>
+
+      {/* Lab Work Details Sheet */}
+      <LabWorkDetailsSheet
+        labWorkId={selectedWorkId}
+        isOpen={!!selectedWorkId}
+        onClose={() => setSelectedWorkId(null)}
+      />
 
       <style jsx>{`
         .scrollbar-hide {

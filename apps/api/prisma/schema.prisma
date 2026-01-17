@@ -107,6 +107,16 @@ enum LabWorkStatus {
   ARCHIVED
 }
 
+enum LabChannelPostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum LabButtonTarget {
+  LAB_HOME
+  LAB_CUSTOM
+}
+
 enum LabWorkMediaType {
   IMAGE
   VIDEO
@@ -675,4 +685,31 @@ model LabWorkRating {
   @@unique([labWorkId, userId])
   @@index([labWorkId])
   @@map("lab_work_ratings")
+}
+
+model LabChannelPost {
+  id               String                @id @default(cuid())
+  title            String?
+  text             String                @db.Text
+  photoUrl         String?
+  buttonText       String                @default("Открыть LAB")
+  buttonTarget     LabButtonTarget       @default(LAB_HOME)
+  status           LabChannelPostStatus  @default(DRAFT)
+  createdAt        DateTime              @default(now())
+  publishedAt      DateTime?
+  telegramMessageId String?
+  telegramChatId    String?
+
+  @@index([status, createdAt])
+  @@map("lab_channel_posts")
+}
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text // JSON string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
 }
