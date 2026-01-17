@@ -157,7 +157,7 @@ export class AdminLabWorksController {
 
   @Delete(':id/media/:mediaId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteMedia(@Param('id') labWorkId: string, @Param('mediaId') mediaId: string): Promise<void> {
+  async deleteMedia(@Param('mediaId') mediaId: string): Promise<void> {
     return this.labService.deleteWorkMedia(mediaId);
   }
 }

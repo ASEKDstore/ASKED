@@ -2,7 +2,6 @@
 
 import { motion, useInView } from 'framer-motion';
 import {
-  ArrowLeft,
   ArrowRight,
   Check,
   Image as ImageIcon,

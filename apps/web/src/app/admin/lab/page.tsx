@@ -30,7 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useTelegram } from '@/hooks/useTelegram';
 import { getTokenFromUrl } from '@/lib/admin-nav';
-import { api, ApiClientError, type LabProduct, type CreateLabProductDto, type LabWork, type CreateLabWorkDto, type CreateLabWorkMediaDto } from '@/lib/api';
+import { api, ApiClientError, type LabProduct, type CreateLabProductDto, type LabWork, type CreateLabWorkDto } from '@/lib/api';
 
 function formatError(error: unknown): string {
   if (error instanceof ApiClientError) {

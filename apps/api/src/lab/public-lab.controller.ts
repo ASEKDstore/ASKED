@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 
 import { LabService } from './lab.service';
 import type { PublicLabProductDto } from './dto/public-lab-product.dto';
