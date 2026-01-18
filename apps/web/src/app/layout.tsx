@@ -5,6 +5,7 @@ import Script from 'next/script';
 import { Footer } from '@/components/Footer';
 import { GlobalMaintenanceGate } from '@/components/GlobalMaintenanceGate';
 import { Header } from '@/components/Header';
+import { LabRouteGuard } from '@/components/LabRouteGuard';
 import { SplashGate } from '@/components/SplashGate';
 import { Providers } from '@/lib/providers';
 
@@ -60,6 +61,7 @@ export default function RootLayout({
         <Providers>
           <SplashGate>
             <GlobalMaintenanceGate>
+              <LabRouteGuard />
               <div className="flex flex-col min-h-screen">
                 <Header />
                 <main className="flex-1">{children}</main>

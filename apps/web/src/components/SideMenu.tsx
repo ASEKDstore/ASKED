@@ -18,6 +18,8 @@ import {
 import { useRouter, usePathname } from 'next/navigation';
 import { useRef } from 'react';
 
+import { useLabLockStore } from '@/lib/lab-lock-store';
+
 import { Overlay } from './Overlay';
 
 interface MenuItem {
@@ -77,6 +79,7 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
   const sheetRef = useRef<HTMLDivElement>(null);
+  const { labLockMode } = useLabLockStore();
 
   const handleItemClick = (href: string) => {
     if (href && !href.startsWith('#')) {
@@ -180,6 +183,14 @@ export function SideMenu({ isOpen, onClose }: SideMenuProps): JSX.Element {
                 }
 
                 if (!item.icon) {
+                  return null;
+                }
+
+                // Hide items during LAB lock mode (except LAB, Profile, Orders)
+                const allowedInLockMode = ['/lab', '/profile', '/orders'];
+                const isBlockedInLockMode = labLockMode && !allowedInLockMode.includes(item.href);
+
+                if (isBlockedInLockMode) {
                   return null;
                 }
 

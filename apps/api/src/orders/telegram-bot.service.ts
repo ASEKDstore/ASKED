@@ -32,12 +32,17 @@ export class TelegramBotService {
   /**
    * Resolve admin chat configuration (DB priority, ENV fallback)
    */
-  private async resolveAdminChatConfig(): Promise<{ chatId: string | null; threadId: number | null }> {
+  private async resolveAdminChatConfig(): Promise<{
+    chatId: string | null;
+    threadId: number | null;
+  }> {
     try {
       // 1. Try DB config first
       const dbConfig = await this.adminChatConfigService.getConfig();
       if (dbConfig) {
-        this.logger.log(`📋 Using admin chat config from DB: chatId=${dbConfig.chatId}, threadId=${dbConfig.threadId || 'null'}`);
+        this.logger.log(
+          `📋 Using admin chat config from DB: chatId=${dbConfig.chatId}, threadId=${dbConfig.threadId || 'null'}`,
+        );
         return {
           chatId: dbConfig.chatId,
           threadId: dbConfig.threadId,
@@ -46,7 +51,9 @@ export class TelegramBotService {
 
       // 2. Fallback to ENV
       if (this.adminChatIdNew) {
-        this.logger.log(`📋 Using admin chat config from ENV: chatId=${this.adminChatIdNew}, threadId=${this.adminChatThreadId || 'null'}`);
+        this.logger.log(
+          `📋 Using admin chat config from ENV: chatId=${this.adminChatIdNew}, threadId=${this.adminChatThreadId || 'null'}`,
+        );
         return {
           chatId: this.adminChatIdNew,
           threadId: this.adminChatThreadId,
@@ -157,17 +164,13 @@ export class TelegramBotService {
     }
 
     try {
-      const buyerName =
-        buyerInfo?.firstName && buyerInfo?.lastName
-          ? `${buyerInfo.firstName} ${buyerInfo.lastName}`
-          : buyerInfo?.firstName || buyerInfo?.username || 'Не указано';
-
-      const buyerUsername = buyerInfo?.username ? `@${buyerInfo.username}` : '';
-      const buyerTelegramId = buyerInfo?.telegramId ? ` (ID: ${buyerInfo.telegramId})` : '';
-
       // Format clothing type
       const clothingTypeText =
-        wizardData.clothingType === 'custom' ? 'Своё' : wizardData.clothingType === 'hoodie' ? 'Худи' : wizardData.clothingType || 'Не указано';
+        wizardData.clothingType === 'custom'
+          ? 'Своё'
+          : wizardData.clothingType === 'hoodie'
+            ? 'Худи'
+            : wizardData.clothingType || '—';
 
       // Format color
       const colorText =
@@ -177,7 +180,7 @@ export class TelegramBotService {
             ? 'Белый'
             : wizardData.colorChoice === 'gray'
               ? 'Серый'
-              : wizardData.colorChoice || 'Не указано';
+              : wizardData.colorChoice || '—';
 
       // Format placement
       const placementText =
@@ -189,23 +192,39 @@ export class TelegramBotService {
               ? 'Рукав'
               : wizardData.placement === 'individual'
                 ? 'Индивидуально'
-                : wizardData.placement || 'Не указано';
+                : wizardData.placement || '—';
 
-      // Build media links
-      const mediaLinks = wizardData.attachmentUrl ? [`📎 ${wizardData.attachmentUrl}`] : [];
+      // Format description (idea)
+      const descriptionText = wizardData.description || '—';
+
+      // Build media links (one per line if multiple)
+      let mediaText = '—';
+      if (wizardData.attachmentUrl) {
+        // If there are multiple URLs (future), list each on its own line
+        // For now, single attachment URL
+        mediaText = wizardData.attachmentUrl;
+      }
+
+      // Format client info: @username (id: telegramId)
+      let clientText = '—';
+      if (buyerInfo?.telegramId) {
+        const username = buyerInfo.username ? `@${buyerInfo.username}` : '';
+        clientText = username
+          ? `${username} (id: ${buyerInfo.telegramId})`
+          : `(id: ${buyerInfo.telegramId})`;
+      }
 
       // Build message with required format
-      const orderNumber = order.number || order.id.slice(0, 8);
+      const orderNumber = order.number || `№${order.id.slice(0, 8)}/LAB`;
       const message = `Сестренка, у нас новая темка нарисовалась
+Заказ: ${orderNumber}
 
-*${orderNumber}*
-
-*Что кастомим:* ${clothingTypeText}${wizardData.clothingType === 'custom' && wizardData.description ? `\n${wizardData.description}` : ''}
-*Цвет:* ${colorText}
-*Место:* ${placementText}
-*Идея клиента:* ${wizardData.description}
-${mediaLinks.length > 0 ? `\n*Медиа:*\n${mediaLinks.join('\n')}` : ''}
-${buyerInfo ? `\n👤 *Клиент:* ${buyerName}${buyerUsername ? ` ${buyerUsername}` : ''}${buyerTelegramId}` : ''}`;
+Что кастомим: ${clothingTypeText}
+Цвет: ${colorText}
+Место: ${placementText}
+Идея клиента: ${descriptionText}
+Медиа: ${mediaText}
+Клиент: ${clientText}`;
 
       // Build inline keyboard
       const keyboard = {
@@ -252,7 +271,9 @@ ${buyerInfo ? `\n👤 *Клиент:* ${buyerName}${buyerUsername ? ` ${buyerUse
 
       // 3. Legacy: Send to TELEGRAM_ADMIN_CHAT_ID if configured
       if (this.adminChatId && this.adminChatId !== this.adminChatIdNew) {
-        this.logger.log(`📡 Sending LAB order notification to legacy admin chat (${this.adminChatId})`);
+        this.logger.log(
+          `📡 Sending LAB order notification to legacy admin chat (${this.adminChatId})`,
+        );
         sendPromises.push(
           this.sendMessage(this.adminChatId, message, {
             parseMode: 'Markdown',
@@ -275,7 +296,10 @@ ${buyerInfo ? `\n👤 *Клиент:* ${buyerName}${buyerUsername ? ` ${buyerUse
     }
   }
 
-  async notifyNewOrder(order: OrderDto, buyerInfo?: { username?: string; firstName?: string; lastName?: string; telegramId?: string }): Promise<void> {
+  async notifyNewOrder(
+    order: OrderDto,
+    buyerInfo?: { username?: string; firstName?: string; lastName?: string; telegramId?: string },
+  ): Promise<void> {
     this.logger.log(
       `📤 Preparing to send order notification: orderId=${order.id}, hasToken=${!!this.botToken}, adminTgId=${!!this.adminTgId}, adminChatId=${!!this.adminChatIdNew}, legacyChatId=${!!this.adminChatId}`,
     );
@@ -395,7 +419,9 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
    * Used for testing bot configuration
    */
   async sendTestNotification(): Promise<{ success: boolean; message?: string; error?: string }> {
-    this.logger.log(`🧪 Sending test notification: chatId=${this.adminChatId}, hasToken=${!!this.botToken}, hasChatId=${!!this.adminChatId}`);
+    this.logger.log(
+      `🧪 Sending test notification: chatId=${this.adminChatId}, hasToken=${!!this.botToken}, hasChatId=${!!this.adminChatId}`,
+    );
 
     if (!this.botToken || !this.adminChatId) {
       const error = `TELEGRAM_BOT_TOKEN or TELEGRAM_ADMIN_CHAT_ID not configured - hasToken=${!!this.botToken}, hasChatId=${!!this.adminChatId}`;
@@ -434,7 +460,9 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
       const responseText = await response.text();
 
       if (!response.ok) {
-        this.logger.error(`❌ Test notification failed: status=${response.status}, response=${responseText}`);
+        this.logger.error(
+          `❌ Test notification failed: status=${response.status}, response=${responseText}`,
+        );
         return {
           success: false,
           error: `Telegram API error: ${response.status} ${responseText}`,
@@ -462,17 +490,27 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
    * @param buyerTelegramId Buyer's Telegram ID (chat_id)
    * @param newStatus New order status
    */
-  async notifyBuyerStatusChange(orderNumber: string, buyerTelegramId: string, newStatus: string): Promise<void> {
+  async notifyBuyerStatusChange(
+    orderNumber: string,
+    buyerTelegramId: string,
+    newStatus: string,
+  ): Promise<void> {
     // Log before send
-    this.logger.log(`📤 Preparing to send status change notification: orderNumber=${orderNumber}, chatId=${buyerTelegramId}, newStatus=${newStatus}, hasToken=${!!this.botToken}`);
+    this.logger.log(
+      `📤 Preparing to send status change notification: orderNumber=${orderNumber}, chatId=${buyerTelegramId}, newStatus=${newStatus}, hasToken=${!!this.botToken}`,
+    );
 
     if (!this.botToken) {
-      this.logger.warn(`⚠️ TELEGRAM_BOT_TOKEN not configured - skipping buyer notification for order ${orderNumber}`);
+      this.logger.warn(
+        `⚠️ TELEGRAM_BOT_TOKEN not configured - skipping buyer notification for order ${orderNumber}`,
+      );
       return;
     }
 
     if (!buyerTelegramId) {
-      this.logger.warn(`⚠️ Buyer telegramId not available - skipping notification for order ${orderNumber}`);
+      this.logger.warn(
+        `⚠️ Buyer telegramId not available - skipping notification for order ${orderNumber}`,
+      );
       return;
     }
 
@@ -498,7 +536,9 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
         text: message,
       };
 
-      this.logger.log(`📡 Sending Telegram status notification to chat ${buyerTelegramId} for order ${orderNumber}`);
+      this.logger.log(
+        `📡 Sending Telegram status notification to chat ${buyerTelegramId} for order ${orderNumber}`,
+      );
 
       const response = await fetch(url, {
         method: 'POST',
@@ -512,12 +552,16 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
 
       if (!response.ok) {
         // Log error but don't throw - status update should succeed even if notification fails
-        this.logger.error(`❌ Buyer notification failed for order ${orderNumber}: status=${response.status}, response=${responseText}`);
+        this.logger.error(
+          `❌ Buyer notification failed for order ${orderNumber}: status=${response.status}, response=${responseText}`,
+        );
         return;
       }
 
       // Log success
-      this.logger.log(`✅ Buyer notification sent successfully for order ${orderNumber} to chat ${buyerTelegramId}`);
+      this.logger.log(
+        `✅ Buyer notification sent successfully for order ${orderNumber} to chat ${buyerTelegramId}`,
+      );
     } catch (error) {
       // Log failure but don't throw - status update should succeed even if notification fails
       this.logger.error(`❌ Failed to send buyer notification for order ${orderNumber}:`, error);
@@ -545,7 +589,9 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
     const config = await this.resolveAdminChatConfig();
 
     if (!config.chatId) {
-      this.logger.warn('⚠️ Admin chat not configured (neither DB nor ENV) - skipping admin chat message');
+      this.logger.warn(
+        '⚠️ Admin chat not configured (neither DB nor ENV) - skipping admin chat message',
+      );
       return;
     }
 
@@ -555,11 +601,15 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
         replyMarkup: options?.replyMarkup,
         messageThreadId: config.threadId ?? undefined,
       });
-      this.logger.log(`✅ Message sent to admin chat (${config.chatId})${config.threadId ? ` in thread ${config.threadId}` : ''}`);
+      this.logger.log(
+        `✅ Message sent to admin chat (${config.chatId})${config.threadId ? ` in thread ${config.threadId}` : ''}`,
+      );
     } catch (error) {
       // Log warning but don't throw - failures should not crash the app
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.warn(`⚠️ Failed to send message to admin chat (${config.chatId}): ${errorMessage}`);
+      this.logger.warn(
+        `⚠️ Failed to send message to admin chat (${config.chatId}): ${errorMessage}`,
+      );
       // Don't throw - failures should be logged but not crash the app
     }
   }
@@ -587,12 +637,7 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
 
     try {
       // Build message
-      const daysText =
-        daysRemaining === 1
-          ? 'день'
-          : daysRemaining < 5
-            ? 'дня'
-            : 'дней';
+      const daysText = daysRemaining === 1 ? 'день' : daysRemaining < 5 ? 'дня' : 'дней';
       const message = `⏰ *Напоминание*
 
 Подписка «${subscriptionName}»
@@ -690,4 +735,3 @@ ${order.comment ? `\n💬 *Комментарий:*\n${order.comment}` : ''}`;
     return new Intl.NumberFormat('ru-RU').format(price);
   }
 }
-
