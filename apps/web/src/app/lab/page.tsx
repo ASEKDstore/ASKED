@@ -1,9 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, User, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, User, ShoppingBag, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 import { CustomSteps } from '@/components/CustomSteps';
 import { HEADER_HEIGHT_PX } from '@/components/Header';
@@ -38,7 +38,7 @@ export default function LabPage(): JSX.Element {
   const [showSplash, setShowSplash] = useState(true);
   const [showOrderFlow, setShowOrderFlow] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
-  const { labMaintenance } = useLabLockStore();
+  const { labMaintenance, disableLabLockMode } = useLabLockStore();
 
   // Lock body scroll on LAB page
   useLockBodyScroll(true);
@@ -66,6 +66,20 @@ export default function LabPage(): JSX.Element {
   });
 
   const isMaintenance = (labStatus?.maintenance === true || labMaintenance) && !isAdmin;
+
+  // Handle exit from maintenance screen
+  const handleExitMaintenance = useCallback(() => {
+    // Disable lock mode to allow navigation
+    disableLabLockMode();
+
+    // Try to go back in history, fallback to home if no history
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      // No history, go to home
+      router.replace('/');
+    }
+  }, [disableLabLockMode, router]);
 
   const handleSplashComplete = () => {
     setShowSplash(false);
@@ -231,10 +245,22 @@ export default function LabPage(): JSX.Element {
 
             {/* CTA Buttons */}
             <div className="flex flex-col gap-3 pt-4">
+              {/* Exit button - primary */}
+              <Button
+                onClick={handleExitMaintenance}
+                size="lg"
+                className="w-full bg-white/95 text-black hover:bg-white border border-white/50 shadow-lg font-medium"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Назад
+              </Button>
+
+              {/* Secondary buttons */}
               <Button
                 onClick={() => router.push('/profile')}
                 size="lg"
-                className="w-full bg-white/95 text-black hover:bg-white border border-white/50 shadow-lg font-medium"
+                variant="outline"
+                className="w-full bg-white/10 text-white hover:bg-white/20 border border-white/30 shadow-lg font-medium"
               >
                 <User className="w-5 h-5 mr-2" />
                 Профиль
@@ -242,7 +268,8 @@ export default function LabPage(): JSX.Element {
               <Button
                 onClick={() => router.push('/orders')}
                 size="lg"
-                className="w-full bg-white/95 text-black hover:bg-white border border-white/50 shadow-lg font-medium"
+                variant="outline"
+                className="w-full bg-white/10 text-white hover:bg-white/20 border border-white/30 shadow-lg font-medium"
               >
                 <ShoppingBag className="w-5 h-5 mr-2" />
                 Мои заказы
