@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, User, ShoppingBag, X } from 'lucide-react';
+import { ArrowLeft, User, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useCallback } from 'react';
 
