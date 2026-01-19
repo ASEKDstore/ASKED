@@ -195,9 +195,8 @@ function BannerSlide({ banner, index, onClick, isDragging }: BannerSlideProps): 
         damping: 30,
       }}
     >
-      {/* Glass Container - Dark background */}
+      {/* Black background */}
       <div className="absolute inset-0 bg-black rounded-[28px] border border-white/5" />
-      <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-[28px]" />
 
       {/* Media Layer */}
       <div className="absolute inset-0 rounded-[28px] overflow-hidden">
@@ -245,7 +244,7 @@ function BannerSlide({ banner, index, onClick, isDragging }: BannerSlideProps): 
       </div>
 
       {/* Content */}
-      <div className="relative h-full flex flex-col justify-between p-6 z-10" style={{ paddingTop: 'clamp(60px, 15vw, 80px)' }}>
+      <div className="relative h-full flex flex-col justify-between p-6 z-10" style={{ paddingTop: 'clamp(80px, 20vw, 100px)' }}>
         {/* Top spacing */}
         <div className="flex-1" />
 
