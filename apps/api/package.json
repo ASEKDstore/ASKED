@@ -16,7 +16,7 @@
     "start": "node dist/main",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "prisma migrate deploy && node dist/main",
+    "start:prod": "prisma migrate resolve --rolled-back 20250123000000_add_polet_system || true && prisma migrate deploy && node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest --config jest.config.js",
     "test:setup": "ts-node scripts/setup-test-db.ts",
