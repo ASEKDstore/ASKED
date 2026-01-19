@@ -5,7 +5,9 @@ export interface PoziciyaPoletaDto {
   poletId: string;
   nazvanie: string;
   kolichestvo: number;
-  sebestoimostNaEd: number;
+  sebestoimostBazovayaRub: number;
+  sebestoimostDostavkaRub: number;
+  sebestoimostItogoRub: number;
   tovarId: string | null;
   tovar?: {
     id: string;
@@ -18,10 +20,10 @@ export interface PoletDto {
   id: string;
   nazvanie: string;
   status: 'DRAFT' | 'RECEIVED' | 'DISASSEMBLED' | 'POSTED' | 'CANCELED';
-  cenaPoleta: number;
-  dostavka: number;
-  prochieRashody: number;
-  obshayaSumma: number;
+  cenaPoletaRub: number;
+  dostavkaRub: number;
+  prochieRashodyRub: number;
+  obshayaSummaRub: number;
   metodRaspredeleniya: 'BY_QUANTITY';
   primernoeKolvo: number | null;
   createdAt: Date;
@@ -34,10 +36,10 @@ export function mapPoletToDto(polet: Polet & { pozicii: (PoziciyaPoleta & { tova
     id: polet.id,
     nazvanie: polet.nazvanie,
     status: polet.status,
-    cenaPoleta: polet.cenaPoleta,
-    dostavka: polet.dostavka,
-    prochieRashody: polet.prochieRashody,
-    obshayaSumma: polet.obshayaSumma,
+    cenaPoletaRub: polet.cenaPoletaRub,
+    dostavkaRub: polet.dostavkaRub,
+    prochieRashodyRub: polet.prochieRashodyRub,
+    obshayaSummaRub: polet.obshayaSummaRub,
     metodRaspredeleniya: polet.metodRaspredeleniya,
     primernoeKolvo: polet.primernoeKolvo,
     createdAt: polet.createdAt,
@@ -47,7 +49,9 @@ export function mapPoletToDto(polet: Polet & { pozicii: (PoziciyaPoleta & { tova
       poletId: poz.poletId,
       nazvanie: poz.nazvanie,
       kolichestvo: poz.kolichestvo,
-      sebestoimostNaEd: poz.sebestoimostNaEd,
+      sebestoimostBazovayaRub: poz.sebestoimostBazovayaRub,
+      sebestoimostDostavkaRub: poz.sebestoimostDostavkaRub,
+      sebestoimostItogoRub: poz.sebestoimostItogoRub,
       tovarId: poz.tovarId,
       tovar: poz.tovar ? {
         id: poz.tovar.id,

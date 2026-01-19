@@ -55,9 +55,9 @@ export default function AdminPoletPage(): JSX.Element {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState<CreatePoletDto>({
     nazvanie: '',
-    cenaPoleta: 0,
-    dostavka: 0,
-    prochieRashody: 0,
+    cenaPoletaRub: 0,
+    dostavkaRub: 0,
+    prochieRashodyRub: 0,
     primernoeKolvo: undefined,
   });
 
@@ -76,9 +76,9 @@ export default function AdminPoletPage(): JSX.Element {
       setCreateDialogOpen(false);
       setFormData({
         nazvanie: '',
-        cenaPoleta: 0,
-        dostavka: 0,
-        prochieRashody: 0,
+        cenaPoletaRub: 0,
+        dostavkaRub: 0,
+        prochieRashodyRub: 0,
         primernoeKolvo: undefined,
       });
       router.push(`/admin/polet/${newPolet.id}`);
@@ -163,7 +163,7 @@ export default function AdminPoletPage(): JSX.Element {
                         {statusLabels[polet.status] || polet.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatPrice(polet.obshayaSumma)}</TableCell>
+                    <TableCell>{formatPrice(polet.obshayaSummaRub)}</TableCell>
                     <TableCell>{polet.primernoeKolvo || '-'}</TableCell>
                     <TableCell>{new Date(polet.createdAt).toLocaleDateString('ru-RU')}</TableCell>
                     <TableCell className="text-right">
@@ -201,21 +201,23 @@ export default function AdminPoletPage(): JSX.Element {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="cenaPoleta">Цена паллеты (копейки) *</Label>
+              <Label htmlFor="cenaPoletaRub">Цена паллеты (рубли) *</Label>
               <Input
-                id="cenaPoleta"
+                id="cenaPoletaRub"
                 type="number"
-                value={formData.cenaPoleta}
-                onChange={(e) => setFormData({ ...formData, cenaPoleta: parseInt(e.target.value) || 0 })}
+                value={formData.cenaPoletaRub}
+                onChange={(e) => setFormData({ ...formData, cenaPoletaRub: parseInt(e.target.value) || 0 })}
+                placeholder="в рублях"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="dostavka">Доставка (копейки) *</Label>
+              <Label htmlFor="dostavkaRub">Доставка (рубли) *</Label>
               <Input
-                id="dostavka"
+                id="dostavkaRub"
                 type="number"
-                value={formData.dostavka}
-                onChange={(e) => setFormData({ ...formData, dostavka: parseInt(e.target.value) || 0 })}
+                value={formData.dostavkaRub}
+                onChange={(e) => setFormData({ ...formData, dostavkaRub: parseInt(e.target.value) || 0 })}
+                placeholder="в рублях"
               />
             </div>
             <div className="grid gap-2">
@@ -234,12 +236,13 @@ export default function AdminPoletPage(): JSX.Element {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="prochieRashody">Прочие расходы (копейки)</Label>
+              <Label htmlFor="prochieRashodyRub">Прочие расходы (рубли)</Label>
               <Input
-                id="prochieRashody"
+                id="prochieRashodyRub"
                 type="number"
-                value={formData.prochieRashody}
-                onChange={(e) => setFormData({ ...formData, prochieRashody: parseInt(e.target.value) || 0 })}
+                value={formData.prochieRashodyRub}
+                onChange={(e) => setFormData({ ...formData, prochieRashodyRub: parseInt(e.target.value) || 0 })}
+                placeholder="в рублях"
               />
             </div>
           </div>

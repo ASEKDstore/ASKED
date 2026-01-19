@@ -697,7 +697,9 @@ export interface PoziciyaPoleta {
   poletId: string;
   nazvanie: string;
   kolichestvo: number;
-  sebestoimostNaEd: number;
+  sebestoimostBazovayaRub: number;
+  sebestoimostDostavkaRub: number;
+  sebestoimostItogoRub: number;
   tovarId: string | null;
   tovar?: {
     id: string;
@@ -710,10 +712,10 @@ export interface Polet {
   id: string;
   nazvanie: string;
   status: 'DRAFT' | 'RECEIVED' | 'DISASSEMBLED' | 'POSTED' | 'CANCELED';
-  cenaPoleta: number;
-  dostavka: number;
-  prochieRashody: number;
-  obshayaSumma: number;
+  cenaPoletaRub: number;
+  dostavkaRub: number;
+  prochieRashodyRub: number;
+  obshayaSummaRub: number;
   metodRaspredeleniya: 'BY_QUANTITY';
   primernoeKolvo: number | null;
   createdAt: string;
@@ -723,17 +725,17 @@ export interface Polet {
 
 export interface CreatePoletDto {
   nazvanie: string;
-  cenaPoleta: number;
-  dostavka: number;
-  prochieRashody?: number;
+  cenaPoletaRub: number;
+  dostavkaRub: number;
+  prochieRashodyRub?: number;
   primernoeKolvo?: number;
 }
 
 export interface UpdatePoletDto {
   nazvanie?: string;
-  cenaPoleta?: number;
-  dostavka?: number;
-  prochieRashody?: number;
+  cenaPoletaRub?: number;
+  dostavkaRub?: number;
+  prochieRashodyRub?: number;
   primernoeKolvo?: number | null;
 }
 

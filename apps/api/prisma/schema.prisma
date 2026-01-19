@@ -741,10 +741,10 @@ model Polet {
   id                  String                     @id @default(cuid())
   nazvanie            String                     @db.VarChar(255) // название
   status              PoletStatus                @default(DRAFT) // статус
-  cenaPoleta          Int // ценаПолета
-  dostavka            Int // доставка
-  prochieRashody      Int                        @default(0) // прочиеРасходы
-  obshayaSumma        Int // общаяСумма
+  cenaPoletaRub       Int // ценаПаллетыRub (в рублях)
+  dostavkaRub         Int // доставкаRub (в рублях)
+  prochieRashodyRub   Int                        @default(0) // прочиеРасходыRub (в рублях)
+  obshayaSummaRub     Int // общаяСуммаRub (в рублях)
   metodRaspredeleniya DeliveryDistributionMethod @default(BY_QUANTITY) // методРаспределения
   primernoeKolvo      Int? // примерноеКолво (optional, before receiving)
   createdAt           DateTime                   @default(now())
@@ -755,14 +755,16 @@ model Polet {
 }
 
 model PoziciyaPoleta {
-  id               String   @id @default(cuid())
-  poletId          String // полетId
-  nazvanie         String   @db.VarChar(255) // название
-  kolichestvo      Int // количество
-  sebestoimostNaEd Int      @default(0) // себестоимостьНаЕд
-  tovarId          String? // товарId
-  polet            Polet    @relation(fields: [poletId], references: [id], onDelete: Cascade)
-  tovar            Product? @relation(fields: [tovarId], references: [id])
+  id                      String   @id @default(cuid())
+  poletId                 String // полетId
+  nazvanie                String   @db.VarChar(255) // название
+  kolichestvo             Int // количество
+  sebestoimostBazovayaRub Int      @default(0) // себестоимостьБазоваяRub (в рублях)
+  sebestoimostDostavkaRub Int      @default(0) // себестоимостьДоставкаRub (в рублях)
+  sebestoimostItogoRub    Int      @default(0) // себестоимостьИтогоRub (в рублях)
+  tovarId                 String? // товарId
+  polet                   Polet    @relation(fields: [poletId], references: [id], onDelete: Cascade)
+  tovar                   Product? @relation(fields: [tovarId], references: [id])
 
   @@index([poletId])
   @@map("poziciya_poleta")

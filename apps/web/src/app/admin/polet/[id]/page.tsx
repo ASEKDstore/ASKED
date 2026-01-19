@@ -170,25 +170,25 @@ export default function AdminPoletDetailPage(): JSX.Element {
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Цена паллеты:</span>
-              <span className="font-medium">{formatPrice(polet.cenaPoleta)}</span>
+              <span className="font-medium">{formatPrice(polet.cenaPoletaRub)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Доставка:</span>
-              <span className="font-medium">{formatPrice(polet.dostavka)}</span>
+              <span className="font-medium">{formatPrice(polet.dostavkaRub)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Прочие расходы:</span>
-              <span className="font-medium">{formatPrice(polet.prochieRashody)}</span>
+              <span className="font-medium">{formatPrice(polet.prochieRashodyRub)}</span>
             </div>
             <div className="flex justify-between pt-2 border-t">
               <span className="font-semibold">Итого:</span>
-              <span className="font-bold text-lg">{formatPrice(polet.obshayaSumma)}</span>
+              <span className="font-bold text-lg">{formatPrice(polet.obshayaSummaRub)}</span>
             </div>
             {polet.status === 'RECEIVED' && polet.pozicii.length > 0 && (
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-muted-foreground">Себестоимость на единицу:</span>
                 <span className="font-medium">
-                  {formatPrice(polet.pozicii[0]?.sebestoimostNaEd || 0)}
+                  {formatPrice(polet.pozicii[0]?.sebestoimostItogoRub || 0)}
                 </span>
               </div>
             )}
@@ -259,7 +259,9 @@ export default function AdminPoletDetailPage(): JSX.Element {
                 <TableRow>
                   <TableHead>Название</TableHead>
                   <TableHead className="text-right">Количество</TableHead>
-                  <TableHead className="text-right">Себестоимость на ед.</TableHead>
+                  <TableHead className="text-right">Базовая себестоимость</TableHead>
+                  <TableHead className="text-right">Доставка</TableHead>
+                  <TableHead className="text-right">Итого на ед.</TableHead>
                   <TableHead className="text-right">Итого себестоимость</TableHead>
                   <TableHead>Товар</TableHead>
                   {canSozdatTovar && <TableHead className="text-right">Действия</TableHead>}
@@ -268,7 +270,7 @@ export default function AdminPoletDetailPage(): JSX.Element {
               <TableBody>
                 {polet.pozicii.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={canSozdatTovar ? 8 : 7} className="text-center text-muted-foreground">
                       Нет позиций. Добавьте первую позицию после получения паллеты.
                     </TableCell>
                   </TableRow>
@@ -277,9 +279,11 @@ export default function AdminPoletDetailPage(): JSX.Element {
                     <TableRow key={poz.id}>
                       <TableCell className="font-medium">{poz.nazvanie}</TableCell>
                       <TableCell className="text-right">{poz.kolichestvo}</TableCell>
-                      <TableCell className="text-right">{formatPrice(poz.sebestoimostNaEd)}</TableCell>
+                      <TableCell className="text-right">{formatPrice(poz.sebestoimostBazovayaRub)}</TableCell>
+                      <TableCell className="text-right">{formatPrice(poz.sebestoimostDostavkaRub)}</TableCell>
+                      <TableCell className="text-right">{formatPrice(poz.sebestoimostItogoRub)}</TableCell>
                       <TableCell className="text-right font-semibold">
-                        {formatPrice(poz.sebestoimostNaEd * poz.kolichestvo)}
+                        {formatPrice(poz.sebestoimostItogoRub * poz.kolichestvo)}
                       </TableCell>
                       <TableCell>
                         {poz.tovar ? (

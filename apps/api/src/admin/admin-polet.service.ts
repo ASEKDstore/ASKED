@@ -77,15 +77,15 @@ export class AdminPoletService {
   }
 
   async create(dto: CreatePoletDto): Promise<PoletDto> {
-    const obshayaSumma = dto.cenaPoleta + dto.dostavka + dto.prochieRashody;
+    const obshayaSummaRub = dto.cenaPoletaRub + dto.dostavkaRub + dto.prochieRashodyRub;
 
     const polet = await this.prisma.polet.create({
       data: {
         nazvanie: dto.nazvanie,
-        cenaPoleta: dto.cenaPoleta,
-        dostavka: dto.dostavka,
-        prochieRashody: dto.prochieRashody,
-        obshayaSumma,
+        cenaPoletaRub: dto.cenaPoletaRub,
+        dostavkaRub: dto.dostavkaRub,
+        prochieRashodyRub: dto.prochieRashodyRub,
+        obshayaSummaRub,
         metodRaspredeleniya: 'BY_QUANTITY',
         primernoeKolvo: dto.primernoeKolvo ?? null,
         status: 'DRAFT',
@@ -126,24 +126,24 @@ export class AdminPoletService {
     if (dto.nazvanie !== undefined) {
       updateData.nazvanie = dto.nazvanie;
     }
-    if (dto.cenaPoleta !== undefined) {
-      updateData.cenaPoleta = dto.cenaPoleta;
+    if (dto.cenaPoletaRub !== undefined) {
+      updateData.cenaPoletaRub = dto.cenaPoletaRub;
     }
-    if (dto.dostavka !== undefined) {
-      updateData.dostavka = dto.dostavka;
+    if (dto.dostavkaRub !== undefined) {
+      updateData.dostavkaRub = dto.dostavkaRub;
     }
-    if (dto.prochieRashody !== undefined) {
-      updateData.prochieRashody = dto.prochieRashody;
+    if (dto.prochieRashodyRub !== undefined) {
+      updateData.prochieRashodyRub = dto.prochieRashodyRub;
     }
     if (dto.primernoeKolvo !== undefined) {
       updateData.primernoeKolvo = dto.primernoeKolvo;
     }
 
-    // Пересчитать общаяСумма
-    const cenaPoleta = dto.cenaPoleta ?? existing.cenaPoleta;
-    const dostavka = dto.dostavka ?? existing.dostavka;
-    const prochieRashody = dto.prochieRashody ?? existing.prochieRashody;
-    updateData.obshayaSumma = cenaPoleta + dostavka + prochieRashody;
+    // Пересчитать общаяСуммаRub
+    const cenaPoletaRub = dto.cenaPoletaRub ?? existing.cenaPoletaRub;
+    const dostavkaRub = dto.dostavkaRub ?? existing.dostavkaRub;
+    const prochieRashodyRub = dto.prochieRashodyRub ?? existing.prochieRashodyRub;
+    updateData.obshayaSummaRub = cenaPoletaRub + dostavkaRub + prochieRashodyRub;
 
     const polet = await this.prisma.polet.update({
       where: { id },
@@ -202,6 +202,46 @@ export class AdminPoletService {
     return mapPoletToDto(updated);
   }
 
+  /**
+   * Распределение доставки ПО_КОЛИЧЕСТВУ с остатком
+   * Распределяет доставкуRub + прочиеРасходыRub между позициями пропорционально количеству
+   */
+  private calculateDeliveryDistribution(
+    pozicii: Array<{ id: string; kolichestvo: number }>,
+    dostavkaRub: number,
+    prochieRashodyRub: number,
+  ): Map<string, { sebestoimostDostavkaRub: number }> {
+    const totalDeliveryRub = dostavkaRub + prochieRashodyRub;
+    const totalQty = pozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0);
+
+    if (totalQty === 0) {
+      return new Map();
+    }
+
+    // Базовая себестоимость доставки на единицу (целая часть)
+    const basePerUnit = Math.floor(totalDeliveryRub / totalQty);
+    // Остаток для распределения
+    let remainder = totalDeliveryRub % totalQty;
+
+    const result = new Map<string, { sebestoimostDostavkaRub: number }>();
+
+    // Распределяем базовую часть и остаток
+    for (const poz of pozicii) {
+      let sebestoimostDostavkaRub = basePerUnit * poz.kolichestvo;
+
+      // Распределяем остаток по единицам (детерминированно)
+      if (remainder > 0) {
+        const unitsToAdd = Math.min(remainder, poz.kolichestvo);
+        sebestoimostDostavkaRub += unitsToAdd;
+        remainder -= unitsToAdd;
+      }
+
+      result.set(poz.id, { sebestoimostDostavkaRub });
+    }
+
+    return result;
+  }
+
   async addPoziciya(poletId: string, dto: CreatePoziciyaDto): Promise<PoletDto> {
     const polet = await this.prisma.polet.findUnique({
       where: { id: poletId },
@@ -216,11 +256,22 @@ export class AdminPoletService {
       throw new BadRequestException('Можно добавлять позиции только в полеты со статусом ПОЛУЧЕН');
     }
 
-    // Рассчитать себестоимость на единицу для всех позиций
-    const vsegoEdinits = polet.pozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0) + dto.kolichestvo;
-    const sebestoimostNaEd = vsegoEdinits > 0 ? Math.round(polet.obshayaSumma / vsegoEdinits) : 0;
+    // Рассчитать распределение доставки для всех позиций (включая новую)
+    const allPozicii = [
+      ...polet.pozicii.map((poz) => ({ id: poz.id, kolichestvo: poz.kolichestvo })),
+      { id: 'NEW', kolichestvo: dto.kolichestvo },
+    ];
 
-    // Обновить себестоимость всех существующих позиций
+    const deliveryDistribution = this.calculateDeliveryDistribution(
+      allPozicii,
+      polet.dostavkaRub,
+      polet.prochieRashodyRub,
+    );
+
+    // Базовая себестоимость = цена паллеты / общее количество
+    const totalQty = allPozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0);
+    const sebestoimostBazovayaRub = totalQty > 0 ? Math.floor(polet.cenaPoletaRub / totalQty) : 0;
+
     await this.prisma.$transaction(async (tx) => {
       // Добавить новую позицию
       await tx.poziciyaPoleta.create({
@@ -228,19 +279,29 @@ export class AdminPoletService {
           poletId,
           nazvanie: dto.nazvanie,
           kolichestvo: dto.kolichestvo,
-          sebestoimostNaEd,
+          sebestoimostBazovayaRub,
+          sebestoimostDostavkaRub: deliveryDistribution.get('NEW')?.sebestoimostDostavkaRub ?? 0,
+          sebestoimostItogoRub: sebestoimostBazovayaRub + (deliveryDistribution.get('NEW')?.sebestoimostDostavkaRub ?? 0),
         },
       });
 
       // Обновить себестоимость всех существующих позиций
       if (polet.pozicii.length > 0) {
         await Promise.all(
-          polet.pozicii.map((poz) =>
-            tx.poziciyaPoleta.update({
+          polet.pozicii.map((poz) => {
+            const dist = deliveryDistribution.get(poz.id);
+            const sebestoimostDostavkaRub = dist?.sebestoimostDostavkaRub ?? 0;
+            const sebestoimostItogoRub = sebestoimostBazovayaRub + sebestoimostDostavkaRub;
+
+            return tx.poziciyaPoleta.update({
               where: { id: poz.id },
-              data: { sebestoimostNaEd },
-            })
-          )
+              data: {
+                sebestoimostBazovayaRub,
+                sebestoimostDostavkaRub,
+                sebestoimostItogoRub,
+              },
+            });
+          })
         );
       }
     });
@@ -289,16 +350,31 @@ export class AdminPoletService {
       const updatedPozicii = await tx.poziciyaPoleta.findMany({
         where: { poletId },
       });
-      const vsegoEdinits = updatedPozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0);
-      const sebestoimostNaEd = vsegoEdinits > 0 ? Math.round(polet.obshayaSumma / vsegoEdinits) : 0;
+
+      const deliveryDistribution = this.calculateDeliveryDistribution(
+        updatedPozicii.map((poz) => ({ id: poz.id, kolichestvo: poz.kolichestvo })),
+        polet.dostavkaRub,
+        polet.prochieRashodyRub,
+      );
+
+      const totalQty = updatedPozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0);
+      const sebestoimostBazovayaRub = totalQty > 0 ? Math.floor(polet.cenaPoletaRub / totalQty) : 0;
 
       await Promise.all(
-        updatedPozicii.map((poz) =>
-          tx.poziciyaPoleta.update({
+        updatedPozicii.map((poz) => {
+          const dist = deliveryDistribution.get(poz.id);
+          const sebestoimostDostavkaRub = dist?.sebestoimostDostavkaRub ?? 0;
+          const sebestoimostItogoRub = sebestoimostBazovayaRub + sebestoimostDostavkaRub;
+
+          return tx.poziciyaPoleta.update({
             where: { id: poz.id },
-            data: { sebestoimostNaEd },
-          })
-        )
+            data: {
+              sebestoimostBazovayaRub,
+              sebestoimostDostavkaRub,
+              sebestoimostItogoRub,
+            },
+          });
+        })
       );
     });
 
@@ -338,16 +414,30 @@ export class AdminPoletService {
       });
 
       if (remainingPozicii.length > 0) {
-        const vsegoEdinits = remainingPozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0);
-        const sebestoimostNaEd = vsegoEdinits > 0 ? Math.round(polet.obshayaSumma / vsegoEdinits) : 0;
+        const deliveryDistribution = this.calculateDeliveryDistribution(
+          remainingPozicii.map((poz) => ({ id: poz.id, kolichestvo: poz.kolichestvo })),
+          polet.dostavkaRub,
+          polet.prochieRashodyRub,
+        );
+
+        const totalQty = remainingPozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0);
+        const sebestoimostBazovayaRub = totalQty > 0 ? Math.floor(polet.cenaPoletaRub / totalQty) : 0;
 
         await Promise.all(
-          remainingPozicii.map((poz) =>
-            tx.poziciyaPoleta.update({
+          remainingPozicii.map((poz) => {
+            const dist = deliveryDistribution.get(poz.id);
+            const sebestoimostDostavkaRub = dist?.sebestoimostDostavkaRub ?? 0;
+            const sebestoimostItogoRub = sebestoimostBazovayaRub + sebestoimostDostavkaRub;
+
+            return tx.poziciyaPoleta.update({
               where: { id: poz.id },
-              data: { sebestoimostNaEd },
-            })
-          )
+              data: {
+                sebestoimostBazovayaRub,
+                sebestoimostDostavkaRub,
+                sebestoimostItogoRub,
+              },
+            });
+          })
         );
       }
     });
@@ -422,11 +512,14 @@ export class AdminPoletService {
       throw new BadRequestException('Товар для этой позиции уже создан');
     }
 
+    // Конвертируем RUB в копейки для costPrice (Warehouse использует копейки)
+    const costPriceInCents = poziciya.sebestoimostItogoRub * 100;
+
     const tovar = await this.prisma.product.create({
       data: {
         title: poziciya.nazvanie,
         price: 0, // Цена будет установлена позже
-        costPrice: poziciya.sebestoimostNaEd,
+        costPrice: costPriceInCents,
         status: 'DRAFT',
         stock: 0,
         sourcePoletId: poletId,
@@ -475,10 +568,13 @@ export class AdminPoletService {
           continue;
         }
 
+        // Конвертируем RUB в копейки для unitCost (Warehouse использует копейки)
+        const unitCostInCents = poz.sebestoimostItogoRub * 100;
+
         await tx.inventoryLot.create({
           data: {
             productId: poz.tovar.id,
-            unitCost: poz.sebestoimostNaEd,
+            unitCost: unitCostInCents,
             qtyReceived: poz.kolichestvo,
             qtyRemaining: poz.kolichestvo,
             receivedAt: new Date(),
