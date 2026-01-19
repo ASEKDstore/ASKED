@@ -3,6 +3,7 @@ import { Body, Controller, Patch, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
+
 import { updateMaintenanceSchema } from './dto/maintenance.dto';
 import { SettingsService } from './settings.service';
 
@@ -17,4 +18,3 @@ export class AdminSettingsController {
     return this.settingsService.updateMaintenanceStatus(dto);
   }
 }
-

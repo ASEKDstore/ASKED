@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+
 import { FifoAllocationService } from './fifo-allocation.service';
 
 @Injectable()
@@ -537,4 +538,3 @@ export class WarehouseService {
     };
   }
 }
-

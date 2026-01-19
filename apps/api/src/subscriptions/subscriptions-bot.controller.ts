@@ -1,9 +1,10 @@
 import { Controller, Post, Param, Headers, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { format } from 'date-fns';
+
+import { TelegramBotService } from '../orders/telegram-bot.service';
 
 import { SubscriptionsService } from './subscriptions.service';
-import { TelegramBotService } from '../orders/telegram-bot.service';
-import { format } from 'date-fns';
 
 /**
  * Controller for bot-initiated subscription operations
@@ -34,7 +35,11 @@ export class SubscriptionsBotController {
   async updatePaymentDate(
     @Param('id') id: string,
     @Headers('x-bot-token') botToken: string,
-  ): Promise<{ success: boolean; subscription?: { id: string; name: string; nextDueAt: string }; error?: string }> {
+  ): Promise<{
+    success: boolean;
+    subscription?: { id: string; name: string; nextDueAt: string };
+    error?: string;
+  }> {
     // Verify bot token
     if (!botToken || botToken !== this.botToken) {
       throw new UnauthorizedException('Invalid or missing bot token');
@@ -73,4 +78,3 @@ export class SubscriptionsBotController {
     }
   }
 }
-

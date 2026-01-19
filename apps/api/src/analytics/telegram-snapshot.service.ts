@@ -24,7 +24,9 @@ export class TelegramSnapshotService {
     const channelId = this.configService.get<string>('TELEGRAM_CHANNEL_ID');
 
     if (!botToken || !channelId) {
-      this.logger.warn('TELEGRAM_BOT_TOKEN or TELEGRAM_CHANNEL_ID not configured, skipping snapshot');
+      this.logger.warn(
+        'TELEGRAM_BOT_TOKEN or TELEGRAM_CHANNEL_ID not configured, skipping snapshot',
+      );
       return;
     }
 
@@ -49,7 +51,15 @@ export class TelegramSnapshotService {
 
       // Store snapshot with idempotency (one per hour)
       const now = new Date();
-      const snapshotAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0, 0);
+      const snapshotAt = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        now.getHours(),
+        0,
+        0,
+        0,
+      );
 
       await this.prisma.telegramChannelSnapshot.upsert({
         where: {
@@ -68,10 +78,13 @@ export class TelegramSnapshotService {
         },
       });
 
-      this.logger.log(`Snapshot stored: ${subscriberCount} subscribers for channel ${channelId} at ${snapshotAt.toISOString()}`);
+      this.logger.log(
+        `Snapshot stored: ${subscriberCount} subscribers for channel ${channelId} at ${snapshotAt.toISOString()}`,
+      );
     } catch (error) {
-      this.logger.error(`Error taking snapshot: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `Error taking snapshot: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }
-

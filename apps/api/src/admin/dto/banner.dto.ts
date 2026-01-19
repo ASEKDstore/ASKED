@@ -41,19 +41,13 @@ export type UpdateBannerDto = z.infer<typeof updateBannerSchema>;
 
 export const bannerQuerySchema = z.object({
   q: z.string().optional(),
-  isActive: z.string().transform((val) => val === 'true').optional(),
+  isActive: z
+    .string()
+    .transform((val) => val === 'true')
+    .optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
 });
 
 export type BannerQueryDto = z.infer<typeof bannerQuerySchema>;
-
-
-
-
-
-
-
-
-
 

@@ -6,4 +6,3 @@ export const markReadSchema = z.object({
 });
 
 export type MarkReadDto = z.infer<typeof markReadSchema>;
-

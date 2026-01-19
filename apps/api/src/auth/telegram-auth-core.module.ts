@@ -10,7 +10,7 @@ import { TelegramInitDataService } from './telegram-init-data.service';
  * Core Telegram authentication module
  * Provides TelegramInitDataService and TelegramAuthGuard
  * This module is separate from AuthModule to avoid circular dependencies
- * 
+ *
  * Imports ConfigModule for ConfigService (required by TelegramAuthGuard)
  * Imports PrismaModule for PrismaService (required by TelegramAuthGuard)
  */
@@ -20,4 +20,3 @@ import { TelegramInitDataService } from './telegram-init-data.service';
   exports: [TelegramInitDataService, TelegramAuthGuard],
 })
 export class TelegramAuthCoreModule {}
-

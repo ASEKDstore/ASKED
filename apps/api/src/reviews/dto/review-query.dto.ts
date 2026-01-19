@@ -11,4 +11,3 @@ export const reviewQuerySchema = z.object({
 });
 
 export type ReviewQueryDto = z.infer<typeof reviewQuerySchema>;
-

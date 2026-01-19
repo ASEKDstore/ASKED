@@ -137,7 +137,9 @@ export class NotificationsService {
   /**
    * Create a notification and deliver it to user(s)
    */
-  async createNotification(dto: CreateNotificationDto): Promise<{ notificationId: string; delivered?: number; totalUsers?: number }> {
+  async createNotification(
+    dto: CreateNotificationDto,
+  ): Promise<{ notificationId: string; delivered?: number; totalUsers?: number }> {
     if (dto.target === 'ALL') {
       // Broadcast to all users - MUST NEVER crash
       try {
@@ -158,7 +160,9 @@ export class NotificationsService {
           });
 
           const totalUsers = users.length;
-          this.logger.log(`Broadcast notification created: ${notification.id}, found ${totalUsers} users`);
+          this.logger.log(
+            `Broadcast notification created: ${notification.id}, found ${totalUsers} users`,
+          );
 
           // Handle empty users gracefully - return success with delivered: 0
           if (totalUsers === 0) {
@@ -200,7 +204,7 @@ export class NotificationsService {
           `Error stack trace:`,
           error instanceof Error ? error.stack : 'No stack trace available',
         );
-        
+
         // For broadcast, we should still try to create the notification record for logging
         // But if that also fails, return a safe response
         try {

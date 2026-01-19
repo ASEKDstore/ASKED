@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
-import type { TelegramUser } from '../auth/types/telegram-user.interface';
 import { AppEventsService } from '../analytics/app-events.service';
 import { AppOpensService } from '../analytics/app-opens.service';
+import type { TelegramUser } from '../auth/types/telegram-user.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { userResponseSchema, type UserResponseDto } from './dto/user.dto';
@@ -40,9 +40,11 @@ export class UsersService {
     // Track app open event (fire and forget - don't fail user creation if this fails)
     // Use void to explicitly ignore the promise
     void Promise.all([
-      this.appOpensService.trackAppOpen(telegramId, telegramUser.username || undefined).catch((error) => {
-        console.error('Failed to track app open:', error);
-      }),
+      this.appOpensService
+        .trackAppOpen(telegramId, telegramUser.username || undefined)
+        .catch((error) => {
+          console.error('Failed to track app open:', error);
+        }),
       this.appEventsService
         .createEvent({
           eventType: 'APP_OPEN',
@@ -67,9 +69,3 @@ export class UsersService {
     });
   }
 }
-
-
-
-
-
-

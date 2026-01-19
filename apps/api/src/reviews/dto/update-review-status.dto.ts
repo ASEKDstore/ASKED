@@ -5,4 +5,3 @@ export const updateReviewStatusSchema = z.object({
 });
 
 export type UpdateReviewStatusDto = z.infer<typeof updateReviewStatusSchema>;
-

@@ -166,10 +166,7 @@ export class SubscriptionsService {
           : null;
         const nextDueDate = new Date(sub.nextDueAt);
 
-        if (
-          !lastRemindedDate ||
-          lastRemindedDate.getTime() !== nextDueDate.getTime()
-        ) {
+        if (!lastRemindedDate || lastRemindedDate.getTime() !== nextDueDate.getTime()) {
           needingReminders.push(this.mapToDto(sub));
         }
       }
@@ -254,4 +251,3 @@ export class SubscriptionsService {
     };
   }
 }
-

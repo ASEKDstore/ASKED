@@ -1,7 +1,16 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 
-import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
 import { CurrentTelegramUser } from '../auth/decorators/current-telegram-user.decorator';
+import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
 import type { TelegramUser } from '../auth/types/telegram-user.interface';
 import { UsersService } from '../users/users.service';
 
@@ -39,7 +48,10 @@ export class NotificationsController {
       const user = await this.usersService.upsertByTelegramData(telegramUser);
 
       if (!user?.id) {
-        this.logger.error('getMyNotifications: user.id is missing after upsert', { userId: user?.id, telegramId: telegramUser.id });
+        this.logger.error('getMyNotifications: user.id is missing after upsert', {
+          userId: user?.id,
+          telegramId: telegramUser.id,
+        });
         throw new UnauthorizedException('User ID not found');
       }
 
@@ -63,7 +75,9 @@ export class NotificationsController {
 
   @Get('my/unread-count')
   @UseGuards(TelegramAuthGuard)
-  async getUnreadCount(@CurrentTelegramUser() telegramUser: TelegramUser | undefined): Promise<UnreadCountResponse> {
+  async getUnreadCount(
+    @CurrentTelegramUser() telegramUser: TelegramUser | undefined,
+  ): Promise<UnreadCountResponse> {
     try {
       if (!telegramUser) {
         this.logger.warn('getUnreadCount: telegramUser is undefined');
@@ -74,7 +88,10 @@ export class NotificationsController {
       const user = await this.usersService.upsertByTelegramData(telegramUser);
 
       if (!user?.id) {
-        this.logger.error('getUnreadCount: user.id is missing after upsert', { userId: user?.id, telegramId: telegramUser.id });
+        this.logger.error('getUnreadCount: user.id is missing after upsert', {
+          userId: user?.id,
+          telegramId: telegramUser.id,
+        });
         throw new UnauthorizedException('User ID not found');
       }
 
@@ -108,7 +125,10 @@ export class NotificationsController {
     const user = await this.usersService.upsertByTelegramData(telegramUser);
 
     if (!user?.id) {
-      this.logger.error('markAsRead: user.id is missing after upsert', { userId: user?.id, telegramId: telegramUser.id });
+      this.logger.error('markAsRead: user.id is missing after upsert', {
+        userId: user?.id,
+        telegramId: telegramUser.id,
+      });
       throw new UnauthorizedException('User ID not found');
     }
 
@@ -116,4 +136,3 @@ export class NotificationsController {
     return this.notificationsService.markAsRead(user.id, dto);
   }
 }
-

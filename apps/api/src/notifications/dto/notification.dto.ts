@@ -23,4 +23,3 @@ export interface UnreadCountResponse {
 export interface MarkReadResponse {
   updated: number;
 }
-

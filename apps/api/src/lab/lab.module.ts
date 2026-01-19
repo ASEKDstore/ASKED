@@ -11,16 +11,13 @@ import { PublicLabController, PublicLabWorksController } from './public-lab.cont
 
 @Module({
   imports: [PrismaModule, TelegramAuthCoreModule],
-  controllers: [AdminLabController, AdminLabWorksController, PublicLabController, PublicLabWorksController],
+  controllers: [
+    AdminLabController,
+    AdminLabWorksController,
+    PublicLabController,
+    PublicLabWorksController,
+  ],
   providers: [LabService, DevAdminAuthGuard, AdminGuard],
   exports: [LabService],
 })
 export class LabModule {}
-
-
-
-
-
-
-
-

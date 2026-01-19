@@ -1,16 +1,25 @@
-import { Controller, Get, Post, Body, Req, UseGuards, HttpCode, HttpStatus, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Req,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Param,
+} from '@nestjs/common';
 import type { Request } from 'express';
 
-import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
-import type { TelegramUser } from '../auth/types/telegram-user.interface';
-import type { AuthenticatedRequest } from '../auth/telegram-auth.guard';
 import { AppEventsService } from '../analytics/app-events.service';
+import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
+import type { AuthenticatedRequest } from '../auth/telegram-auth.guard';
+import type { TelegramUser } from '../auth/types/telegram-user.interface';
 import { UsersService } from '../users/users.service';
 
-import { createOrderSchema } from './dto/create-order.dto';
 import { createLabOrderSchema } from './dto/create-lab-order.dto';
-import type { OrderDto } from './dto/order.dto';
-import type { OrdersListResponse } from './dto/order.dto';
+import { createOrderSchema } from './dto/create-order.dto';
+import type { OrderDto, OrdersListResponse } from './dto/order.dto';
 import { OrdersService } from './orders.service';
 import { TelegramBotService } from './telegram-bot.service';
 
@@ -26,16 +35,13 @@ export class OrdersController {
   @Post()
   @UseGuards(TelegramAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  async create(
-    @Req() req: Request & AuthenticatedRequest,
-    @Body() body: any,
-  ): Promise<OrderDto> {
+  async create(@Req() req: Request & AuthenticatedRequest, @Body() body: any): Promise<OrderDto> {
     const createOrderDto = createOrderSchema.parse(body);
 
     // User is authenticated via TelegramAuthGuard
     // req.user and req.telegramUser are both available
     const telegramUser = req.user;
-    
+
     if (!telegramUser) {
       throw new Error('User not authenticated');
     }
@@ -139,7 +145,7 @@ export class OrdersController {
   async getMyOrders(@Req() req: Request & { user: TelegramUser }): Promise<OrdersListResponse> {
     // User is authenticated via TelegramAuthGuard, so req.user exists
     const user = await this.usersService.upsertByTelegramData(req.user);
-    
+
     return this.ordersService.findByUserId(user.id, {
       page: 1,
       pageSize: 50,
@@ -151,7 +157,7 @@ export class OrdersController {
   async getMyLastOrder(@Req() req: Request & { user: TelegramUser }): Promise<OrderDto | null> {
     // User is authenticated via TelegramAuthGuard, so req.user exists
     const user = await this.usersService.upsertByTelegramData(req.user);
-    
+
     return this.ordersService.findLastByUserId(user.id);
   }
 
@@ -163,7 +169,7 @@ export class OrdersController {
   ): Promise<OrderDto> {
     // User is authenticated via TelegramAuthGuard, so req.user exists
     const user = await this.usersService.upsertByTelegramData(req.user);
-    
+
     // Find order by ID and userId (ensures user can only access their own orders)
     return this.ordersService.findOneByUserId(user.id, id);
   }

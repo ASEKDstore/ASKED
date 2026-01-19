@@ -5,6 +5,12 @@ import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
 
 import { AnalyticsService } from './analytics.service';
 import { AppOpensService } from './app-opens.service';
+import {
+  analyticsQuerySchema,
+  telegramPostsQuerySchema,
+  shopProductsQuerySchema,
+  funnelQuerySchema,
+} from './dto/analytics-query.dto';
 import type {
   AnalyticsOverviewDto,
   TelegramSubscribersResponse,
@@ -14,12 +20,6 @@ import type {
   AppUsersStatsResponse,
   AppUsersListResponse,
 } from './dto/analytics.dto';
-import {
-  analyticsQuerySchema,
-  telegramPostsQuerySchema,
-  shopProductsQuerySchema,
-  funnelQuerySchema,
-} from './dto/analytics-query.dto';
 
 @Controller('admin/analytics')
 @UseGuards(DevAdminAuthGuard, AdminGuard)
@@ -107,4 +107,3 @@ export class AdminAnalyticsController {
     };
   }
 }
-

@@ -23,7 +23,14 @@ import { AdminUsersController } from './admin-users.controller';
 import { AdminController } from './admin.controller';
 
 @Module({
-  imports: [OrdersModule, ProductsModule, AuthModule, PrismaModule, UsersModule, NotificationsModule],
+  imports: [
+    OrdersModule,
+    ProductsModule,
+    AuthModule,
+    PrismaModule,
+    UsersModule,
+    NotificationsModule,
+  ],
   controllers: [
     AdminController,
     AdminOrdersController,

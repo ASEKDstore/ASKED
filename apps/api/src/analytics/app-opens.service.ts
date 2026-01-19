@@ -33,32 +33,37 @@ export class AppOpensService {
   /**
    * Get app opens statistics
    */
-  async getAppOpensStats(from?: Date, to?: Date): Promise<{
+  async getAppOpensStats(
+    from?: Date,
+    to?: Date,
+  ): Promise<{
     totalUsers: number;
     newUsers: number;
     totalOpens: number;
   }> {
-    const where = from || to
-      ? {
-          firstOpenedAt: {
-            ...(from ? { gte: from } : {}),
-            ...(to ? { lte: to } : {}),
-          },
-        }
-      : {};
-
-    const totalUsers = await this.prisma.appOpenEvent.count();
-
-    const newUsers = from || to
-      ? await this.prisma.appOpenEvent.count({
-          where: {
+    const where =
+      from || to
+        ? {
             firstOpenedAt: {
               ...(from ? { gte: from } : {}),
               ...(to ? { lte: to } : {}),
             },
-          },
-        })
-      : 0;
+          }
+        : {};
+
+    const totalUsers = await this.prisma.appOpenEvent.count();
+
+    const newUsers =
+      from || to
+        ? await this.prisma.appOpenEvent.count({
+            where: {
+              firstOpenedAt: {
+                ...(from ? { gte: from } : {}),
+                ...(to ? { lte: to } : {}),
+              },
+            },
+          })
+        : 0;
 
     const result = await this.prisma.appOpenEvent.aggregate({
       _sum: {
@@ -77,13 +82,18 @@ export class AppOpensService {
   /**
    * Get list of app opens events
    */
-  async getAppOpensList(limit = 50, offset = 0): Promise<Array<{
-    userId: string;
-    username: string | null;
-    firstOpenedAt: Date;
-    lastOpenedAt: Date;
-    opensCount: number;
-  }>> {
+  async getAppOpensList(
+    limit = 50,
+    offset = 0,
+  ): Promise<
+    Array<{
+      userId: string;
+      username: string | null;
+      firstOpenedAt: Date;
+      lastOpenedAt: Date;
+      opensCount: number;
+    }>
+  > {
     const events = await this.prisma.appOpenEvent.findMany({
       take: limit,
       skip: offset,
@@ -100,4 +110,3 @@ export class AppOpensService {
     return events;
   }
 }
-

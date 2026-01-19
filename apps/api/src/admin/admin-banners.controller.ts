@@ -27,7 +27,9 @@ export class AdminBannersController {
   constructor(private readonly adminBannersService: AdminBannersService) {}
 
   @Get()
-  async findAll(@Query() query: any): Promise<{ items: BannerDto[]; total: number; page: number; pageSize: number }> {
+  async findAll(
+    @Query() query: any,
+  ): Promise<{ items: BannerDto[]; total: number; page: number; pageSize: number }> {
     const validatedQuery = bannerQuerySchema.parse(query);
     return this.adminBannersService.findAll(validatedQuery);
   }
@@ -55,13 +57,4 @@ export class AdminBannersController {
     return this.adminBannersService.delete(id);
   }
 }
-
-
-
-
-
-
-
-
-
 

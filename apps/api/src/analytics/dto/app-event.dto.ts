@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
 export const appEventSchema = z.object({
-  eventType: z.enum(['APP_OPEN', 'PAGE_VIEW', 'PRODUCT_VIEW', 'ADD_TO_CART', 'CHECKOUT_STARTED', 'PURCHASE']),
+  eventType: z.enum([
+    'APP_OPEN',
+    'PAGE_VIEW',
+    'PRODUCT_VIEW',
+    'ADD_TO_CART',
+    'CHECKOUT_STARTED',
+    'PURCHASE',
+  ]),
   userId: z.string().optional(),
   sessionId: z.string().optional(),
   productId: z.string().optional(),
@@ -12,10 +19,3 @@ export const appEventSchema = z.object({
 });
 
 export type AppEventDto = z.infer<typeof appEventSchema>;
-
-
-
-
-
-
-

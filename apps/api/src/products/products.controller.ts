@@ -37,7 +37,10 @@ export class ProductsController {
   }
 
   @Get(':id/reviews')
-  async findReviews(@Param('id') productId: string, @Query() query: unknown): Promise<ReviewsListResponse> {
+  async findReviews(
+    @Param('id') productId: string,
+    @Query() query: unknown,
+  ): Promise<ReviewsListResponse> {
     const reviewQuery = reviewQuerySchema.parse(query);
     return this.reviewsService.findByProduct(productId, reviewQuery);
   }

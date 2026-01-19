@@ -101,7 +101,11 @@ export class AdminController {
   }
 
   @Post('telegram/test')
-  async testTelegramNotification(): Promise<{ success: boolean; message?: string; error?: string }> {
+  async testTelegramNotification(): Promise<{
+    success: boolean;
+    message?: string;
+    error?: string;
+  }> {
     return this.telegramBotService.sendTestNotification();
   }
 

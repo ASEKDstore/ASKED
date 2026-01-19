@@ -14,4 +14,3 @@ export const targetedNotificationSchema = z.object({
 });
 
 export type TargetedNotificationDto = z.infer<typeof targetedNotificationSchema>;
-

@@ -13,12 +13,3 @@ import { PromosService } from './promos.service';
 })
 export class PromosModule {}
 
-
-
-
-
-
-
-
-
-

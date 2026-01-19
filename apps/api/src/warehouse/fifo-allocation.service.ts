@@ -6,7 +6,6 @@ import { PrismaClient } from '@prisma/client';
  * Extracted for testability and reuse across order creation and write-offs
  */
 export class FifoAllocationService {
-
   /**
    * Allocate lots FIFO for a given quantity
    * Returns allocations created and total COGS
@@ -57,7 +56,9 @@ export class FifoAllocationService {
 
       // Runtime assertion: lot remaining must be non-negative
       if (process.env.NODE_ENV !== 'production' && lot.qtyRemaining < 0) {
-        throw new Error(`INVARIANT VIOLATION: Lot ${lot.id} has negative qtyRemaining: ${lot.qtyRemaining}`);
+        throw new Error(
+          `INVARIANT VIOLATION: Lot ${lot.id} has negative qtyRemaining: ${lot.qtyRemaining}`,
+        );
       }
 
       const allocationCogs = take * lot.unitCost;
@@ -151,4 +152,3 @@ export class FifoAllocationService {
     };
   }
 }
-

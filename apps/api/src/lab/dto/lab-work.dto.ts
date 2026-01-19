@@ -91,4 +91,3 @@ export interface RateLabWorkResponse {
 }
 
 export type RateLabWorkDto = z.infer<typeof rateLabWorkSchema>;
-

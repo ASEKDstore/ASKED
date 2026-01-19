@@ -56,7 +56,9 @@ export class AdminChatConfigService {
         },
       });
 
-      this.logger.log(`✅ Admin chat config updated: chatId=${chatId}, threadId=${threadId || 'null'}`);
+      this.logger.log(
+        `✅ Admin chat config updated: chatId=${chatId}, threadId=${threadId || 'null'}`,
+      );
 
       return {
         chatId: config.chatId,
@@ -74,11 +76,13 @@ export class AdminChatConfigService {
    */
   async clearConfig(): Promise<void> {
     try {
-      await this.prisma.adminChatConfig.delete({
-        where: { id: 1 },
-      }).catch(() => {
-        // Ignore if config doesn't exist (idempotent)
-      });
+      await this.prisma.adminChatConfig
+        .delete({
+          where: { id: 1 },
+        })
+        .catch(() => {
+          // Ignore if config doesn't exist (idempotent)
+        });
 
       this.logger.log('✅ Admin chat config cleared');
     } catch (error) {
@@ -87,4 +91,3 @@ export class AdminChatConfigService {
     }
   }
 }
-

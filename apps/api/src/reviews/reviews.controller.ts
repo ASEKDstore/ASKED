@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Body, Query, UseGuards, HttpCode, HttpStatus, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 
 import { CurrentTelegramUser } from '../auth/decorators/current-telegram-user.decorator';
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
@@ -25,7 +35,10 @@ export class ReviewsController {
       const reviewQuery = reviewQuerySchema.parse(query);
       return await this.reviewsService.findAllApproved(reviewQuery);
     } catch (error) {
-      this.logger.error(`GET /reviews failed: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        `GET /reviews failed: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw error;
     }
   }
@@ -61,4 +74,3 @@ export class ReviewsController {
     return this.reviewsService.findByUser(userId, reviewQuery);
   }
 }
-

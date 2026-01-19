@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+
 import type { MaintenanceResponseDto, UpdateMaintenanceDto } from './dto/maintenance.dto';
 
 @Injectable()
@@ -39,4 +40,3 @@ export class SettingsService {
     };
   }
 }
-

@@ -1,9 +1,9 @@
 import { Controller, Get, UseGuards, UnauthorizedException } from '@nestjs/common';
 
+import { AppService } from './app.service';
 import { CurrentTelegramUser } from './auth/decorators/current-telegram-user.decorator';
 import { TelegramAuthGuard } from './auth/telegram-auth.guard';
 import type { TelegramUser } from './auth/types/telegram-user.interface';
-import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
 import { UsersService } from './users/users.service';
 
@@ -68,9 +68,7 @@ export class AppController {
 
   @Get('debug/whoami')
   @UseGuards(TelegramAuthGuard)
-  async getWhoami(
-    @CurrentTelegramUser() telegramUser: TelegramUser | undefined,
-  ): Promise<{
+  async getWhoami(@CurrentTelegramUser() telegramUser: TelegramUser | undefined): Promise<{
     telegramId: string | null;
     usersCount: number;
   }> {
@@ -86,9 +84,3 @@ export class AppController {
     };
   }
 }
-
-
-
-
-
-

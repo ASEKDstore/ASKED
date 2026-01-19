@@ -11,4 +11,3 @@ export const updateMaintenanceSchema = z.object({
 });
 
 export type UpdateMaintenanceDto = z.infer<typeof updateMaintenanceSchema>;
-

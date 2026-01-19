@@ -39,7 +39,12 @@ export class SubscriptionsScheduler {
 
           // Send notification to admin DM and chat with inline button
           await this.telegramBotService
-            .sendSubscriptionReminder(subscription.id, subscription.name, dueDateFormatted, daysRemaining)
+            .sendSubscriptionReminder(
+              subscription.id,
+              subscription.name,
+              dueDateFormatted,
+              daysRemaining,
+            )
             .catch((error) => {
               this.logger.error(
                 `❌ Failed to send reminder notification for subscription ${subscription.id}:`,
@@ -50,7 +55,9 @@ export class SubscriptionsScheduler {
           // Mark as reminded
           await this.subscriptionsService.markAsReminded(subscription.id, nextDueDate);
 
-          this.logger.log(`✅ Sent reminder for subscription ${subscription.id} (${subscription.name})`);
+          this.logger.log(
+            `✅ Sent reminder for subscription ${subscription.id} (${subscription.name})`,
+          );
         } catch (error) {
           this.logger.error(
             `❌ Failed to send reminder for subscription ${subscription.id}:`,
@@ -60,10 +67,11 @@ export class SubscriptionsScheduler {
         }
       }
 
-      this.logger.log(`✅ Completed subscription reminders check. Processed ${subscriptions.length} subscriptions.`);
+      this.logger.log(
+        `✅ Completed subscription reminders check. Processed ${subscriptions.length} subscriptions.`,
+      );
     } catch (error) {
       this.logger.error('❌ Error during subscription reminders check:', error);
     }
   }
 }
-

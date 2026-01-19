@@ -239,7 +239,10 @@ export class PurchasesService {
     };
   }
 
-  async update(id: string, dto: UpdatePurchaseDto): Promise<{
+  async update(
+    id: string,
+    dto: UpdatePurchaseDto,
+  ): Promise<{
     id: string;
     supplier: string | null;
     comment: string | null;
@@ -318,7 +321,10 @@ export class PurchasesService {
     };
   }
 
-  async post(id: string, options?: PostPurchaseDto): Promise<{
+  async post(
+    id: string,
+    options?: PostPurchaseDto,
+  ): Promise<{
     id: string;
     status: 'POSTED';
     postedAt: Date;
@@ -457,4 +463,3 @@ export class PurchasesService {
     };
   }
 }
-

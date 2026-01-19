@@ -32,4 +32,3 @@ export const adminDirectNotificationSchema = z.object({
 });
 
 export type AdminDirectNotificationDto = z.infer<typeof adminDirectNotificationSchema>;
-

@@ -19,7 +19,7 @@ interface OrderData {
   placement: string | null;
   description: string;
   attachment: File | null;
-  phoneDigits: string; // 10 digits after +7
+  phoneRaw: string; // 11 digits starting with "7"
   address: string;
 }
 
@@ -91,7 +91,7 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
     placement: null,
     description: '',
     attachment: null,
-    phoneDigits: '', // 10 digits after +7
+    phoneRaw: '', // 11 digits starting with "7"
     address: '',
   });
   const [currentStep, setCurrentStep] = useState(0); // Track current step for single-step view
@@ -404,12 +404,14 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
               <label className="block text-white/70 text-sm font-medium">Телефон</label>
               <input
                 type="tel"
-                value={`+7 ${orderData.phoneDigits}`}
+                value={`+7 ${orderData.phoneRaw.length > 0 ? orderData.phoneRaw.slice(1) : ''}`}
                 onChange={(e) => {
                   const newDigits = extractPhoneDigits(e.target.value);
                   // Limit to 10 digits
                   const limitedDigits = newDigits.slice(0, 10);
-                  setOrderData((prev) => ({ ...prev, phoneDigits: limitedDigits }));
+                  // Always update phoneRaw as "7" + 10 digits
+                  const phoneRaw = limitedDigits.length > 0 ? '7' + limitedDigits : '';
+                  setOrderData((prev) => ({ ...prev, phoneRaw }));
                 }}
                 placeholder="+7 999 999 99 99"
                 className="w-full rounded-[16px] p-4 bg-black/30 backdrop-blur-xl
@@ -417,7 +419,7 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
                          focus:outline-none focus:border-white/30 focus:bg-black/35
                          text-[clamp(14px,3.5vw,16px)]"
               />
-              {orderData.phoneDigits.length > 0 && orderData.phoneDigits.length !== 10 && (
+              {orderData.phoneRaw.length > 0 && !(orderData.phoneRaw.length === 11 && orderData.phoneRaw.startsWith('7')) && (
                 <p className="text-red-400 text-sm">Номер должен содержать 11 цифр</p>
               )}
             </div>
@@ -443,7 +445,7 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
             </div>
 
             {/* Next Button */}
-            {orderData.phoneDigits.length === 10 && orderData.address.trim().length >= 5 && (
+            {orderData.phoneRaw.length === 11 && orderData.phoneRaw.startsWith('7') && orderData.address.trim().length >= 5 && (
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={goNext}

@@ -3,10 +3,11 @@ import { Controller, Get, Param, Post, Body, Query, UseGuards, Req } from '@nest
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
 import type { AuthenticatedRequest } from '../auth/telegram-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
-import { LabService } from './lab.service';
-import type { PublicLabProductDto } from './dto/public-lab-product.dto';
+
 import type { LabWorkDto, RateLabWorkResponse } from './dto/lab-work.dto';
 import { rateLabWorkSchema } from './dto/lab-work.dto';
+import type { PublicLabProductDto } from './dto/public-lab-product.dto';
+import { LabService } from './lab.service';
 
 @Controller('public/lab-products')
 export class PublicLabController {
@@ -33,7 +34,8 @@ export class PublicLabWorksController {
   @Get()
   async findAll(@Query('limit') limit?: string): Promise<LabWorkDto[]> {
     const limitNum = limit ? parseInt(limit, 10) : undefined;
-    const safeLimit = limitNum && !isNaN(limitNum) && limitNum > 0 && limitNum <= 100 ? limitNum : undefined;
+    const safeLimit =
+      limitNum && !isNaN(limitNum) && limitNum > 0 && limitNum <= 100 ? limitNum : undefined;
     return this.labService.findAllPublicWorks(safeLimit);
   }
 
@@ -55,7 +57,7 @@ export class PublicLabWorksController {
     @Req() req: AuthenticatedRequest,
   ): Promise<RateLabWorkResponse> {
     const rateDto = rateLabWorkSchema.parse(body);
-    
+
     // Get user ID from request (upserted in guard)
     if (!req.telegramUser) {
       throw new Error('User not found in request');
@@ -73,11 +75,3 @@ export class PublicLabWorksController {
     return this.labService.rateLabWork(id, user.id, rateDto);
   }
 }
-
-
-
-
-
-
-
-

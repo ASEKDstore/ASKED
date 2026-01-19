@@ -4,18 +4,18 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
 import type {
+  AnalyticsQueryDto,
+  TelegramPostsQueryDto,
+  ShopProductsQueryDto,
+  FunnelQueryDto,
+} from './dto/analytics-query.dto';
+import type {
   AnalyticsOverviewDto,
   TelegramSubscribersResponse,
   TelegramPostsResponse,
   TopProductsResponse,
   FunnelResponse,
 } from './dto/analytics.dto';
-import type {
-  AnalyticsQueryDto,
-  TelegramPostsQueryDto,
-  ShopProductsQueryDto,
-  FunnelQueryDto,
-} from './dto/analytics-query.dto';
 
 @Injectable()
 export class AnalyticsService {
@@ -25,7 +25,9 @@ export class AnalyticsService {
   ) {}
 
   async getOverview(query: AnalyticsQueryDto): Promise<AnalyticsOverviewDto> {
-    const from = query.from ? new Date(query.from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const from = query.from
+      ? new Date(query.from)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const to = query.to ? new Date(query.to) : new Date();
 
     // Get current subscriber count (latest snapshot)
@@ -94,7 +96,9 @@ export class AnalyticsService {
   }
 
   async getTelegramSubscribers(query: AnalyticsQueryDto): Promise<TelegramSubscribersResponse> {
-    const from = query.from ? new Date(query.from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const from = query.from
+      ? new Date(query.from)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const to = query.to ? new Date(query.to) : new Date();
     const granularity = query.granularity || 'day';
 
@@ -117,7 +121,7 @@ export class AnalyticsService {
       let key: string;
 
       const pad = (n: number) => String(n).padStart(2, '0');
-      
+
       if (granularity === 'hour') {
         key = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:00:00`;
       } else if (granularity === 'day') {
@@ -321,58 +325,65 @@ export class AnalyticsService {
   }
 
   async getFunnel(query: FunnelQueryDto): Promise<FunnelResponse> {
-    const from = query.from ? new Date(query.from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const from = query.from
+      ? new Date(query.from)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const to = query.to ? new Date(query.to) : new Date();
 
     // Get unique user counts per event type (for funnel analysis)
-    const [pageViewEvents, productViewEvents, addToCartEvents, checkoutStartedEvents, purchaseEvents] =
-      await Promise.all([
-        this.prisma.appEvent.findMany({
-          where: {
-            eventType: 'PAGE_VIEW',
-            createdAt: { gte: from, lte: to },
-            userId: { not: null },
-          },
-          select: { userId: true },
-          distinct: ['userId'],
-        }),
-        this.prisma.appEvent.findMany({
-          where: {
-            eventType: 'PRODUCT_VIEW',
-            createdAt: { gte: from, lte: to },
-            userId: { not: null },
-          },
-          select: { userId: true },
-          distinct: ['userId'],
-        }),
-        this.prisma.appEvent.findMany({
-          where: {
-            eventType: 'ADD_TO_CART',
-            createdAt: { gte: from, lte: to },
-            userId: { not: null },
-          },
-          select: { userId: true },
-          distinct: ['userId'],
-        }),
-        this.prisma.appEvent.findMany({
-          where: {
-            eventType: 'CHECKOUT_STARTED',
-            createdAt: { gte: from, lte: to },
-            userId: { not: null },
-          },
-          select: { userId: true },
-          distinct: ['userId'],
-        }),
-        this.prisma.appEvent.findMany({
-          where: {
-            eventType: 'PURCHASE',
-            createdAt: { gte: from, lte: to },
-            userId: { not: null },
-          },
-          select: { userId: true },
-          distinct: ['userId'],
-        }),
-      ]);
+    const [
+      pageViewEvents,
+      productViewEvents,
+      addToCartEvents,
+      checkoutStartedEvents,
+      purchaseEvents,
+    ] = await Promise.all([
+      this.prisma.appEvent.findMany({
+        where: {
+          eventType: 'PAGE_VIEW',
+          createdAt: { gte: from, lte: to },
+          userId: { not: null },
+        },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      this.prisma.appEvent.findMany({
+        where: {
+          eventType: 'PRODUCT_VIEW',
+          createdAt: { gte: from, lte: to },
+          userId: { not: null },
+        },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      this.prisma.appEvent.findMany({
+        where: {
+          eventType: 'ADD_TO_CART',
+          createdAt: { gte: from, lte: to },
+          userId: { not: null },
+        },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      this.prisma.appEvent.findMany({
+        where: {
+          eventType: 'CHECKOUT_STARTED',
+          createdAt: { gte: from, lte: to },
+          userId: { not: null },
+        },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+      this.prisma.appEvent.findMany({
+        where: {
+          eventType: 'PURCHASE',
+          createdAt: { gte: from, lte: to },
+          userId: { not: null },
+        },
+        select: { userId: true },
+        distinct: ['userId'],
+      }),
+    ]);
 
     const pageViews = pageViewEvents.length;
     const productViews = productViewEvents.length;
@@ -420,4 +431,3 @@ export class AnalyticsService {
     };
   }
 }
-

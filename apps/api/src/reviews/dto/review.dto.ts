@@ -28,13 +28,15 @@ export const reviewDtoSchema = z.object({
   updatedAt: z.date(),
   media: z.array(reviewMediaDtoSchema),
   reply: reviewReplyDtoSchema.nullable().optional(),
-  user: z.object({
-    id: z.string(),
-    username: z.string().nullable(),
-    firstName: z.string().nullable(),
-    lastName: z.string().nullable(),
-    photoUrl: z.string().nullable(),
-  }).optional(),
+  user: z
+    .object({
+      id: z.string(),
+      username: z.string().nullable(),
+      firstName: z.string().nullable(),
+      lastName: z.string().nullable(),
+      photoUrl: z.string().nullable(),
+    })
+    .optional(),
 });
 
 export const reviewListItemDtoSchema = z.object({
@@ -72,4 +74,3 @@ export type ReviewListItemDto = z.infer<typeof reviewListItemDtoSchema>;
 export type ReviewsListResponse = z.infer<typeof reviewsListResponseSchema>;
 export type ReviewMediaDto = z.infer<typeof reviewMediaDtoSchema>;
 export type ReviewReplyDto = z.infer<typeof reviewReplyDtoSchema>;
-

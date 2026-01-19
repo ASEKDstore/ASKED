@@ -22,7 +22,7 @@ export class TelegramInitDataService {
   /**
    * Verify Telegram WebApp initData signature using OFFICIAL algorithm
    * https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
-   * 
+   *
    * IMPORTANT: Follows the exact specification:
    * - DO NOT use botToken directly as HMAC key
    * - DO NOT verify initDataUnsafe
@@ -56,10 +56,7 @@ export class TelegramInitDataService {
 
       // 4. Compute secret_key = HMAC_SHA256(key="WebAppData", msg=botToken)
       // IMPORTANT: 'WebAppData' is the key, botToken is the message
-      const secretKey = crypto
-        .createHmac('sha256', 'WebAppData')
-        .update(botToken)
-        .digest();
+      const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
 
       // 5. Compute calculated_hash = HMAC_SHA256(key=secret_key, msg=data_check_string) in hex
       const calculatedHash = crypto

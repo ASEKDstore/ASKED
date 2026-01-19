@@ -14,7 +14,6 @@ import type {
   CreateLabProductMediaDto,
   UpdateLabProductMediaDto,
 } from './dto/lab-product.dto';
-import type { PublicLabProductDto } from './dto/public-lab-product.dto';
 import type {
   LabWorkDto,
   LabWorkMediaDto,
@@ -27,6 +26,7 @@ import type {
   RateLabWorkDto,
   RateLabWorkResponse,
 } from './dto/lab-work.dto';
+import type { PublicLabProductDto } from './dto/public-lab-product.dto';
 
 @Injectable()
 export class LabService {
@@ -168,8 +168,8 @@ export class LabService {
         coverMediaType: createDto.coverMediaType,
         coverMediaUrl: createDto.coverMediaUrl,
         ctaType: createDto.ctaType ?? 'NONE',
-        ctaProductId: createDto.ctaType === 'PRODUCT' ? createDto.ctaProductId ?? null : null,
-        ctaUrl: createDto.ctaType === 'URL' ? createDto.ctaUrl ?? null : null,
+        ctaProductId: createDto.ctaType === 'PRODUCT' ? (createDto.ctaProductId ?? null) : null,
+        ctaUrl: createDto.ctaType === 'URL' ? (createDto.ctaUrl ?? null) : null,
       },
       include: {
         gallery: true,
@@ -190,7 +190,8 @@ export class LabService {
 
     // Validate CTA logic if ctaType is being updated
     const finalCtaType = updateDto.ctaType ?? existing.ctaType;
-    const finalCtaProductId = updateDto.ctaProductId !== undefined ? updateDto.ctaProductId : existing.ctaProductId;
+    const finalCtaProductId =
+      updateDto.ctaProductId !== undefined ? updateDto.ctaProductId : existing.ctaProductId;
     const finalCtaUrl = updateDto.ctaUrl !== undefined ? updateDto.ctaUrl : existing.ctaUrl;
 
     if (finalCtaType === 'PRODUCT' && !finalCtaProductId) {
@@ -218,13 +219,19 @@ export class LabService {
       data: {
         ...(updateDto.title !== undefined ? { title: updateDto.title } : {}),
         ...(updateDto.subtitle !== undefined ? { subtitle: updateDto.subtitle ?? null } : {}),
-        ...(updateDto.description !== undefined ? { description: updateDto.description ?? null } : {}),
+        ...(updateDto.description !== undefined
+          ? { description: updateDto.description ?? null }
+          : {}),
         ...(updateDto.price !== undefined ? { price: updateDto.price } : {}),
         ...(updateDto.currency !== undefined ? { currency: updateDto.currency } : {}),
         ...(updateDto.isActive !== undefined ? { isActive: updateDto.isActive } : {}),
         ...(updateDto.sortOrder !== undefined ? { sortOrder: updateDto.sortOrder } : {}),
-        ...(updateDto.coverMediaType !== undefined ? { coverMediaType: updateDto.coverMediaType } : {}),
-        ...(updateDto.coverMediaUrl !== undefined ? { coverMediaUrl: updateDto.coverMediaUrl } : {}),
+        ...(updateDto.coverMediaType !== undefined
+          ? { coverMediaType: updateDto.coverMediaType }
+          : {}),
+        ...(updateDto.coverMediaUrl !== undefined
+          ? { coverMediaUrl: updateDto.coverMediaUrl }
+          : {}),
         ...(updateDto.ctaType !== undefined ? { ctaType: updateDto.ctaType } : {}),
         ...(finalCtaType === 'PRODUCT' ? { ctaProductId: finalCtaProductId, ctaUrl: null } : {}),
         ...(finalCtaType === 'URL' ? { ctaUrl: finalCtaUrl, ctaProductId: null } : {}),
@@ -249,7 +256,10 @@ export class LabService {
     });
   }
 
-  async addMedia(labProductId: string, createDto: CreateLabProductMediaDto): Promise<LabProductMediaDto> {
+  async addMedia(
+    labProductId: string,
+    createDto: CreateLabProductMediaDto,
+  ): Promise<LabProductMediaDto> {
     const product = await this.prisma.labProduct.findUnique({
       where: { id: labProductId },
     });
@@ -485,7 +495,9 @@ export class LabService {
       data: {
         ...(updateDto.title !== undefined ? { title: updateDto.title } : {}),
         ...(updateDto.slug !== undefined ? { slug: updateDto.slug ?? null } : {}),
-        ...(updateDto.description !== undefined ? { description: updateDto.description ?? null } : {}),
+        ...(updateDto.description !== undefined
+          ? { description: updateDto.description ?? null }
+          : {}),
         ...(updateDto.coverUrl !== undefined ? { coverUrl: updateDto.coverUrl ?? null } : {}),
         ...(updateDto.ratingAvg !== undefined ? { ratingAvg: updateDto.ratingAvg } : {}),
         ...(updateDto.ratingCount !== undefined ? { ratingCount: updateDto.ratingCount } : {}),
@@ -510,7 +522,10 @@ export class LabService {
     });
   }
 
-  async addWorkMedia(labWorkId: string, createDto: CreateLabWorkMediaDto): Promise<LabWorkMediaDto> {
+  async addWorkMedia(
+    labWorkId: string,
+    createDto: CreateLabWorkMediaDto,
+  ): Promise<LabWorkMediaDto> {
     const work = await this.prisma.labWork.findUnique({
       where: { id: labWorkId },
       include: { media: true },
@@ -705,7 +720,10 @@ export class LabService {
   }
 
   // Helper: recalculate rating aggregates from LabWorkRating records
-  private async recalcLabWorkRating(labWorkId: string, tx?: Prisma.TransactionClient): Promise<void> {
+  private async recalcLabWorkRating(
+    labWorkId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
     const prisma = tx || this.prisma;
 
     const ratings = await prisma.labWorkRating.findMany({
@@ -714,9 +732,8 @@ export class LabService {
     });
 
     const ratingCount = ratings.length;
-    const ratingAvg = ratingCount > 0
-      ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratingCount
-      : 0;
+    const ratingAvg =
+      ratingCount > 0 ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratingCount : 0;
 
     await prisma.labWork.update({
       where: { id: labWorkId },
@@ -727,7 +744,11 @@ export class LabService {
     });
   }
 
-  async rateLabWork(labWorkId: string, userId: string, ratingDto: RateLabWorkDto): Promise<RateLabWorkResponse> {
+  async rateLabWork(
+    labWorkId: string,
+    userId: string,
+    ratingDto: RateLabWorkDto,
+  ): Promise<RateLabWorkResponse> {
     // Validate work exists
     const work = await this.prisma.labWork.findUnique({
       where: { id: labWorkId },
@@ -792,11 +813,3 @@ export class LabService {
     return { maintenance };
   }
 }
-
-
-
-
-
-
-
-

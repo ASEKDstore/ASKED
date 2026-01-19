@@ -22,7 +22,10 @@ export class AdminUsersController {
       const count = await this.prisma.user.count();
       return { count };
     } catch (error) {
-      this.logger.error('Failed to get user count', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'Failed to get user count',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }
@@ -103,9 +106,7 @@ export class AdminUsersController {
           : [];
 
       // Create a map for quick lookup
-      const appOpenMap = new Map(
-        appOpenEvents.map((event) => [event.userId, event]),
-      );
+      const appOpenMap = new Map(appOpenEvents.map((event) => [event.userId, event]));
 
       // Combine user data with app open events
       const items = users.map((user) => {
@@ -121,7 +122,9 @@ export class AdminUsersController {
         };
       });
 
-      this.logger.log(`Admin users list: found ${total} total users, returning ${items.length} items`);
+      this.logger.log(
+        `Admin users list: found ${total} total users, returning ${items.length} items`,
+      );
 
       return {
         items,
@@ -144,4 +147,3 @@ export class AdminUsersController {
     }
   }
 }
-

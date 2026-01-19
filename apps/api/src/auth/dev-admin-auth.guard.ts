@@ -6,7 +6,11 @@ import type { AuthenticatedRequest } from './telegram-auth.guard';
 @Injectable()
 export class DevAdminAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest & { url?: string; query?: Record<string, string | string[]> }>();
+    const request = context
+      .switchToHttp()
+      .getRequest<
+        AuthenticatedRequest & { url?: string; query?: Record<string, string | string[]> }
+      >();
 
     const expectedToken = process.env.ADMIN_DEV_TOKEN;
 
@@ -27,7 +31,12 @@ export class DevAdminAuthGuard implements CanActivate {
     // If not found in header, check query params (Express automatically parses query string)
     if (!devToken && request.query?.token) {
       const queryToken = request.query.token;
-      devToken = typeof queryToken === 'string' ? queryToken : Array.isArray(queryToken) ? queryToken[0] : null;
+      devToken =
+        typeof queryToken === 'string'
+          ? queryToken
+          : Array.isArray(queryToken)
+            ? queryToken[0]
+            : null;
     }
 
     const hasToken = !!devToken;

@@ -29,12 +29,3 @@ export class BannersService {
   }
 }
 
-
-
-
-
-
-
-
-
-

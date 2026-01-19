@@ -4,8 +4,8 @@ import { TelegramAuthCoreModule } from '../auth/telegram-auth-core.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 import { PurchasesService } from './purchases.service';
-import { WarehouseService } from './warehouse.service';
 import { WarehouseController } from './warehouse.controller';
+import { WarehouseService } from './warehouse.service';
 
 @Module({
   imports: [PrismaModule, TelegramAuthCoreModule],
@@ -14,4 +14,3 @@ import { WarehouseController } from './warehouse.controller';
   exports: [WarehouseService, PurchasesService],
 })
 export class WarehouseModule {}
-

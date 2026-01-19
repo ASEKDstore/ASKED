@@ -47,12 +47,3 @@ export class PromosService {
   }
 }
 
-
-
-
-
-
-
-
-
-

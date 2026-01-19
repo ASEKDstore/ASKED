@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Delete, Headers, UnauthorizedException, Body, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Headers,
+  UnauthorizedException,
+  Body,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { AdminChatConfigService } from './admin-chat-config.service';
@@ -31,9 +40,11 @@ export class AdminChatConfigBotController {
    * Get current admin chat configuration
    */
   @Get()
-  async getConfig(
-    @Headers('x-bot-token') botToken: string,
-  ): Promise<{ success: boolean; config?: { chatId: string; threadId: number | null; updatedAt: string } | null; error?: string }> {
+  async getConfig(@Headers('x-bot-token') botToken: string): Promise<{
+    success: boolean;
+    config?: { chatId: string; threadId: number | null; updatedAt: string } | null;
+    error?: string;
+  }> {
     // Verify bot token
     if (!botToken || botToken !== this.botToken) {
       throw new UnauthorizedException('Invalid or missing bot token');
@@ -68,7 +79,11 @@ export class AdminChatConfigBotController {
   async setConfig(
     @Headers('x-bot-token') botToken: string,
     @Body() body: SetAdminChatDto,
-  ): Promise<{ success: boolean; config?: { chatId: string; threadId: number | null; updatedAt: string }; error?: string }> {
+  ): Promise<{
+    success: boolean;
+    config?: { chatId: string; threadId: number | null; updatedAt: string };
+    error?: string;
+  }> {
     // Verify bot token
     if (!botToken || botToken !== this.botToken) {
       throw new UnauthorizedException('Invalid or missing bot token');
@@ -79,7 +94,10 @@ export class AdminChatConfigBotController {
     }
 
     try {
-      const config = await this.adminChatConfigService.setConfig(body.chatId, body.threadId ?? null);
+      const config = await this.adminChatConfigService.setConfig(
+        body.chatId,
+        body.threadId ?? null,
+      );
 
       return {
         success: true,
@@ -125,4 +143,3 @@ export class AdminChatConfigBotController {
     }
   }
 }
-

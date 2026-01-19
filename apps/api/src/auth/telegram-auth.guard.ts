@@ -1,9 +1,16 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
+import { PrismaService } from '../prisma/prisma.service';
 
 import { TelegramInitDataService } from './telegram-init-data.service';
 import type { TelegramUser } from './types/telegram-user.interface';
-import { PrismaService } from '../prisma/prisma.service';
 
 export interface AuthenticatedRequest {
   user: TelegramUser;
@@ -27,7 +34,7 @@ export class TelegramAuthGuard implements CanActivate {
     private readonly prisma: PrismaService,
   ) {
     this.botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN', '');
-    
+
     if (!this.botToken) {
       throw new Error('TELEGRAM_BOT_TOKEN is required');
     }
@@ -73,22 +80,28 @@ export class TelegramAuthGuard implements CanActivate {
     try {
       // Verify initData using the official algorithm
       if (!this.telegramInitDataService.verifyTelegramInitData(initData, this.botToken)) {
-        throw new UnauthorizedException('Authentication required. Please open the app from Telegram');
+        throw new UnauthorizedException(
+          'Authentication required. Please open the app from Telegram',
+        );
       }
 
       // Parse user from initData
       const params = new URLSearchParams(initData);
       const userStr = params.get('user');
-      
+
       if (!userStr) {
-        throw new UnauthorizedException('Authentication required. Please open the app from Telegram');
+        throw new UnauthorizedException(
+          'Authentication required. Please open the app from Telegram',
+        );
       }
 
       const user = JSON.parse(userStr) as TelegramUser;
 
       // Validate required fields
       if (!user.id || !user.first_name) {
-        throw new UnauthorizedException('Authentication required. Please open the app from Telegram');
+        throw new UnauthorizedException(
+          'Authentication required. Please open the app from Telegram',
+        );
       }
 
       // Attach user to request (for compatibility with existing code)
@@ -111,7 +124,7 @@ export class TelegramAuthGuard implements CanActivate {
       // If upsert fails, the request MUST fail with 500 to reveal the real Prisma error
       // Using PrismaService directly avoids ModuleRef issues and circular dependencies
       const telegramId = user.id.toString();
-      
+
       // Execute upsert directly via Prisma - if this fails, rethrow to reveal the real Prisma error
       // DO NOT catch and swallow - we need to see the actual error in production logs
       const upsertedUser = await this.prisma.user.upsert({
@@ -132,10 +145,10 @@ export class TelegramAuthGuard implements CanActivate {
           photoUrl: user.photo_url || null,
         },
       });
-      
+
       // Log successful upsert
       this.logger.debug(
-        `User upserted in guard: telegramId=${upsertedUser.telegramId}, username=${upsertedUser.username || 'null'}, userId=${upsertedUser.id}`
+        `User upserted in guard: telegramId=${upsertedUser.telegramId}, username=${upsertedUser.username || 'null'}, userId=${upsertedUser.id}`,
       );
 
       return true;

@@ -16,11 +16,3 @@ export class EventsController {
   }
 }
 
-
-
-
-
-
-
-
-

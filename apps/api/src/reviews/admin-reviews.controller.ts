@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Req,
+} from '@nestjs/common';
 import type { Request } from 'express';
 
 import { AdminGuard } from '../auth/admin.guard';
@@ -69,4 +81,3 @@ export class AdminReviewsController {
     return this.reviewsService.deleteReply(id);
   }
 }
-

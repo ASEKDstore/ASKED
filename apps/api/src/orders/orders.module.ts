@@ -10,8 +10,8 @@ import { WarehouseModule } from '../warehouse/warehouse.module';
 import { AdminChatConfigBotController } from './admin-chat-config-bot.controller';
 import { AdminChatConfigService } from './admin-chat-config.service';
 import { OrdersController } from './orders.controller';
-import { PublicOrdersController } from './public-orders.controller';
 import { OrdersService } from './orders.service';
+import { PublicOrdersController } from './public-orders.controller';
 import { TelegramBotService } from './telegram-bot.service';
 
 @Module({
@@ -28,6 +28,3 @@ import { TelegramBotService } from './telegram-bot.service';
   exports: [OrdersService, TelegramBotService, AdminChatConfigService],
 })
 export class OrdersModule {}
-
-
-

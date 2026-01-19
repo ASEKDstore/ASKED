@@ -14,11 +14,3 @@ export class TelegramWebhookController {
   }
 }
 
-
-
-
-
-
-
-
-

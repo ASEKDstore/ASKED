@@ -11,4 +11,3 @@ export class SettingsController {
     return this.settingsService.getMaintenanceStatus();
   }
 }
-

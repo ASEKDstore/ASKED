@@ -1,7 +1,7 @@
 import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 
-import { PromosService } from './promos.service';
 import type { PromoDto } from './dto/promo.dto';
+import { PromosService } from './promos.service';
 
 @Controller('promo')
 export class PromosController {
@@ -19,13 +19,4 @@ export class PromosController {
     }
   }
 }
-
-
-
-
-
-
-
-
-
 

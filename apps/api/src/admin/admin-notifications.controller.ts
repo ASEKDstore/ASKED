@@ -3,7 +3,6 @@ import { Controller, Post, Param, Body, UseGuards, Logger } from '@nestjs/common
 import { AdminGuard } from '../auth/admin.guard';
 import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
-
 import type { CreateNotificationDto } from '../notifications/dto/create-notification.dto';
 import {
   adminBroadcastNotificationSchema,
@@ -20,7 +19,9 @@ export class AdminNotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post('broadcast')
-  async broadcast(@Body() body: unknown): Promise<{ notificationId: string; delivered: number; totalUsers: number }> {
+  async broadcast(
+    @Body() body: unknown,
+  ): Promise<{ notificationId: string; delivered: number; totalUsers: number }> {
     try {
       const parsed = adminBroadcastNotificationSchema.parse(body);
       const dto: CreateNotificationDto = {
@@ -47,7 +48,7 @@ export class AdminNotificationsController {
         'Error stack trace:',
         error instanceof Error ? error.stack : 'No stack trace available',
       );
-      
+
       // Broadcast must NEVER crash - always return 200 with delivered=0
       // This handles validation errors or any other unexpected errors
       return {

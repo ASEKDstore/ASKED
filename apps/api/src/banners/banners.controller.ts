@@ -13,12 +13,3 @@ export class BannersController {
   }
 }
 
-
-
-
-
-
-
-
-
-

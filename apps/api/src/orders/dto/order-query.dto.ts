@@ -12,9 +12,3 @@ export const orderQuerySchema = z.object({
 export type OrderQueryDto = Omit<z.infer<typeof orderQuerySchema>, 'includeDeleted'> & {
   includeDeleted?: boolean;
 };
-
-
-
-
-
-

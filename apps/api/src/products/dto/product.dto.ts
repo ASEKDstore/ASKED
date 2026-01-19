@@ -68,8 +68,3 @@ export type ProductDto = z.infer<typeof productDtoSchema>;
 export type ProductListItemDto = z.infer<typeof productListItemDtoSchema>;
 export type PaginationMeta = z.infer<typeof paginationMetaSchema>;
 export type ProductsListResponse = z.infer<typeof productsListResponseSchema>;
-
-
-
-
-

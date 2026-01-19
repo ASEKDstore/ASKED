@@ -35,8 +35,9 @@ export const createLabProductSchema = z
       return !data.ctaProductId && !data.ctaUrl;
     },
     {
-      message: 'CTA validation failed: PRODUCT requires ctaProductId, URL requires ctaUrl, NONE requires neither',
-    }
+      message:
+        'CTA validation failed: PRODUCT requires ctaProductId, URL requires ctaUrl, NONE requires neither',
+    },
   );
 
 export type CreateLabProductDto = z.infer<typeof createLabProductSchema>;
@@ -104,4 +105,3 @@ export type CreateLabProductMediaDto = z.infer<typeof createLabProductMediaSchem
 export const updateLabProductMediaSchema = createLabProductMediaSchema.partial();
 
 export type UpdateLabProductMediaDto = z.infer<typeof updateLabProductMediaSchema>;
-

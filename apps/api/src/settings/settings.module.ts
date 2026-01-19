@@ -14,4 +14,3 @@ import { SettingsService } from './settings.service';
   exports: [SettingsService],
 })
 export class SettingsModule {}
-

@@ -15,7 +15,6 @@ import {
 import { AdminGuard } from '../auth/admin.guard';
 import { DevAdminAuthGuard } from '../auth/dev-admin-auth.guard';
 
-import { LabService } from './lab.service';
 import type {
   LabProductDto,
   LabProductMediaDto,
@@ -28,11 +27,7 @@ import {
   createLabProductMediaSchema,
   updateLabProductMediaSchema,
 } from './dto/lab-product.dto';
-import type {
-  LabWorkDto,
-  LabWorkMediaDto,
-  LabWorksListResponse,
-} from './dto/lab-work.dto';
+import type { LabWorkDto, LabWorkMediaDto, LabWorksListResponse } from './dto/lab-work.dto';
 import {
   labWorkQuerySchema,
   createLabWorkSchema,
@@ -40,6 +35,7 @@ import {
   createLabWorkMediaSchema,
   updateLabWorkMediaSchema,
 } from './dto/lab-work.dto';
+import { LabService } from './lab.service';
 
 @Controller('admin/lab-products')
 @UseGuards(DevAdminAuthGuard, AdminGuard)
@@ -76,7 +72,10 @@ export class AdminLabController {
   }
 
   @Post(':id/media')
-  async addMedia(@Param('id') labProductId: string, @Body() body: any): Promise<LabProductMediaDto> {
+  async addMedia(
+    @Param('id') labProductId: string,
+    @Body() body: any,
+  ): Promise<LabProductMediaDto> {
     const createDto = createLabProductMediaSchema.parse(body);
     return this.labService.addMedia(labProductId, createDto);
   }
@@ -151,7 +150,10 @@ export class AdminLabWorksController {
   }
 
   @Patch(':id/media/reorder')
-  async reorderMedia(@Param('id') labWorkId: string, @Body() body: { mediaIds: string[] }): Promise<LabWorkMediaDto[]> {
+  async reorderMedia(
+    @Param('id') labWorkId: string,
+    @Body() body: { mediaIds: string[] },
+  ): Promise<LabWorkMediaDto[]> {
     return this.labService.reorderWorkMedia(labWorkId, body.mediaIds);
   }
 
@@ -161,4 +163,3 @@ export class AdminLabWorksController {
     return this.labService.deleteWorkMedia(mediaId);
   }
 }
-

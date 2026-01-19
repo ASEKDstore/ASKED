@@ -8,6 +8,7 @@ import { useState, useCallback } from 'react';
 import { CustomSteps } from '@/components/CustomSteps';
 import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { ArtistCard } from '@/components/lab/ArtistCard';
+import { LabLoadingScreen } from '@/components/lab/LabLoadingScreen';
 import { LabOrderFlow } from '@/components/lab/LabOrderFlow';
 import { LabProductsCarousel } from '@/components/lab/LabProductsCarousel';
 import { LabSplash } from '@/components/lab/LabSplash';
@@ -38,6 +39,7 @@ export default function LabPage(): JSX.Element {
   const [showSplash, setShowSplash] = useState(true);
   const [showOrderFlow, setShowOrderFlow] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { labMaintenance, disableLabLockMode } = useLabLockStore();
 
   // Lock body scroll on LAB page
@@ -58,7 +60,7 @@ export default function LabPage(): JSX.Element {
   const isAdmin = !!adminData;
 
   // Check LAB maintenance status
-  const { data: labStatus } = useQuery({
+  const { data: labStatus, isLoading: isLoadingLabStatus } = useQuery({
     queryKey: ['lab-status'],
     queryFn: () => api.getLabStatus(),
     refetchOnWindowFocus: true,
@@ -66,6 +68,14 @@ export default function LabPage(): JSX.Element {
   });
 
   const isMaintenance = (labStatus?.maintenance === true || labMaintenance) && !isAdmin;
+  
+  // Get user info for LabLoadingScreen
+  const telegramUser = webApp?.initDataUnsafe?.user;
+  const userName = telegramUser?.first_name || undefined;
+  const avatarUrl = telegramUser?.photo_url || undefined;
+
+  // Show loading screen during initial load or submit
+  const isInitialLoading = !showSplash && isLoadingLabStatus;
 
   // Handle exit from maintenance screen
   const handleExitMaintenance = useCallback(() => {
@@ -100,6 +110,7 @@ export default function LabPage(): JSX.Element {
     phoneRaw: string;
     address: string;
   }) => {
+    setIsSubmitting(true);
     try {
       // Upload attachment if provided
       const attachmentUrl: string | null = null;
@@ -116,11 +127,10 @@ export default function LabPage(): JSX.Element {
         : 'Не указано';
       const customerPhone = telegramUser?.username ? `@${telegramUser.username}` : 'Не указано';
 
-      // Format phone for API (ensure it starts with 7)
-      let formattedPhone: string | undefined = undefined;
-      if (data.phoneRaw && data.phoneRaw.length === 11) {
-        formattedPhone = data.phoneRaw[0] === '8' ? '7' + data.phoneRaw.slice(1) : data.phoneRaw;
-      }
+      // phoneRaw is already 11 digits starting with "7"
+      const formattedPhone: string | undefined = data.phoneRaw && data.phoneRaw.length === 11 && data.phoneRaw.startsWith('7') 
+        ? data.phoneRaw 
+        : undefined;
 
       // Send LAB order to backend
       await api.createLabOrder(initData, {
@@ -144,6 +154,8 @@ export default function LabPage(): JSX.Element {
       // Show error to user
       console.error('Failed to submit LAB order:', error);
       alert('Не удалось отправить заказ. Попробуйте позже.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -155,6 +167,16 @@ export default function LabPage(): JSX.Element {
   const handleProgressChange = (progressData: ProgressData) => {
     setProgress(progressData);
   };
+
+  // Show LabLoadingScreen during submit
+  if (isSubmitting) {
+    return <LabLoadingScreen userName={userName} avatarUrl={avatarUrl} />;
+  }
+
+  // Show LabLoadingScreen during initial data loading (after splash)
+  if (isInitialLoading) {
+    return <LabLoadingScreen userName={userName} avatarUrl={avatarUrl} />;
+  }
 
   if (showOrderFlow) {
     return (

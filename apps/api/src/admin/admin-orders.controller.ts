@@ -1,4 +1,16 @@
-import { Controller, Get, Param, Patch, Delete, Body, Query, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Delete,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Req,
+} from '@nestjs/common';
 import type { Request } from 'express';
 
 import { AdminGuard } from '../auth/admin.guard';
@@ -27,7 +39,10 @@ export class AdminOrdersController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Query('includeDeleted') includeDeleted?: string): Promise<OrderDto> {
+  async findOne(
+    @Param('id') id: string,
+    @Query('includeDeleted') includeDeleted?: string,
+  ): Promise<OrderDto> {
     const includeDeletedBool = includeDeleted === 'true';
     return this.ordersService.findOne(id, includeDeletedBool);
   }
@@ -40,7 +55,10 @@ export class AdminOrdersController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async delete(@Param('id') id: string, @Req() req: Request & { user?: TelegramUser }): Promise<OrderDto> {
+  async delete(
+    @Param('id') id: string,
+    @Req() req: Request & { user?: TelegramUser },
+  ): Promise<OrderDto> {
     // Get admin user ID for deletedBy tracking
     let deletedBy: string | undefined;
     if (req.user) {

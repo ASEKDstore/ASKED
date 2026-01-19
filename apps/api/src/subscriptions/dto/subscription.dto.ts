@@ -16,4 +16,3 @@ export const subscriptionDtoSchema = z.object({
 });
 
 export type SubscriptionDto = z.infer<typeof subscriptionDtoSchema>;
-

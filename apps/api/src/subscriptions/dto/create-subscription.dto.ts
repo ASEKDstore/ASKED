@@ -10,4 +10,3 @@ export const createSubscriptionSchema = z.object({
 });
 
 export type CreateSubscriptionDto = z.infer<typeof createSubscriptionSchema>;
-

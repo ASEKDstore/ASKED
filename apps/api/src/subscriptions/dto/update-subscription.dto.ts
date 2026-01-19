@@ -10,4 +10,3 @@ export const updateSubscriptionSchema = z.object({
 });
 
 export type UpdateSubscriptionDto = z.infer<typeof updateSubscriptionSchema>;
-

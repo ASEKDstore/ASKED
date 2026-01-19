@@ -21,11 +21,3 @@ export interface TelegramInitData {
   hash: string;
 }
 
-
-
-
-
-
-
-
-

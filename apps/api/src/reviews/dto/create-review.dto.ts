@@ -15,4 +15,3 @@ export const createReviewSchema = z.object({
 
 export type CreateReviewDto = z.infer<typeof createReviewSchema>;
 export type CreateReviewMediaDto = z.infer<typeof createReviewMediaSchema>;
-

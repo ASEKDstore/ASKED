@@ -8,7 +8,9 @@ import type { BannerDto, CreateBannerDto, UpdateBannerDto, BannerQueryDto } from
 export class AdminBannersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: BannerQueryDto): Promise<{ items: BannerDto[]; total: number; page: number; pageSize: number }> {
+  async findAll(
+    query: BannerQueryDto,
+  ): Promise<{ items: BannerDto[]; total: number; page: number; pageSize: number }> {
     const { q, isActive, page, pageSize } = query;
 
     const where: any = {};
@@ -170,5 +172,3 @@ export class AdminBannersService {
     });
   }
 }
-
-

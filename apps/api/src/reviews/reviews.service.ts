@@ -1,11 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { PrismaClient } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
-import type { CreateReviewDto } from './dto/create-review.dto';
 import type { CreateReviewReplyDto } from './dto/create-review-reply.dto';
+import type { CreateReviewDto } from './dto/create-review.dto';
 import type { ReviewQueryDto } from './dto/review-query.dto';
 import type { ReviewDto, ReviewsListResponse } from './dto/review.dto';
 
@@ -18,7 +24,8 @@ export class ReviewsService {
     private readonly configService: ConfigService,
   ) {
     // Default to true: require purchase verification by default
-    this.reviewsRequirePurchase = this.configService.get<string>('REVIEWS_REQUIRE_PURCHASE', 'true') === 'true';
+    this.reviewsRequirePurchase =
+      this.configService.get<string>('REVIEWS_REQUIRE_PURCHASE', 'true') === 'true';
   }
 
   /**
@@ -116,10 +123,11 @@ export class ReviewsService {
         text: text || null,
         status: 'PENDING',
         media: {
-          create: media?.map((m) => ({
-            type: m.type,
-            url: m.url,
-          })) || [],
+          create:
+            media?.map((m) => ({
+              type: m.type,
+              url: m.url,
+            })) || [],
         },
       },
       include: {
@@ -498,7 +506,11 @@ export class ReviewsService {
   /**
    * Add or update a reply to a review (admin)
    */
-  async addReply(reviewId: string, createReplyDto: CreateReviewReplyDto, adminId?: string): Promise<ReviewDto> {
+  async addReply(
+    reviewId: string,
+    createReplyDto: CreateReviewReplyDto,
+    adminId?: string,
+  ): Promise<ReviewDto> {
     const { text } = createReplyDto;
 
     // Verify review exists
@@ -617,7 +629,12 @@ export class ReviewsService {
    */
   private async recalculateProductRating(
     productId: string,
-    tx?: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'> | PrismaService,
+    tx?:
+      | Omit<
+          PrismaClient,
+          '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+        >
+      | PrismaService,
   ): Promise<void> {
     const prisma = tx || this.prisma;
 
@@ -643,7 +660,8 @@ export class ReviewsService {
     const reviewsCount = rating1Count + rating2Count + rating3Count + rating4Count + rating5Count;
 
     // Calculate average rating
-    const totalRating = rating1Count * 1 + rating2Count * 2 + rating3Count * 3 + rating4Count * 4 + rating5Count * 5;
+    const totalRating =
+      rating1Count * 1 + rating2Count * 2 + rating3Count * 3 + rating4Count * 4 + rating5Count * 5;
     const averageRating = reviewsCount > 0 ? totalRating / reviewsCount : 0;
 
     // Update product aggregates (handle empty sets: set to 0)

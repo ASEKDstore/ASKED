@@ -25,7 +25,7 @@ export class PublicOrdersController {
     }
 
     const user = await this.usersService.upsertByTelegramData(req.user);
-    
+
     // Return orders for this user (filtered by userId)
     return this.ordersService.findByUserId(user.id, {
       page: 1,
@@ -33,4 +33,3 @@ export class PublicOrdersController {
     });
   }
 }
-
