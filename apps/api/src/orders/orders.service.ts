@@ -1,11 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FifoAllocationService } from '../warehouse/fifo-allocation.service';
 
-import type { CreateOrderDto } from './dto/create-order.dto';
 import type { CreateLabOrderDto } from './dto/create-lab-order.dto';
+import type { CreateOrderDto } from './dto/create-order.dto';
 import type { OrderQueryDto } from './dto/order-query.dto';
 import type { OrderDto, OrdersListResponse } from './dto/order.dto';
 import type { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -24,7 +29,15 @@ export class OrdersService {
   }
 
   async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<OrderDto> {
-    const { items, customerName, customerPhone, customerAddress, comment, channel = 'AS', idempotencyKey } = createOrderDto;
+    const {
+      items,
+      customerName,
+      customerPhone,
+      customerAddress,
+      comment,
+      channel = 'AS',
+      idempotencyKey,
+    } = createOrderDto;
 
     // Check idempotency: if idempotencyKey provided and order exists, return existing order
     if (idempotencyKey) {
@@ -288,7 +301,10 @@ export class OrdersService {
     };
   }
 
-  async findByUserId(userId: string, query: { page: number; pageSize: number }): Promise<OrdersListResponse> {
+  async findByUserId(
+    userId: string,
+    query: { page: number; pageSize: number },
+  ): Promise<OrdersListResponse> {
     const { page, pageSize } = query;
 
     const where = {
@@ -431,7 +447,13 @@ export class OrdersService {
       const statusText = statusMessages[updateDto.status] || 'изменён';
 
       void this.notificationsService
-        .createOrderNotification('ORDER_STATUS_CHANGED', updated.userId, updated.id, updated.number, statusText)
+        .createOrderNotification(
+          'ORDER_STATUS_CHANGED',
+          updated.userId,
+          updated.id,
+          updated.number,
+          statusText,
+        )
         .catch((error) => {
           console.error('Failed to create order status notification:', error);
         });
@@ -517,7 +539,10 @@ export class OrdersService {
     };
   }
 
-  async createLabOrder(userId: string | null, createLabOrderDto: CreateLabOrderDto): Promise<OrderDto> {
+  async createLabOrder(
+    userId: string | null,
+    createLabOrderDto: CreateLabOrderDto,
+  ): Promise<OrderDto> {
     const {
       clothingType,
       size,
@@ -528,6 +553,8 @@ export class OrdersService {
       attachmentUrl,
       customerName,
       customerPhone,
+      phone,
+      address,
       idempotencyKey,
     } = createLabOrderDto;
 
@@ -594,6 +621,9 @@ export class OrdersService {
       const seq = counter.value;
       const number = `№${String(seq).padStart(5, '0')}/LAB`;
 
+      // Use phone from DTO if provided, otherwise fall back to customerPhone
+      const finalPhone = phone || customerPhone || 'Не указано';
+
       // Create order with LAB channel
       const createdOrder = await tx.order.create({
         data: {
@@ -606,7 +636,8 @@ export class OrdersService {
           totalAmount: 0, // LAB orders have no items, total is 0
           currency: 'RUB',
           customerName: customerName || 'Не указано',
-          customerPhone: customerPhone || 'Не указано',
+          customerPhone: finalPhone,
+          customerAddress: address || null,
           comment: commentLines,
         },
       });

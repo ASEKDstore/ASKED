@@ -114,6 +114,12 @@ export default function LabPage(): JSX.Element {
         : 'Не указано';
       const customerPhone = telegramUser?.username ? `@${telegramUser.username}` : 'Не указано';
 
+      // Format phone for API (ensure it starts with 7)
+      let formattedPhone = data.phoneRaw;
+      if (formattedPhone.length === 11 && formattedPhone[0] === '8') {
+        formattedPhone = '7' + formattedPhone.slice(1);
+      }
+
       // Send LAB order to backend
       await api.createLabOrder(initData, {
         clothingType: data.clothingType,
@@ -124,7 +130,9 @@ export default function LabPage(): JSX.Element {
         description: data.description,
         attachmentUrl,
         customerName,
-        customerPhone,
+        customerPhone: formattedPhone || customerPhone,
+        phone: formattedPhone || undefined,
+        address: data.address || undefined,
       });
 
       // Close flow - success screen is shown in LabOrderFlow

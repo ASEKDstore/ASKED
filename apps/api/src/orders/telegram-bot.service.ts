@@ -214,6 +214,22 @@ export class TelegramBotService {
           : `(id: ${buyerInfo.telegramId})`;
       }
 
+      // Format phone for display: +7 (999) 999-99-99
+      let phoneText = '—';
+      if (order.customerPhone && order.customerPhone !== 'Не указано') {
+        const phoneDigits = order.customerPhone.replace(/\D/g, '');
+        if (phoneDigits.length === 11) {
+          // Format as +7 (XXX) XXX-XX-XX
+          const last10 = phoneDigits.slice(-10);
+          phoneText = `+7 (${last10.slice(0, 3)}) ${last10.slice(3, 6)}-${last10.slice(6, 8)}-${last10.slice(8)}`;
+        } else {
+          phoneText = order.customerPhone;
+        }
+      }
+
+      // Format address
+      const addressText = order.customerAddress || '—';
+
       // Build message with required format
       const orderNumber = order.number || `№${order.id.slice(0, 8)}/LAB`;
       const message = `Сестренка, у нас новая темка нарисовалась
@@ -224,6 +240,8 @@ export class TelegramBotService {
 Место: ${placementText}
 Идея клиента: ${descriptionText}
 Медиа: ${mediaText}
+Телефон: ${phoneText}
+Адрес: ${addressText}
 Клиент: ${clientText}`;
 
       // Build inline keyboard

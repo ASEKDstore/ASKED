@@ -19,6 +19,8 @@ interface OrderData {
   placement: string | null;
   description: string;
   attachment: File | null;
+  phoneRaw: string;
+  address: string;
 }
 
 // Clothing types with images
@@ -49,8 +51,42 @@ const STEP_LABELS = [
   'Размер',
   'Цвет базы',
   'Место кастома',
+  'Доставка',
   'Описание и файл',
 ];
+
+// Phone formatting helpers
+function normalizePhoneDigits(input: string): string {
+  // Extract only digits
+  const digits = input.replace(/\D/g, '');
+  // Limit to 11 digits max
+  return digits.slice(0, 11);
+}
+
+function formatPhone(digits: string): string {
+  // Normalize digits first
+  const normalized = normalizePhoneDigits(digits);
+  
+  // Always show +7 format
+  if (normalized.length === 0) {
+    return '';
+  }
+  
+  // Take last 10 digits (if we have 11, drop the first digit; if we have 10, use all)
+  const last10 = normalized.length > 10 ? normalized.slice(-10) : normalized;
+  
+  if (normalized.length <= 1) {
+    return `+7${last10 ? ` (${last10}` : ''}`;
+  } else if (normalized.length <= 4) {
+    return `+7 (${last10}`;
+  } else if (normalized.length <= 7) {
+    return `+7 (${last10.slice(0, 3)}) ${last10.slice(3)}`;
+  } else if (normalized.length <= 9) {
+    return `+7 (${last10.slice(0, 3)}) ${last10.slice(3, 6)}-${last10.slice(6)}`;
+  } else {
+    return `+7 (${last10.slice(0, 3)}) ${last10.slice(3, 6)}-${last10.slice(6, 8)}-${last10.slice(8)}`;
+  }
+}
 
 interface LabOrderFlowProps {
   onComplete: (data: OrderData) => void;
@@ -122,7 +158,7 @@ function StepBlock({ stepIndex, isVisible, isHighlighted, stepRefs, children }: 
         {/* Step Header */}
         <div className="mb-6 text-center">
           <p className="text-[clamp(11px,2.5vw,12px)] font-semibold tracking-[0.1em] uppercase text-white/60 mb-2">
-            Шаг {stepIndex + 1} из 5 · {STEP_LABELS[stepIndex]}
+            Шаг {stepIndex + 1} из 6 · {STEP_LABELS[stepIndex]}
           </p>
         </div>
 
@@ -141,6 +177,8 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
     placement: null,
     description: '',
     attachment: null,
+    phoneRaw: '',
+    address: '',
   });
   const [customBaseDescription, setCustomBaseDescription] = useState('');
   const [highlightedStep, setHighlightedStep] = useState<number | null>(null);
@@ -154,6 +192,7 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
   const isStep2Complete = isStep1Complete && Boolean(orderData.size);
   const isStep3Complete = isStep2Complete && Boolean(orderData.colorChoice);
   const isStep4Complete = isStep3Complete && Boolean(orderData.placement);
+  const isStep5Complete = isStep4Complete && orderData.phoneRaw.length === 11 && orderData.address.trim().length >= 5;
 
   // Scroll to step function - declared first to be available for scrollToStepWithRetry
   const scrollToStep = useCallback((stepIndex: number) => {
@@ -217,11 +256,13 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
           return isStep3Complete; // Step 4 becomes visible after Step 3 is complete
         case 4:
           return isStep4Complete; // Step 5 becomes visible after Step 4 is complete
+        case 5:
+          return isStep5Complete; // Step 6 becomes visible after Step 5 is complete
         default:
           return false;
       }
     },
-    [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete]
+    [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete, isStep5Complete]
   );
 
   // Find scroll container - retry until found - memoized
@@ -255,7 +296,7 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
   // Find scroll container on mount and when steps become visible
   useEffect(() => {
     findScrollContainer();
-  }, [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete, findScrollContainer]);
+  }, [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete, isStep5Complete, findScrollContainer]);
 
   // Auto-scroll when steps become visible (only after user completes step)
   useEffect(() => {
@@ -277,24 +318,32 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
   }, [isStep3Complete, orderData.placement, scrollToStepWithRetry]);
 
   useEffect(() => {
-    if (isStep4Complete && !orderData.description) {
+    if (isStep4Complete && !orderData.phoneRaw) {
       scrollToStepWithRetry(4);
     }
-  }, [isStep4Complete, orderData.description, scrollToStepWithRetry]);
+  }, [isStep4Complete, orderData.phoneRaw, scrollToStepWithRetry]);
+
+  useEffect(() => {
+    if (isStep5Complete && !orderData.description) {
+      scrollToStepWithRetry(5);
+    }
+  }, [isStep5Complete, orderData.description, scrollToStepWithRetry]);
 
   // Notify parent about progress changes
   // Step 1 = clothingType not selected
   // Step 2 = clothingType selected, size not selected
   // Step 3 = size selected, colorChoice not selected
   // Step 4 = colorChoice selected, placement not selected
-  // Step 5 = placement selected
+  // Step 5 = placement selected, delivery not complete
+  // Step 6 = delivery complete
   const currentStep = useMemo(() => {
+    if (isStep5Complete) return 6;
     if (orderData.placement) return 5;
     if (orderData.colorChoice) return 4;
     if (orderData.size) return 3;
     if (orderData.clothingType) return 2;
     return 1; // Start at step 1 when nothing is selected
-  }, [orderData.placement, orderData.colorChoice, orderData.size, orderData.clothingType]);
+  }, [orderData.placement, orderData.colorChoice, orderData.size, orderData.clothingType, isStep5Complete]);
 
   // Handle back navigation
   const handleBack = useCallback(() => {
@@ -321,6 +370,10 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
         // Go back to step 4: clear placement
         setOrderData((prev) => ({ ...prev, placement: null }));
         scrollToStepWithRetry(3);
+      } else if (currentStep === 6) {
+        // Go back to step 5: clear delivery data
+        setOrderData((prev) => ({ ...prev, phoneRaw: '', address: '' }));
+        scrollToStepWithRetry(4);
       }
     }
   }, [currentStep, scrollToStepWithRetry, onExit]);
@@ -329,7 +382,7 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
     if (onProgressChange) {
       onProgressChange({
         currentStep,
-        totalSteps: 5,
+        totalSteps: 6,
         stepLabels: STEP_LABELS,
         isStepVisible,
         onBack: handleBack,
@@ -653,11 +706,86 @@ export function LabOrderFlow({ onComplete, onProgressChange, onExit }: LabOrderF
           </div>
         </StepBlock>
 
-        {/* Step 5: Description + File Upload */}
+        {/* Step 5: Delivery (Phone + Address) */}
         <StepBlock
           stepIndex={4}
           isVisible={isStepVisible(4)}
           isHighlighted={highlightedStep === 4}
+          stepRefs={stepRefs}
+        >
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h3 className="text-[clamp(24px,6vw,32px)] font-bold text-white mb-2">Доставка</h3>
+              <p className="text-white/70 text-[clamp(14px,3.5vw,16px)]">
+                Укажи номер телефона и адрес доставки
+              </p>
+            </div>
+
+            {/* Phone Input */}
+            <div className="space-y-2">
+              <label className="block text-white/70 text-sm font-medium">Телефон</label>
+              <input
+                type="tel"
+                value={formatPhone(orderData.phoneRaw)}
+                onChange={(e) => {
+                  const normalized = normalizePhoneDigits(e.target.value);
+                  setOrderData((prev) => ({ ...prev, phoneRaw: normalized }));
+                }}
+                placeholder="+7 (999) 999-99-99"
+                className="w-full rounded-[16px] p-4 bg-black/30 backdrop-blur-xl
+                         border border-white/10 text-white placeholder-white/40
+                         focus:outline-none focus:border-white/30 focus:bg-black/35
+                         text-[clamp(14px,3.5vw,16px)]"
+              />
+              {orderData.phoneRaw.length > 0 && orderData.phoneRaw.length !== 11 && (
+                <p className="text-red-400 text-sm">Номер должен содержать 11 цифр</p>
+              )}
+            </div>
+
+            {/* Address Input */}
+            <div className="space-y-2">
+              <label className="block text-white/70 text-sm font-medium">
+                Адрес доставки <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                value={orderData.address}
+                onChange={(e) => setOrderData((prev) => ({ ...prev, address: e.target.value }))}
+                placeholder="Введите адрес доставки"
+                className="w-full min-h-[100px] rounded-[16px] p-4 bg-black/30 backdrop-blur-xl
+                         border border-white/10 text-white placeholder-white/40
+                         focus:outline-none focus:border-white/30 focus:bg-black/35
+                         resize-none text-[clamp(14px,3.5vw,16px)]"
+                required
+              />
+              {orderData.address.trim().length > 0 && orderData.address.trim().length < 5 && (
+                <p className="text-red-400 text-sm">Адрес должен содержать минимум 5 символов</p>
+              )}
+            </div>
+
+            {/* Next Button */}
+            {orderData.phoneRaw.length === 11 && orderData.address.trim().length >= 5 && (
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => {
+                  // Auto-advance to next step
+                  scrollToStepWithRetry(5);
+                }}
+                className="w-full rounded-full px-6 py-4 text-base font-medium
+                         bg-white text-black shadow-[0_4px_16px_rgba(255,255,255,0.3)] 
+                         hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+              >
+                Продолжить
+                <ArrowRight className="w-5 h-5" />
+              </motion.button>
+            )}
+          </div>
+        </StepBlock>
+
+        {/* Step 6: Description + File Upload */}
+        <StepBlock
+          stepIndex={5}
+          isVisible={isStepVisible(5)}
+          isHighlighted={highlightedStep === 5}
           stepRefs={stepRefs}
         >
           <div className="space-y-6">

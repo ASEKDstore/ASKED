@@ -816,6 +816,8 @@ export const api = {
       attachmentUrl?: string | null;
       customerName?: string;
       customerPhone?: string;
+      phone?: string;
+      address?: string;
     }
   ): Promise<Order> {
     return request<Order>('/orders/lab', {
