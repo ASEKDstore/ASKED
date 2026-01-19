@@ -5,6 +5,16 @@ import { ArrowLeft, Plus, Check, Package, Warehouse, Box, Trash2, ExternalLink, 
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,16 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -336,85 +336,88 @@ export default function AdminPoletDetailPage(): JSX.Element {
                         {formatPrice(poz.sebestoimostItogoRub * poz.kolichestvo)}
                       </TableCell>
                       <TableCell>
-                        {poz.tovar ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 font-medium"
-                                onClick={() => router.push(`/admin/products/${poz.tovar?.id}/edit`)}
-                              >
-                                {poz.tovar.title}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={() => router.push(`/admin/products/${poz.tovar?.id}/edit`)}
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                              </Button>
-                            </div>
-                            <div className="text-xs text-muted-foreground space-y-1">
-                              <div>Цена продажи: {editingProduct?.productId === poz.tovar.id ? (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <Input
-                                    type="number"
-                                    value={editingProduct.price}
-                                    onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
-                                    className="h-6 w-24 text-xs"
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0"
-                                    onClick={handleSaveProduct}
-                                    disabled={updateProductMutation.isPending}
-                                  >
-                                    <Save className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0"
-                                    onClick={() => setEditingProduct(null)}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <span className="font-medium">{formatPrice(poz.tovar.price)}</span>
-                              )}
-                              </div>
-                              <div>На складе: <span className="font-medium">{poz.tovar.stock}</span></div>
-                              <div>Статус: <span className="font-medium">
-                                {poz.tovar.status === 'ACTIVE' ? 'Активен' : poz.tovar.status === 'DRAFT' ? 'Черновик' : 'Архив'}
-                              </span></div>
-                            </div>
-                            <div className="flex items-center gap-1 mt-2">
-                              {editingProduct?.productId !== poz.tovar.id && (
+                        {poz.tovar ? (() => {
+                          const tovar = poz.tovar;
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
                                 <Button
-                                  variant="outline"
+                                  variant="link"
                                   size="sm"
-                                  className="h-6 text-xs"
-                                  onClick={() => handleEditProduct(poz.tovar.id, poz.tovar.price)}
+                                  className="h-auto p-0 font-medium"
+                                  onClick={() => router.push(`/admin/products/${tovar.id}/edit`)}
                                 >
-                                  Изменить цену
+                                  {tovar.title}
                                 </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                onClick={() => handleDeleteProduct(poz.tovar.id, poz.id)}
-                                disabled={deleteProductMutation.isPending}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => router.push(`/admin/products/${tovar.id}/edit`)}
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </Button>
+                              </div>
+                              <div className="text-xs text-muted-foreground space-y-1">
+                                <div>Цена продажи: {editingProduct?.productId === tovar.id ? (
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <Input
+                                      type="number"
+                                      value={editingProduct.price}
+                                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
+                                      className="h-6 w-24 text-xs"
+                                    />
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0"
+                                      onClick={handleSaveProduct}
+                                      disabled={updateProductMutation.isPending}
+                                    >
+                                      <Save className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => setEditingProduct(null)}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <span className="font-medium">{formatPrice(tovar.price)}</span>
+                                )}
+                                </div>
+                                <div>На складе: <span className="font-medium">{tovar.stock}</span></div>
+                                <div>Статус: <span className="font-medium">
+                                  {tovar.status === 'ACTIVE' ? 'Активен' : tovar.status === 'DRAFT' ? 'Черновик' : 'Архив'}
+                                </span></div>
+                              </div>
+                              <div className="flex items-center gap-1 mt-2">
+                                {editingProduct?.productId !== tovar.id && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 text-xs"
+                                    onClick={() => handleEditProduct(tovar.id, tovar.price)}
+                                  >
+                                    Изменить цену
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                  onClick={() => handleDeleteProduct(tovar.id, poz.id)}
+                                  disabled={deleteProductMutation.isPending}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
+                          );
+                        })() : (
                           <div className="space-y-2">
                             <span className="text-muted-foreground text-sm">Товар не создан</span>
                             {canSozdatTovar && (
