@@ -49,10 +49,10 @@ export function LabLoadingScreen({
   };
 
   // Path length for the oval (calculated for a rounded rectangle with radius 80px)
-  // Width: ~320px (max-w-[320px] + padding), Height: ~200px (estimated)
+  // Width: ~420px (max-w-[420px] + padding), Height: ~200px (estimated)
   // For rounded rect: 2*(width - 2*r) + 2*(height - 2*r) + 2*π*r
-  // Simplified: approximately 2*(160 + 40) + 2*π*80 ≈ 400 + 502 ≈ 902
-  const pathLength = 920;
+  // Simplified: approximately 2*(260 + 40) + 2*π*80 ≈ 600 + 502 ≈ 1102
+  const pathLength = 1120;
 
   // Calculate stroke animation
   useEffect(() => {
@@ -79,7 +79,7 @@ export function LabLoadingScreen({
       />
 
       {/* Center content */}
-      <div className="relative z-10 w-full max-w-[320px] px-6">
+      <div className="relative z-10 w-full max-w-[420px] px-6">
         {/* Glass oval pill container */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -93,7 +93,7 @@ export function LabLoadingScreen({
           {/* SVG progress stroke on border */}
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox="0 0 320 200"
+            viewBox="0 0 420 200"
             preserveAspectRatio="none"
             style={{ borderRadius: '80px' }}
           >
@@ -103,9 +103,9 @@ export function LabLoadingScreen({
                 <stop offset="100%" stopColor="rgba(255, 255, 255, 0.8)" />
               </linearGradient>
             </defs>
-            {/* Rounded rectangle path: traces the border of the pill */}
+            {/* Rounded rectangle path: traces the border of the pill - more elongated */}
             <path
-              d="M 80,0 Q 0,0 0,80 L 0,120 Q 0,200 80,200 L 240,200 Q 320,200 320,120 L 320,80 Q 320,0 240,0 L 80,0 Z"
+              d="M 80,0 Q 0,0 0,80 L 0,120 Q 0,200 80,200 L 340,200 Q 420,200 420,120 L 420,80 Q 420,0 340,0 L 80,0 Z"
               vectorEffect="non-scaling-stroke"
               fill="none"
               stroke={`url(#${gradientId})`}

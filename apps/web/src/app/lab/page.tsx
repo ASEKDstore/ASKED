@@ -11,7 +11,6 @@ import { ArtistCard } from '@/components/lab/ArtistCard';
 import { LabLoadingScreen } from '@/components/lab/LabLoadingScreen';
 import { LabOrderFlow } from '@/components/lab/LabOrderFlow';
 import { LabProductsCarousel } from '@/components/lab/LabProductsCarousel';
-import { LabSplash } from '@/components/lab/LabSplash';
 import { LabWorksCarousel } from '@/components/lab/LabWorksCarousel';
 import { Button } from '@/components/ui/button';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
@@ -36,7 +35,6 @@ export default function LabPage(): JSX.Element {
   const { initData, webApp } = useTelegram();
   const token = getTokenFromUrl();
   const hasDevToken = !!token && process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN === token;
-  const [showSplash, setShowSplash] = useState(true);
   const [showOrderFlow, setShowOrderFlow] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,7 +73,7 @@ export default function LabPage(): JSX.Element {
   const avatarUrl = telegramUser?.photo_url || undefined;
 
   // Show loading screen during initial load or submit
-  const isInitialLoading = !showSplash && isLoadingLabStatus;
+  const isInitialLoading = isLoadingLabStatus;
 
   // Handle exit from maintenance screen
   const handleExitMaintenance = useCallback(() => {
@@ -91,9 +89,6 @@ export default function LabPage(): JSX.Element {
     }
   }, [disableLabLockMode, router]);
 
-  const handleSplashComplete = () => {
-    setShowSplash(false);
-  };
 
   const handleOrderClick = () => {
     setShowOrderFlow(true);
@@ -224,7 +219,7 @@ export default function LabPage(): JSX.Element {
   }
 
   // Show maintenance screen if maintenance is ON and user is not admin
-  if (isMaintenance && !showSplash) {
+  if (isMaintenance) {
     return (
       <div className="fixed inset-0 overflow-hidden">
         {/* Fixed Background Layers */}
@@ -315,12 +310,8 @@ export default function LabPage(): JSX.Element {
 
   return (
     <>
-      {/* Splash Screen */}
-      {showSplash && <LabSplash onComplete={handleSplashComplete} />}
-
       {/* Main Content */}
-      {!showSplash && (
-        <div className="fixed inset-0 overflow-hidden">
+      <div className="fixed inset-0 overflow-hidden">
           {/* Fixed Background Layers */}
           <div className="fixed inset-0 z-0">
             {/* Background Image */}
@@ -386,7 +377,6 @@ export default function LabPage(): JSX.Element {
             </div>
           </div>
         </div>
-      )}
     </>
   );
 }
