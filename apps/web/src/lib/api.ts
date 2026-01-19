@@ -705,6 +705,11 @@ export interface PoziciyaPoleta {
     id: string;
     title: string;
     price: number;
+    stock: number;
+    status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+    sku: string | null;
+    costPrice: number | null;
+    deletedAt: string | null;
   } | null;
 }
 
@@ -2253,6 +2258,13 @@ export const api = {
   async provestiPolet(initData: string | null, id: string): Promise<Polet> {
     return request<Polet>(`/admin/polet/${id}/provesti`, {
       method: 'POST',
+      initData,
+    });
+  },
+
+  async deleteAdminPolet(initData: string | null, id: string): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${id}`, {
+      method: 'DELETE',
       initData,
     });
   },

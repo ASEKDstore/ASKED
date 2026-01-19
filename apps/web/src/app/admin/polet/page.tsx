@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Boxes, Plus, Eye } from 'lucide-react';
+import { Boxes, Plus, Eye, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -16,6 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -53,6 +63,8 @@ export default function AdminPoletPage(): JSX.Element {
   const queryClient = useQueryClient();
   const token = getTokenFromUrl();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [poletToDelete, setPoletToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreatePoletDto>({
     nazvanie: '',
     cenaPoletaRub: 0,
@@ -84,6 +96,26 @@ export default function AdminPoletPage(): JSX.Element {
       router.push(`/admin/polet/${newPolet.id}`);
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.deleteAdminPolet(initData, id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'poleti'] });
+      setDeleteDialogOpen(false);
+      setPoletToDelete(null);
+    },
+  });
+
+  const handleDelete = (id: string) => {
+    setPoletToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (poletToDelete) {
+      deleteMutation.mutate(poletToDelete);
+    }
+  };
 
   const handleCreate = () => {
     if (!formData.nazvanie.trim()) {
@@ -167,14 +199,25 @@ export default function AdminPoletPage(): JSX.Element {
                     <TableCell>{polet.primernoeKolvo || '-'}</TableCell>
                     <TableCell>{new Date(polet.createdAt).toLocaleDateString('ru-RU')}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push(`/admin/polet/${polet.id}`)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Открыть
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/admin/polet/${polet.id}`)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Открыть
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(polet.id)}
+                          disabled={deleteMutation.isPending}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -256,6 +299,27 @@ export default function AdminPoletPage(): JSX.Element {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить паллету?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Паллета будет скрыта из списка (мягкое удаление). Это действие можно отменить позже.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

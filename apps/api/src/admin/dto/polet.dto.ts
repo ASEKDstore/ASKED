@@ -13,6 +13,11 @@ export interface PoziciyaPoletaDto {
     id: string;
     title: string;
     price: number;
+    stock: number;
+    status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+    sku: string | null;
+    costPrice: number | null;
+    deletedAt: Date | null;
   } | null;
 }
 
@@ -31,7 +36,22 @@ export interface PoletDto {
   pozicii: PoziciyaPoletaDto[];
 }
 
-export function mapPoletToDto(polet: Polet & { pozicii: (PoziciyaPoleta & { tovar: { id: string; title: string; price: number } | null })[] }): PoletDto {
+export function mapPoletToDto(
+  polet: Polet & {
+    pozicii: (PoziciyaPoleta & {
+      tovar: {
+        id: string;
+        title: string;
+        price: number;
+        stock: number;
+        status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+        sku: string | null;
+        costPrice: number | null;
+        deletedAt: Date | null;
+      } | null;
+    })[];
+  },
+): PoletDto {
   return {
     id: polet.id,
     nazvanie: polet.nazvanie,
@@ -53,11 +73,18 @@ export function mapPoletToDto(polet: Polet & { pozicii: (PoziciyaPoleta & { tova
       sebestoimostDostavkaRub: poz.sebestoimostDostavkaRub,
       sebestoimostItogoRub: poz.sebestoimostItogoRub,
       tovarId: poz.tovarId,
-      tovar: poz.tovar ? {
-        id: poz.tovar.id,
-        title: poz.tovar.title,
-        price: poz.tovar.price,
-      } : null,
+      tovar: poz.tovar
+        ? {
+            id: poz.tovar.id,
+            title: poz.tovar.title,
+            price: poz.tovar.price,
+            stock: poz.tovar.stock,
+            status: poz.tovar.status,
+            sku: poz.tovar.sku,
+            costPrice: poz.tovar.costPrice,
+            deletedAt: poz.tovar.deletedAt,
+          }
+        : null,
     })),
   };
 }

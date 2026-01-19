@@ -16,25 +16,36 @@ export class AdminPoletService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<PoletDto[]> {
+  async findAll(includeDeleted = false): Promise<PoletDto[]> {
     try {
       this.logger.log('findAll() - Querying polet table');
+      const where: Prisma.PoletWhereInput = {};
+      
+      // Filter out deleted pallets by default
+      if (!includeDeleted) {
+        where.deletedAt = null;
+      }
+
       const poleti = await this.prisma.polet.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        pozicii: {
-          include: {
-            tovar: {
-              select: {
-                id: true,
-                title: true,
-                price: true,
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          pozicii: {
+            include: {
+              tovar: {
+                select: {
+                  id: true,
+                  title: true,
+                  price: true,
+                  stock: true,
+                  status: true,
+                  deletedAt: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
       this.logger.log(`findAll() - Found ${poleti.length} poleti`);
       return poleti.map(mapPoletToDto);
@@ -51,9 +62,16 @@ export class AdminPoletService {
     }
   }
 
-  async findOne(id: string): Promise<PoletDto> {
-    const polet = await this.prisma.polet.findUnique({
-      where: { id },
+  async findOne(id: string, includeDeleted = false): Promise<PoletDto> {
+    const where: Prisma.PoletWhereInput = { id };
+    
+    // Filter out deleted pallets by default
+    if (!includeDeleted) {
+      where.deletedAt = null;
+    }
+
+    const polet = await this.prisma.polet.findFirst({
+      where,
       include: {
         pozicii: {
           include: {
@@ -62,6 +80,11 @@ export class AdminPoletService {
                 id: true,
                 title: true,
                 price: true,
+                stock: true,
+                status: true,
+                deletedAt: true,
+                sku: true,
+                costPrice: true,
               },
             },
           },
@@ -512,26 +535,35 @@ export class AdminPoletService {
       throw new BadRequestException('Товар для этой позиции уже создан');
     }
 
-    // Конвертируем RUB в копейки для costPrice (Warehouse использует копейки)
-    const costPriceInCents = poziciya.sebestoimostItogoRub * 100;
+    // Use transaction to ensure atomicity
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Конвертируем RUB в копейки для costPrice (Warehouse использует копейки)
+      const costPriceInCents = poziciya.sebestoimostItogoRub * 100;
 
-    const tovar = await this.prisma.product.create({
-      data: {
-        title: poziciya.nazvanie,
-        price: 0, // Цена будет установлена позже
-        costPrice: costPriceInCents,
-        status: 'DRAFT',
-        stock: 0,
-        sourcePoletId: poletId,
-        sourcePoziciyaId: poziciyaId,
-      },
+      // Create product with proper fields
+      const tovar = await tx.product.create({
+        data: {
+          title: poziciya.nazvanie,
+          price: 0, // Цена будет установлена позже
+          costPrice: costPriceInCents,
+          packagingCost: 0, // Default packaging cost
+          status: 'DRAFT',
+          stock: 0, // Stock will be set when pallet is "провести"
+          sourcePoletId: poletId,
+          sourcePoziciyaId: poziciyaId,
+        },
+      });
+
+      // Link product to poziciya
+      await tx.poziciyaPoleta.update({
+        where: { id: poziciyaId },
+        data: { tovarId: tovar.id },
+      });
+
+      return tovar.id;
     });
 
-    await this.prisma.poziciyaPoleta.update({
-      where: { id: poziciyaId },
-      data: { tovarId: tovar.id },
-    });
-
+    // Return updated polet with product data
     return this.findOne(poletId);
   }
 
@@ -606,5 +638,77 @@ export class AdminPoletService {
     });
 
     return mapPoletToDto(updated);
+  }
+
+  async delete(id: string, deletedBy?: string): Promise<PoletDto> {
+    const polet = await this.prisma.polet.findUnique({
+      where: { id },
+    });
+
+    if (!polet) {
+      throw new NotFoundException(`Полет с ID ${id} не найден`);
+    }
+
+    // If pallet is POSTED (ПРОВЕДЕН), only allow soft delete
+    // For other statuses, also use soft delete for safety
+    if (polet.status === 'POSTED') {
+      // Soft delete only for posted pallets (they have inventory movements)
+      const updated = await this.prisma.polet.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          deletedBy: deletedBy ?? null,
+        },
+        include: {
+          pozicii: {
+            include: {
+              tovar: {
+                select: {
+                  id: true,
+                  title: true,
+                  price: true,
+                  stock: true,
+                  status: true,
+                  deletedAt: true,
+                  sku: true,
+                  costPrice: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return mapPoletToDto(updated);
+    } else {
+      // For non-posted pallets, also use soft delete for consistency
+      const updated = await this.prisma.polet.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          deletedBy: deletedBy ?? null,
+        },
+        include: {
+          pozicii: {
+            include: {
+              tovar: {
+                select: {
+                  id: true,
+                  title: true,
+                  price: true,
+                  stock: true,
+                  status: true,
+                  deletedAt: true,
+                  sku: true,
+                  costPrice: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return mapPoletToDto(updated);
+    }
   }
 }

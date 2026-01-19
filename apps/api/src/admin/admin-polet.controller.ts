@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -31,10 +32,10 @@ export class AdminPoletController {
   constructor(private readonly poletService: AdminPoletService) {}
 
   @Get()
-  async findAll(): Promise<PoletDto[]> {
+  async findAll(@Query('includeDeleted') includeDeleted?: string): Promise<PoletDto[]> {
     try {
       this.logger.log('GET /admin/polet - Fetching all poleti');
-      const result = await this.poletService.findAll();
+      const result = await this.poletService.findAll(includeDeleted === 'true');
       this.logger.log(`GET /admin/polet - Success: found ${result.length} poleti`);
       return result;
     } catch (error) {
@@ -44,8 +45,11 @@ export class AdminPoletController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<PoletDto> {
-    return this.poletService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @Query('includeDeleted') includeDeleted?: string,
+  ): Promise<PoletDto> {
+    return this.poletService.findOne(id, includeDeleted === 'true');
   }
 
   @Post()
@@ -109,6 +113,13 @@ export class AdminPoletController {
   @HttpCode(HttpStatus.OK)
   async provesti(@Param('id') id: string): Promise<PoletDto> {
     return this.poletService.provesti(id);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async delete(@Param('id') id: string): Promise<PoletDto> {
+    // TODO: Get admin user ID from request context when available
+    return this.poletService.delete(id);
   }
 }
 

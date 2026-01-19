@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Check, Package, Warehouse, Box } from 'lucide-react';
+import { ArrowLeft, Plus, Check, Package, Warehouse, Box, Trash2, ExternalLink, Save, X } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -16,6 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -55,6 +65,9 @@ export default function AdminPoletDetailPage(): JSX.Element {
   const queryClient = useQueryClient();
   const token = getTokenFromUrl();
   const [addPoziciyaDialogOpen, setAddPoziciyaDialogOpen] = useState(false);
+  const [deleteProductDialogOpen, setDeleteProductDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<{ productId: string; poziciyaId: string } | null>(null);
+  const [editingProduct, setEditingProduct] = useState<{ productId: string; price: number } | null>(null);
   const [poziciyaFormData, setPoziciyaFormData] = useState<CreatePoziciyaDto>({
     nazvanie: '',
     kolichestvo: 1,
@@ -107,6 +120,45 @@ export default function AdminPoletDetailPage(): JSX.Element {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'polet', poletId] });
     },
   });
+
+  const updateProductMutation = useMutation({
+    mutationFn: ({ productId, price }: { productId: string; price: number }) =>
+      api.updateAdminProduct(initData, productId, { price }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'polet', poletId] });
+      setEditingProduct(null);
+    },
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: (productId: string) => api.deleteAdminProduct(initData, productId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'polet', poletId] });
+      setDeleteProductDialogOpen(false);
+      setProductToDelete(null);
+    },
+  });
+
+  const handleEditProduct = (productId: string, currentPrice: number) => {
+    setEditingProduct({ productId, price: currentPrice });
+  };
+
+  const handleSaveProduct = () => {
+    if (editingProduct) {
+      updateProductMutation.mutate(editingProduct);
+    }
+  };
+
+  const handleDeleteProduct = (productId: string, poziciyaId: string) => {
+    setProductToDelete({ productId, poziciyaId });
+    setDeleteProductDialogOpen(true);
+  };
+
+  const confirmDeleteProduct = () => {
+    if (productToDelete) {
+      deleteProductMutation.mutate(productToDelete.productId);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -257,12 +309,10 @@ export default function AdminPoletDetailPage(): JSX.Element {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Название</TableHead>
-                  <TableHead className="text-right">Количество</TableHead>
-                  <TableHead className="text-right">Базовая себестоимость</TableHead>
-                  <TableHead className="text-right">Доставка</TableHead>
-                  <TableHead className="text-right">Итого на ед.</TableHead>
-                  <TableHead className="text-right">Итого себестоимость</TableHead>
+                  <TableHead>Название позиции</TableHead>
+                  <TableHead className="text-right">Кол-во</TableHead>
+                  <TableHead className="text-right">Себестоимость за 1 шт</TableHead>
+                  <TableHead className="text-right">Итоговая себестоимость</TableHead>
                   <TableHead>Товар</TableHead>
                   {canSozdatTovar && <TableHead className="text-right">Действия</TableHead>}
                 </TableRow>
@@ -270,7 +320,7 @@ export default function AdminPoletDetailPage(): JSX.Element {
               <TableBody>
                 {polet.pozicii.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={canSozdatTovar ? 8 : 7} className="text-center text-muted-foreground">
+                    <TableCell colSpan={canSozdatTovar ? 6 : 5} className="text-center text-muted-foreground">
                       Нет позиций. Добавьте первую позицию после получения паллеты.
                     </TableCell>
                   </TableRow>
@@ -279,38 +329,123 @@ export default function AdminPoletDetailPage(): JSX.Element {
                     <TableRow key={poz.id}>
                       <TableCell className="font-medium">{poz.nazvanie}</TableCell>
                       <TableCell className="text-right">{poz.kolichestvo}</TableCell>
-                      <TableCell className="text-right">{formatPrice(poz.sebestoimostBazovayaRub)}</TableCell>
-                      <TableCell className="text-right">{formatPrice(poz.sebestoimostDostavkaRub)}</TableCell>
-                      <TableCell className="text-right">{formatPrice(poz.sebestoimostItogoRub)}</TableCell>
+                      <TableCell className="text-right">
+                        {formatPrice(poz.sebestoimostItogoRub)}
+                      </TableCell>
                       <TableCell className="text-right font-semibold">
                         {formatPrice(poz.sebestoimostItogoRub * poz.kolichestvo)}
                       </TableCell>
                       <TableCell>
                         {poz.tovar ? (
-                          <Button
-                            variant="link"
-                            onClick={() => router.push(`/admin/products/${poz.tovar?.id}/edit`)}
-                          >
-                            {poz.tovar.title}
-                          </Button>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 font-medium"
+                                onClick={() => router.push(`/admin/products/${poz.tovar?.id}/edit`)}
+                              >
+                                {poz.tovar.title}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => router.push(`/admin/products/${poz.tovar?.id}/edit`)}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              <div>Цена продажи: {editingProduct?.productId === poz.tovar.id ? (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <Input
+                                    type="number"
+                                    value={editingProduct.price}
+                                    onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
+                                    className="h-6 w-24 text-xs"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                    onClick={handleSaveProduct}
+                                    disabled={updateProductMutation.isPending}
+                                  >
+                                    <Save className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => setEditingProduct(null)}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="font-medium">{formatPrice(poz.tovar.price)}</span>
+                              )}
+                              </div>
+                              <div>На складе: <span className="font-medium">{poz.tovar.stock}</span></div>
+                              <div>Статус: <span className="font-medium">
+                                {poz.tovar.status === 'ACTIVE' ? 'Активен' : poz.tovar.status === 'DRAFT' ? 'Черновик' : 'Архив'}
+                              </span></div>
+                            </div>
+                            <div className="flex items-center gap-1 mt-2">
+                              {editingProduct?.productId !== poz.tovar.id && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-xs"
+                                  onClick={() => handleEditProduct(poz.tovar.id, poz.tovar.price)}
+                                >
+                                  Изменить цену
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                onClick={() => handleDeleteProduct(poz.tovar.id, poz.id)}
+                                disabled={deleteProductMutation.isPending}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
                         ) : (
-                          <span className="text-muted-foreground">Не создан</span>
+                          <div className="space-y-2">
+                            <span className="text-muted-foreground text-sm">Товар не создан</span>
+                            {canSozdatTovar && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => sozdatTovarMutation.mutate(poz.id)}
+                                disabled={sozdatTovarMutation.isPending}
+                              >
+                                <Package className="w-4 h-4 mr-1" />
+                                Создать товар
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </TableCell>
-                      {canSozdatTovar && (
+                      {canSozdatTovar && !poz.tovar && (
                         <TableCell className="text-right">
-                          {!poz.tovarId && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => sozdatTovarMutation.mutate(poz.id)}
-                              disabled={sozdatTovarMutation.isPending}
-                            >
-                              <Package className="w-4 h-4 mr-1" />
-                              Создать товар
-                            </Button>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => sozdatTovarMutation.mutate(poz.id)}
+                            disabled={sozdatTovarMutation.isPending}
+                          >
+                            <Package className="w-4 h-4 mr-1" />
+                            Создать товар
+                          </Button>
                         </TableCell>
+                      )}
+                      {!canSozdatTovar && !poz.tovar && (
+                        <TableCell className="text-right">-</TableCell>
                       )}
                     </TableRow>
                   ))
@@ -373,6 +508,27 @@ export default function AdminPoletDetailPage(): JSX.Element {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteProductDialogOpen} onOpenChange={setDeleteProductDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить товар?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Товар будет архивирован (мягкое удаление) и скрыт из публичного каталога. Это действие можно отменить позже.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteProduct}
+              disabled={deleteProductMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteProductMutation.isPending ? 'Удаление...' : 'Удалить'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

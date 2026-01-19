@@ -13,9 +13,14 @@ export class AdminProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: AdminProductQueryDto): Promise<AdminProductsListResponse> {
-    const { q, status, page, pageSize } = query;
+    const { q, status, page, pageSize, includeDeleted } = query;
 
     const where: any = {};
+
+    // Filter deleted products by default
+    if (!includeDeleted) {
+      where.deletedAt = null;
+    }
 
     // Search
     if (q) {
@@ -94,9 +99,16 @@ export class AdminProductsService {
     };
   }
 
-  async findOne(id: string): Promise<ProductDto> {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
+  async findOne(id: string, includeDeleted = false): Promise<ProductDto> {
+    const where: any = { id };
+    
+    // Filter deleted products by default
+    if (!includeDeleted) {
+      where.deletedAt = null;
+    }
+
+    const product = await this.prisma.product.findFirst({
+      where,
       include: {
         images: {
           orderBy: { sort: 'asc' },
@@ -215,8 +227,8 @@ export class AdminProductsService {
   }
 
   async update(id: string, updateDto: UpdateAdminProductDto): Promise<ProductDto> {
-    // Check if product exists
-    const existing = await this.prisma.product.findUnique({
+    // Check if product exists (allow deleted products to be updated for recovery)
+    const existing = await this.prisma.product.findFirst({
       where: { id },
     });
 
@@ -244,15 +256,30 @@ export class AdminProductsService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      // Update product
-      const updateData: any = { ...productData };
+      // Update product - only include fields that are provided
+      const updateData: any = {};
+      
+      // Only update fields that are explicitly provided
+      if (productData.title !== undefined) updateData.title = productData.title;
+      if (productData.description !== undefined) updateData.description = productData.description;
+      if (productData.price !== undefined) updateData.price = productData.price;
+      if (productData.costPrice !== undefined) updateData.costPrice = productData.costPrice;
+      if (productData.packagingCost !== undefined) updateData.packagingCost = productData.packagingCost;
+      if (productData.currency !== undefined) updateData.currency = productData.currency;
+      if (productData.status !== undefined) updateData.status = productData.status;
+      if (productData.stock !== undefined) updateData.stock = productData.stock;
+      
       if (finalSku !== undefined) {
         updateData.sku = finalSku;
       }
-      await tx.product.update({
-        where: { id },
-        data: updateData,
-      });
+      
+      // Only update if there's something to update
+      if (Object.keys(updateData).length > 0) {
+        await tx.product.update({
+          where: { id },
+          data: updateData,
+        });
+      }
 
       // Replace images (delete old, create new)
       if (images !== undefined) {
@@ -312,19 +339,38 @@ export class AdminProductsService {
     // Check if product exists
     const existing = await this.prisma.product.findUnique({
       where: { id },
+      include: {
+        orderItems: { take: 1 },
+        inventoryMovements: { take: 1 },
+        InventoryLot: { take: 1 },
+        reviews: { take: 1 },
+      },
     });
 
     if (!existing) {
       throw new NotFoundException(`Product with id ${id} not found`);
     }
 
-    // Soft delete: set status to ARCHIVED (updatedAt will be automatically updated by Prisma @updatedAt)
+    // Check if product has relations that prevent deletion
+    const hasOrders = existing.orderItems.length > 0;
+    const hasMovements = existing.inventoryMovements.length > 0;
+    const hasLots = existing.InventoryLot.length > 0;
+    const hasReviews = existing.reviews.length > 0;
+
+    // Always use soft delete for safety
+    // Set deletedAt and status to ARCHIVED
     await this.prisma.product.update({
       where: { id },
-      data: { status: 'ARCHIVED' },
+      data: {
+        deletedAt: new Date(),
+        status: 'ARCHIVED',
+      },
     });
 
     // Return full product with relations
-    return this.findOne(id);
+    const deleted = await this.findOne(id, true); // includeDeleted = true to get the deleted product
+
+    // Return message in response (will be handled by controller if needed)
+    return deleted;
   }
 }

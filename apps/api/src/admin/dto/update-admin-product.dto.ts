@@ -7,6 +7,8 @@ export const updateAdminProductSchema = z.object({
   description: z.string().optional().nullable(),
   sku: z.string().trim().min(1).optional().nullable(),
   price: z.number().int().min(0).optional(),
+  costPrice: z.number().int().min(0).optional().nullable(),
+  packagingCost: z.number().int().min(0).optional().nullable(),
   currency: z.string().optional(),
   status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']).optional(),
   stock: z.number().int().min(0).optional(),

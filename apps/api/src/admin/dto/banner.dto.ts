@@ -51,3 +51,4 @@ export const bannerQuerySchema = z.object({
 
 export type BannerQueryDto = z.infer<typeof bannerQuerySchema>;
 
+

@@ -15,6 +15,7 @@ export class ProductsService {
     const where: any = {
       status: 'ACTIVE',
       stock: { gt: 0 }, // Exclude out-of-stock products from public catalog
+      deletedAt: null, // Exclude soft-deleted products
     };
 
     // Search
@@ -140,8 +141,11 @@ export class ProductsService {
   }
 
   async findOne(id: string): Promise<ProductDto> {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
+    const product = await this.prisma.product.findFirst({
+      where: {
+        id,
+        deletedAt: null, // Exclude soft-deleted products from public API
+      },
       include: {
         images: {
           orderBy: { sort: 'asc' },
@@ -245,6 +249,7 @@ export class ProductsService {
           { id: { not: id } }, // Exclude current product
           { status: 'ACTIVE' }, // Only active products
           { stock: { gt: 0 } }, // Only in-stock products
+          { deletedAt: null }, // Exclude soft-deleted products
           { OR: orConditions },
         ],
       },

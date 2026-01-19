@@ -11,3 +11,4 @@ export interface PublicLabProductDto {
   ctaUrl: string | null;
 }
 
+

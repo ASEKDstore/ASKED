@@ -201,6 +201,7 @@ model Product {
   rating5Count       Int                 @default(0) // Count of approved reviews with rating 5
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime? // Soft delete timestamp
   categories         ProductCategory[]
   tags               ProductTag[]
   images             ProductImage[]
@@ -215,6 +216,7 @@ model Product {
   poziciiPoleta      PoziciyaPoleta[] // позицииПолета
 
   @@index([sku])
+  @@index([deletedAt])
   @@map("products")
 }
 
@@ -749,8 +751,11 @@ model Polet {
   primernoeKolvo      Int? // примерноеКолво (optional, before receiving)
   createdAt           DateTime                   @default(now())
   updatedAt           DateTime                   @updatedAt
+  deletedAt           DateTime? // Soft delete timestamp
+  deletedBy           String? // Admin user ID who deleted the pallet (optional)
   pozicii             PoziciyaPoleta[] // позиции
 
+  @@index([deletedAt])
   @@map("polet")
 }
 

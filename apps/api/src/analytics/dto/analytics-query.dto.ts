@@ -32,3 +32,4 @@ export const funnelQuerySchema = z.object({
 
 export type FunnelQueryDto = z.infer<typeof funnelQuerySchema>;
 
+
