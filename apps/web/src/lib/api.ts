@@ -691,6 +691,70 @@ export interface CreateLabWorkMediaDto {
   sort?: number;
 }
 
+// ПОЛЕТЫ (Polet)
+export interface PoziciyaPoleta {
+  id: string;
+  poletId: string;
+  tovarId: string | null;
+  artikul: string | null;
+  nazvanie: string;
+  kolichestvo: number;
+  sebestoimostBazovaya: number;
+  sebestoimostDostavka: number;
+  sebestoimostItogo: number;
+  tovar?: {
+    id: string;
+    title: string;
+    price: number;
+  } | null;
+}
+
+export interface Polet {
+  id: string;
+  nazvanie: string;
+  status: 'DRAFT' | 'ACCEPTED' | 'POSTED' | 'CANCELED';
+  metodRaspredeleniya: 'BY_QUANTITY' | 'BY_COST';
+  stoimostPoleta: number;
+  stoimostDostavki: number;
+  prochieRashody: number;
+  obshayaSummaZatrat: number;
+  dataPriemki: string | null;
+  dataProvedeniya: string | null;
+  createdAt: string;
+  updatedAt: string;
+  pozicii: PoziciyaPoleta[];
+}
+
+export interface CreatePoletDto {
+  nazvanie: string;
+  metodRaspredeleniya?: 'BY_QUANTITY' | 'BY_COST';
+  stoimostPoleta: number;
+  stoimostDostavki: number;
+  prochieRashody?: number;
+}
+
+export interface UpdatePoletDto {
+  nazvanie?: string;
+  metodRaspredeleniya?: 'BY_QUANTITY' | 'BY_COST';
+  stoimostPoleta?: number;
+  stoimostDostavki?: number;
+  prochieRashody?: number;
+}
+
+export interface CreatePoziciyaDto {
+  artikul?: string;
+  nazvanie: string;
+  kolichestvo: number;
+  sebestoimostBazovaya: number;
+}
+
+export interface UpdatePoziciyaDto {
+  artikul?: string;
+  nazvanie?: string;
+  kolichestvo?: number;
+  sebestoimostBazovaya?: number;
+}
+
 export const api = {
   async getMe(initData: string | null): Promise<User> {
     return request<User>('/users/me', {
@@ -2114,6 +2178,81 @@ export const api = {
       method: 'PATCH',
       initData,
       body: JSON.stringify({ globalMaintenanceEnabled: enabled }),
+    });
+  },
+
+  // Admin Polet (ПОЛЕТЫ)
+  async getAdminPoleti(initData: string | null): Promise<Polet[]> {
+    return request<Polet[]>('/admin/polet', {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async getAdminPolet(initData: string | null, id: string): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${id}`, {
+      method: 'GET',
+      initData,
+    });
+  },
+
+  async createAdminPolet(initData: string | null, polet: CreatePoletDto): Promise<Polet> {
+    return request<Polet>('/admin/polet', {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(polet),
+    });
+  },
+
+  async updateAdminPolet(initData: string | null, id: string, polet: UpdatePoletDto): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${id}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(polet),
+    });
+  },
+
+  async addPoziciya(initData: string | null, poletId: string, poziciya: CreatePoziciyaDto): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${poletId}/poziciya`, {
+      method: 'POST',
+      initData,
+      body: JSON.stringify(poziciya),
+    });
+  },
+
+  async updatePoziciya(initData: string | null, poletId: string, poziciyaId: string, poziciya: UpdatePoziciyaDto): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${poletId}/poziciya/${poziciyaId}`, {
+      method: 'PATCH',
+      initData,
+      body: JSON.stringify(poziciya),
+    });
+  },
+
+  async deletePoziciya(initData: string | null, poletId: string, poziciyaId: string): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${poletId}/poziciya/${poziciyaId}`, {
+      method: 'DELETE',
+      initData,
+    });
+  },
+
+  async prinyatPolet(initData: string | null, id: string): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${id}/prinyat`, {
+      method: 'POST',
+      initData,
+    });
+  },
+
+  async sozdanieTovarov(initData: string | null, id: string): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${id}/sozdanie-tovarov`, {
+      method: 'POST',
+      initData,
+    });
+  },
+
+  async provestiPolet(initData: string | null, id: string): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${id}/provesti`, {
+      method: 'POST',
+      initData,
     });
   },
 };

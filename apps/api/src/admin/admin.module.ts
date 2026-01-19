@@ -21,6 +21,8 @@ import { AdminTagsController } from './admin-tags.controller';
 import { AdminTagsService } from './admin-tags.service';
 import { AdminUsersController } from './admin-users.controller';
 import { AdminController } from './admin.controller';
+import { AdminPoletController } from './admin-polet.controller';
+import { AdminPoletService } from './admin-polet.service';
 
 @Module({
   imports: [
@@ -41,6 +43,7 @@ import { AdminController } from './admin.controller';
     AdminPromosController,
     AdminNotificationsController,
     AdminUsersController,
+    AdminPoletController,
   ],
   providers: [
     AdminProductsService,
@@ -48,6 +51,7 @@ import { AdminController } from './admin.controller';
     AdminTagsService,
     AdminBannersService,
     AdminPromosService,
+    AdminPoletService,
   ],
 })
 export class AdminModule {}
