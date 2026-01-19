@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -34,21 +33,18 @@ import { formatPrice } from '@/lib/utils';
 
 const statusLabels: Record<string, string> = {
   DRAFT: 'Черновик',
-  ACCEPTED: 'Принят',
+  RECEIVED: 'Получен',
+  DISASSEMBLED: 'Разобран',
   POSTED: 'Проведен',
   CANCELED: 'Отменен',
 };
 
 const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   DRAFT: 'secondary',
-  ACCEPTED: 'default',
+  RECEIVED: 'default',
+  DISASSEMBLED: 'outline',
   POSTED: 'outline',
   CANCELED: 'destructive',
-};
-
-const metodLabels: Record<string, string> = {
-  BY_QUANTITY: 'По количеству',
-  BY_COST: 'По стоимости',
 };
 
 export default function AdminPoletPage(): JSX.Element {
@@ -59,10 +55,10 @@ export default function AdminPoletPage(): JSX.Element {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState<CreatePoletDto>({
     nazvanie: '',
-    metodRaspredeleniya: 'BY_QUANTITY',
-    stoimostPoleta: 0,
-    stoimostDostavki: 0,
+    cenaPoleta: 0,
+    dostavka: 0,
     prochieRashody: 0,
+    primernoeKolvo: undefined,
   });
 
   const isDevMode = !!token;
@@ -80,10 +76,10 @@ export default function AdminPoletPage(): JSX.Element {
       setCreateDialogOpen(false);
       setFormData({
         nazvanie: '',
-        metodRaspredeleniya: 'BY_QUANTITY',
-        stoimostPoleta: 0,
-        stoimostDostavki: 0,
+        cenaPoleta: 0,
+        dostavka: 0,
         prochieRashody: 0,
+        primernoeKolvo: undefined,
       });
       router.push(`/admin/polet/${newPolet.id}`);
     },
@@ -147,8 +143,8 @@ export default function AdminPoletPage(): JSX.Element {
                 <TableRow>
                   <TableHead>Название</TableHead>
                   <TableHead>Статус</TableHead>
-                  <TableHead>Метод распределения</TableHead>
-                  <TableHead>Общая сумма затрат</TableHead>
+                  <TableHead>Общая сумма</TableHead>
+                  <TableHead>Примерное кол-во</TableHead>
                   <TableHead>Дата создания</TableHead>
                   <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
@@ -162,8 +158,8 @@ export default function AdminPoletPage(): JSX.Element {
                         {statusLabels[polet.status] || polet.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{metodLabels[polet.metodRaspredeleniya] || polet.metodRaspredeleniya}</TableCell>
-                    <TableCell>{formatPrice(polet.obshayaSummaZatrat)}</TableCell>
+                    <TableCell>{formatPrice(polet.obshayaSumma)}</TableCell>
+                    <TableCell>{polet.primernoeKolvo || '-'}</TableCell>
                     <TableCell>{new Date(polet.createdAt).toLocaleDateString('ru-RU')}</TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -200,34 +196,36 @@ export default function AdminPoletPage(): JSX.Element {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="metodRaspredeleniya">Метод распределения доставки</Label>
-              <Select
-                id="metodRaspredeleniya"
-                value={formData.metodRaspredeleniya}
-                onChange={(e) =>
-                  setFormData({ ...formData, metodRaspredeleniya: e.target.value as 'BY_QUANTITY' | 'BY_COST' })
-                }
-              >
-                <option value="BY_QUANTITY">По количеству</option>
-                <option value="BY_COST">По стоимости</option>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="stoimostPoleta">Стоимость полета (копейки) *</Label>
+              <Label htmlFor="cenaPoleta">Цена полета (копейки) *</Label>
               <Input
-                id="stoimostPoleta"
+                id="cenaPoleta"
                 type="number"
-                value={formData.stoimostPoleta}
-                onChange={(e) => setFormData({ ...formData, stoimostPoleta: parseInt(e.target.value) || 0 })}
+                value={formData.cenaPoleta}
+                onChange={(e) => setFormData({ ...formData, cenaPoleta: parseInt(e.target.value) || 0 })}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="stoimostDostavki">Стоимость доставки (копейки) *</Label>
+              <Label htmlFor="dostavka">Доставка (копейки) *</Label>
               <Input
-                id="stoimostDostavki"
+                id="dostavka"
                 type="number"
-                value={formData.stoimostDostavki}
-                onChange={(e) => setFormData({ ...formData, stoimostDostavki: parseInt(e.target.value) || 0 })}
+                value={formData.dostavka}
+                onChange={(e) => setFormData({ ...formData, dostavka: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="primernoeKolvo">Примерное количество (опционально)</Label>
+              <Input
+                id="primernoeKolvo"
+                type="number"
+                value={formData.primernoeKolvo || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    primernoeKolvo: e.target.value ? parseInt(e.target.value) : undefined,
+                  })
+                }
+                placeholder="Примерное количество единиц"
               />
             </div>
             <div className="grid gap-2">

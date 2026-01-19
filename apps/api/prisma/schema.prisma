@@ -103,14 +103,14 @@ enum ReviewMediaType {
 
 enum PoletStatus {
   DRAFT // ЧЕРНОВИК
-  ACCEPTED // ПРИНЯТ
+  RECEIVED // ПОЛУЧЕН
+  DISASSEMBLED // РАЗОБРАН
   POSTED // ПРОВЕДЕН
   CANCELED // ОТМЕНЕН
 }
 
 enum DeliveryDistributionMethod {
   BY_QUANTITY // ПО_КОЛИЧЕСТВУ
-  BY_COST // ПО_СТОИМОСТИ
 }
 
 enum LabWorkStatus {
@@ -741,13 +741,12 @@ model Polet {
   id                  String                     @id @default(cuid())
   nazvanie            String                     @db.VarChar(255) // название
   status              PoletStatus                @default(DRAFT) // статус
-  metodRaspredeleniya DeliveryDistributionMethod @default(BY_QUANTITY) // методРаспределения
-  stoimostPoleta      Int // стоимостьПолета
-  stoimostDostavki    Int // стоимостьДоставки
+  cenaPoleta          Int // ценаПолета
+  dostavka            Int // доставка
   prochieRashody      Int                        @default(0) // прочиеРасходы
-  obshayaSummaZatrat  Int // общаяСуммаЗатрат
-  dataPriemki         DateTime? // датаПриемки
-  dataProvedeniya     DateTime? // датаПроведения
+  obshayaSumma        Int // общаяСумма
+  metodRaspredeleniya DeliveryDistributionMethod @default(BY_QUANTITY) // методРаспределения
+  primernoeKolvo      Int? // примерноеКолво (optional, before receiving)
   createdAt           DateTime                   @default(now())
   updatedAt           DateTime                   @updatedAt
   pozicii             PoziciyaPoleta[] // позиции
@@ -756,17 +755,14 @@ model Polet {
 }
 
 model PoziciyaPoleta {
-  id                   String   @id @default(cuid())
-  poletId              String // полетId
-  tovarId              String? // товарId
-  artikul              String?  @db.VarChar(100) // артикул
-  nazvanie             String   @db.VarChar(255) // название
-  kolichestvo          Int // количество
-  sebestoimostBazovaya Int // себестоимостьБазовая
-  sebestoimostDostavka Int      @default(0) // себестоимостьДоставка
-  sebestoimostItogo    Int      @default(0) // себестоимостьИтого
-  polet                Polet    @relation(fields: [poletId], references: [id], onDelete: Cascade)
-  tovar                Product? @relation(fields: [tovarId], references: [id])
+  id               String   @id @default(cuid())
+  poletId          String // полетId
+  nazvanie         String   @db.VarChar(255) // название
+  kolichestvo      Int // количество
+  sebestoimostNaEd Int      @default(0) // себестоимостьНаЕд
+  tovarId          String? // товарId
+  polet            Polet    @relation(fields: [poletId], references: [id], onDelete: Cascade)
+  tovar            Product? @relation(fields: [tovarId], references: [id])
 
   @@index([poletId])
   @@map("poziciya_poleta")

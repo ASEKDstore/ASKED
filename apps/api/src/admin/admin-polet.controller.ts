@@ -76,16 +76,22 @@ export class AdminPoletController {
     return this.poletService.deletePoziciya(poletId, poziciyaId);
   }
 
-  @Post(':id/prinyat')
+  @Post(':id/poluchen')
   @HttpCode(HttpStatus.OK)
-  async prinyat(@Param('id') id: string): Promise<PoletDto> {
-    return this.poletService.prinyat(id);
+  async poluchen(@Param('id') id: string): Promise<PoletDto> {
+    return this.poletService.poluchen(id);
   }
 
-  @Post(':id/sozdanie-tovarov')
+  @Post(':id/razobrat')
   @HttpCode(HttpStatus.OK)
-  async sozdanieTovarov(@Param('id') id: string): Promise<PoletDto> {
-    return this.poletService.sozdanieTovarov(id);
+  async razobrat(@Param('id') id: string): Promise<PoletDto> {
+    return this.poletService.razobrat(id);
+  }
+
+  @Post(':id/sozdat-tovar/:poziciyaId')
+  @HttpCode(HttpStatus.OK)
+  async sozdatTovar(@Param('id') id: string, @Param('poziciyaId') poziciyaId: string): Promise<PoletDto> {
+    return this.poletService.sozdatTovar(id, poziciyaId);
   }
 
   @Post(':id/provesti')

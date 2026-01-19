@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Check, Package, Warehouse } from 'lucide-react';
+import { ArrowLeft, Plus, Check, Package, Warehouse, Box } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -33,21 +33,18 @@ import { formatPrice } from '@/lib/utils';
 
 const statusLabels: Record<string, string> = {
   DRAFT: 'Черновик',
-  ACCEPTED: 'Принят',
+  RECEIVED: 'Получен',
+  DISASSEMBLED: 'Разобран',
   POSTED: 'Проведен',
   CANCELED: 'Отменен',
 };
 
 const statusVariants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   DRAFT: 'secondary',
-  ACCEPTED: 'default',
+  RECEIVED: 'default',
+  DISASSEMBLED: 'outline',
   POSTED: 'outline',
   CANCELED: 'destructive',
-};
-
-const metodLabels: Record<string, string> = {
-  BY_QUANTITY: 'По количеству',
-  BY_COST: 'По стоимости',
 };
 
 export default function AdminPoletDetailPage(): JSX.Element {
@@ -59,10 +56,8 @@ export default function AdminPoletDetailPage(): JSX.Element {
   const token = getTokenFromUrl();
   const [addPoziciyaDialogOpen, setAddPoziciyaDialogOpen] = useState(false);
   const [poziciyaFormData, setPoziciyaFormData] = useState<CreatePoziciyaDto>({
-    artikul: '',
     nazvanie: '',
     kolichestvo: 1,
-    sebestoimostBazovaya: 0,
   });
 
   const isDevMode = !!token;
@@ -79,23 +74,28 @@ export default function AdminPoletDetailPage(): JSX.Element {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'polet', poletId] });
       setAddPoziciyaDialogOpen(false);
       setPoziciyaFormData({
-        artikul: '',
         nazvanie: '',
         kolichestvo: 1,
-        sebestoimostBazovaya: 0,
       });
     },
   });
 
-  const prinyatMutation = useMutation({
-    mutationFn: () => api.prinyatPolet(initData, poletId),
+  const poluchenMutation = useMutation({
+    mutationFn: () => api.poluchenPolet(initData, poletId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'polet', poletId] });
     },
   });
 
-  const sozdanieTovarovMutation = useMutation({
-    mutationFn: () => api.sozdanieTovarov(initData, poletId),
+  const razobratMutation = useMutation({
+    mutationFn: () => api.razobratPolet(initData, poletId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'polet', poletId] });
+    },
+  });
+
+  const sozdatTovarMutation = useMutation({
+    mutationFn: (poziciyaId: string) => api.sozdatTovar(initData, poletId, poziciyaId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'polet', poletId] });
     },
@@ -128,10 +128,11 @@ export default function AdminPoletDetailPage(): JSX.Element {
     );
   }
 
-  const canEdit = polet.status === 'DRAFT';
-  const canPrinyat = polet.status === 'DRAFT' && polet.pozicii.length > 0;
-  const canSozdanieTovarov = polet.status === 'ACCEPTED' && polet.pozicii.some((p) => !p.tovarId);
-  const canProvesti = polet.status === 'ACCEPTED' && polet.pozicii.some((p) => p.tovarId);
+  const canPoluchen = polet.status === 'DRAFT';
+  const canAddPoziciya = polet.status === 'RECEIVED';
+  const canRazobrat = polet.status === 'RECEIVED' && polet.pozicii.length > 0;
+  const canSozdatTovar = polet.status === 'DISASSEMBLED';
+  const canProvesti = polet.status === 'DISASSEMBLED' && polet.pozicii.some((p) => p.tovarId);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -145,10 +146,15 @@ export default function AdminPoletDetailPage(): JSX.Element {
           <Badge variant={statusVariants[polet.status] || 'secondary'}>
             {statusLabels[polet.status] || polet.status}
           </Badge>
-          <span className="text-muted-foreground">
-            {metodLabels[polet.metodRaspredeleniya] || polet.metodRaspredeleniya}
-          </span>
+          {polet.primernoeKolvo && (
+            <span className="text-muted-foreground">Примерное кол-во: {polet.primernoeKolvo}</span>
+          )}
         </div>
+        {polet.status === 'DRAFT' && (
+          <p className="text-sm text-muted-foreground mt-2">
+            💡 Состав полета определяется после получения
+          </p>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-6">
@@ -158,12 +164,12 @@ export default function AdminPoletDetailPage(): JSX.Element {
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Стоимость полета:</span>
-              <span className="font-medium">{formatPrice(polet.stoimostPoleta)}</span>
+              <span className="text-muted-foreground">Цена полета:</span>
+              <span className="font-medium">{formatPrice(polet.cenaPoleta)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Доставка:</span>
-              <span className="font-medium">{formatPrice(polet.stoimostDostavki)}</span>
+              <span className="font-medium">{formatPrice(polet.dostavka)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Прочие расходы:</span>
@@ -171,8 +177,16 @@ export default function AdminPoletDetailPage(): JSX.Element {
             </div>
             <div className="flex justify-between pt-2 border-t">
               <span className="font-semibold">Итого:</span>
-              <span className="font-bold text-lg">{formatPrice(polet.obshayaSummaZatrat)}</span>
+              <span className="font-bold text-lg">{formatPrice(polet.obshayaSumma)}</span>
             </div>
+            {polet.status === 'RECEIVED' && polet.pozicii.length > 0 && (
+              <div className="flex justify-between pt-2 border-t">
+                <span className="text-muted-foreground">Себестоимость на единицу:</span>
+                <span className="font-medium">
+                  {formatPrice(polet.pozicii[0]?.sebestoimostNaEd || 0)}
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -181,7 +195,17 @@ export default function AdminPoletDetailPage(): JSX.Element {
             <CardTitle>Действия</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {canEdit && (
+            {canPoluchen && (
+              <Button
+                onClick={() => poluchenMutation.mutate()}
+                disabled={poluchenMutation.isPending}
+                className="w-full"
+              >
+                <Check className="w-4 h-4 mr-2" />
+                {poluchenMutation.isPending ? 'Отметка...' : 'Получен'}
+              </Button>
+            )}
+            {canAddPoziciya && (
               <Button
                 onClick={() => setAddPoziciyaDialogOpen(true)}
                 className="w-full"
@@ -191,25 +215,15 @@ export default function AdminPoletDetailPage(): JSX.Element {
                 Добавить позицию
               </Button>
             )}
-            {canPrinyat && (
+            {canRazobrat && (
               <Button
-                onClick={() => prinyatMutation.mutate()}
-                disabled={prinyatMutation.isPending}
-                className="w-full"
-              >
-                <Check className="w-4 h-4 mr-2" />
-                {prinyatMutation.isPending ? 'Принятие...' : 'Принять полет'}
-              </Button>
-            )}
-            {canSozdanieTovarov && (
-              <Button
-                onClick={() => sozdanieTovarovMutation.mutate()}
-                disabled={sozdanieTovarovMutation.isPending}
+                onClick={() => razobratMutation.mutate()}
+                disabled={razobratMutation.isPending}
                 className="w-full"
                 variant="outline"
               >
-                <Package className="w-4 h-4 mr-2" />
-                {sozdanieTovarovMutation.isPending ? 'Создание...' : 'Создать товары'}
+                <Box className="w-4 h-4 mr-2" />
+                {razobratMutation.isPending ? 'Разборка...' : 'Разобрать'}
               </Button>
             )}
             {canProvesti && (
@@ -226,61 +240,93 @@ export default function AdminPoletDetailPage(): JSX.Element {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Позиции полета</CardTitle>
-          <CardDescription>
-            {polet.pozicii.length} {polet.pozicii.length === 1 ? 'позиция' : 'позиций'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Название</TableHead>
-                <TableHead>Артикул</TableHead>
-                <TableHead className="text-right">Количество</TableHead>
-                <TableHead className="text-right">Базовая себестоимость</TableHead>
-                <TableHead className="text-right">Доставка на единицу</TableHead>
-                <TableHead className="text-right">Себестоимость итого</TableHead>
-                <TableHead>Товар</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {polet.pozicii.map((poz) => (
-                <TableRow key={poz.id}>
-                  <TableCell className="font-medium">{poz.nazvanie}</TableCell>
-                  <TableCell>{poz.artikul || '-'}</TableCell>
-                  <TableCell className="text-right">{poz.kolichestvo}</TableCell>
-                  <TableCell className="text-right">{formatPrice(poz.sebestoimostBazovaya)}</TableCell>
-                  <TableCell className="text-right">{formatPrice(poz.sebestoimostDostavka)}</TableCell>
-                  <TableCell className="text-right font-semibold">
-                    {formatPrice(poz.sebestoimostItogo)}
-                  </TableCell>
-                  <TableCell>
-                    {poz.tovar ? (
-                      <Button
-                        variant="link"
-                        onClick={() => router.push(`/admin/products/${poz.tovar?.id}/edit`)}
-                      >
-                        {poz.tovar.title}
-                      </Button>
-                    ) : (
-                      <span className="text-muted-foreground">Не создан</span>
-                    )}
-                  </TableCell>
+      {polet.status === 'RECEIVED' || polet.status === 'DISASSEMBLED' || polet.status === 'POSTED' ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Позиции полета</CardTitle>
+            <CardDescription>
+              {polet.pozicii.length} {polet.pozicii.length === 1 ? 'позиция' : 'позиций'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Название</TableHead>
+                  <TableHead className="text-right">Количество</TableHead>
+                  <TableHead className="text-right">Себестоимость на ед.</TableHead>
+                  <TableHead className="text-right">Итого себестоимость</TableHead>
+                  <TableHead>Товар</TableHead>
+                  {canSozdatTovar && <TableHead className="text-right">Действия</TableHead>}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {polet.pozicii.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      Нет позиций. Добавьте первую позицию после получения полета.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  polet.pozicii.map((poz) => (
+                    <TableRow key={poz.id}>
+                      <TableCell className="font-medium">{poz.nazvanie}</TableCell>
+                      <TableCell className="text-right">{poz.kolichestvo}</TableCell>
+                      <TableCell className="text-right">{formatPrice(poz.sebestoimostNaEd)}</TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {formatPrice(poz.sebestoimostNaEd * poz.kolichestvo)}
+                      </TableCell>
+                      <TableCell>
+                        {poz.tovar ? (
+                          <Button
+                            variant="link"
+                            onClick={() => router.push(`/admin/products/${poz.tovar?.id}/edit`)}
+                          >
+                            {poz.tovar.title}
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground">Не создан</span>
+                        )}
+                      </TableCell>
+                      {canSozdatTovar && (
+                        <TableCell className="text-right">
+                          {!poz.tovarId && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => sozdatTovarMutation.mutate(poz.id)}
+                              disabled={sozdatTovarMutation.isPending}
+                            >
+                              <Package className="w-4 h-4 mr-1" />
+                              Создать товар
+                            </Button>
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">
+              Позиции появятся после отметки полета как «Получен»
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={addPoziciyaDialogOpen} onOpenChange={setAddPoziciyaDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Добавить позицию</DialogTitle>
-            <DialogDescription>Заполните данные для новой позиции</DialogDescription>
+            <DialogDescription>
+              Себестоимость будет рассчитана автоматически на основе общей суммы полета
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -293,15 +339,6 @@ export default function AdminPoletDetailPage(): JSX.Element {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="poziciya-artikul">Артикул</Label>
-              <Input
-                id="poziciya-artikul"
-                value={poziciyaFormData.artikul}
-                onChange={(e) => setPoziciyaFormData({ ...poziciyaFormData, artikul: e.target.value })}
-                placeholder="Артикул (необязательно)"
-              />
-            </div>
-            <div className="grid gap-2">
               <Label htmlFor="poziciya-kolichestvo">Количество *</Label>
               <Input
                 id="poziciya-kolichestvo"
@@ -311,21 +348,6 @@ export default function AdminPoletDetailPage(): JSX.Element {
                   setPoziciyaFormData({ ...poziciyaFormData, kolichestvo: parseInt(e.target.value) || 1 })
                 }
                 min="1"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="poziciya-sebestoimost">Базовая себестоимость (копейки) *</Label>
-              <Input
-                id="poziciya-sebestoimost"
-                type="number"
-                value={poziciyaFormData.sebestoimostBazovaya}
-                onChange={(e) =>
-                  setPoziciyaFormData({
-                    ...poziciyaFormData,
-                    sebestoimostBazovaya: parseInt(e.target.value) || 0,
-                  })
-                }
-                min="0"
               />
             </div>
           </div>
@@ -345,4 +367,3 @@ export default function AdminPoletDetailPage(): JSX.Element {
     </div>
   );
 }
-

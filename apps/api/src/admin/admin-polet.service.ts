@@ -61,16 +61,17 @@ export class AdminPoletService {
   }
 
   async create(dto: CreatePoletDto): Promise<PoletDto> {
-    const obshayaSummaZatrat = dto.stoimostPoleta + dto.stoimostDostavki + dto.prochieRashody;
+    const obshayaSumma = dto.cenaPoleta + dto.dostavka + dto.prochieRashody;
 
     const polet = await this.prisma.polet.create({
       data: {
         nazvanie: dto.nazvanie,
-        metodRaspredeleniya: dto.metodRaspredeleniya,
-        stoimostPoleta: dto.stoimostPoleta,
-        stoimostDostavki: dto.stoimostDostavki,
+        cenaPoleta: dto.cenaPoleta,
+        dostavka: dto.dostavka,
         prochieRashody: dto.prochieRashody,
-        obshayaSummaZatrat,
+        obshayaSumma,
+        metodRaspredeleniya: 'BY_QUANTITY',
+        primernoeKolvo: dto.primernoeKolvo ?? null,
         status: 'DRAFT',
       },
       include: {
@@ -109,24 +110,24 @@ export class AdminPoletService {
     if (dto.nazvanie !== undefined) {
       updateData.nazvanie = dto.nazvanie;
     }
-    if (dto.metodRaspredeleniya !== undefined) {
-      updateData.metodRaspredeleniya = dto.metodRaspredeleniya;
+    if (dto.cenaPoleta !== undefined) {
+      updateData.cenaPoleta = dto.cenaPoleta;
     }
-    if (dto.stoimostPoleta !== undefined) {
-      updateData.stoimostPoleta = dto.stoimostPoleta;
-    }
-    if (dto.stoimostDostavki !== undefined) {
-      updateData.stoimostDostavki = dto.stoimostDostavki;
+    if (dto.dostavka !== undefined) {
+      updateData.dostavka = dto.dostavka;
     }
     if (dto.prochieRashody !== undefined) {
       updateData.prochieRashody = dto.prochieRashody;
     }
+    if (dto.primernoeKolvo !== undefined) {
+      updateData.primernoeKolvo = dto.primernoeKolvo;
+    }
 
-    // Пересчитать общаяСуммаЗатрат
-    const stoimostPoleta = dto.stoimostPoleta ?? existing.stoimostPoleta;
-    const stoimostDostavki = dto.stoimostDostavki ?? existing.stoimostDostavki;
+    // Пересчитать общаяСумма
+    const cenaPoleta = dto.cenaPoleta ?? existing.cenaPoleta;
+    const dostavka = dto.dostavka ?? existing.dostavka;
     const prochieRashody = dto.prochieRashody ?? existing.prochieRashody;
-    updateData.obshayaSummaZatrat = stoimostPoleta + stoimostDostavki + prochieRashody;
+    updateData.obshayaSumma = cenaPoleta + dostavka + prochieRashody;
 
     const polet = await this.prisma.polet.update({
       where: { id },
@@ -149,7 +150,7 @@ export class AdminPoletService {
     return mapPoletToDto(polet);
   }
 
-  async addPoziciya(poletId: string, dto: CreatePoziciyaDto): Promise<PoletDto> {
+  async poluchen(poletId: string): Promise<PoletDto> {
     const polet = await this.prisma.polet.findUnique({
       where: { id: poletId },
     });
@@ -159,168 +160,13 @@ export class AdminPoletService {
     }
 
     if (polet.status !== 'DRAFT') {
-      throw new BadRequestException('Можно добавлять позиции только в полеты со статусом ЧЕРНОВИК');
+      throw new BadRequestException('Можно отметить как ПОЛУЧЕН только полеты со статусом ЧЕРНОВИК');
     }
 
-    await this.prisma.poziciyaPoleta.create({
-      data: {
-        poletId,
-        artikul: dto.artikul,
-        nazvanie: dto.nazvanie,
-        kolichestvo: dto.kolichestvo,
-        sebestoimostBazovaya: dto.sebestoimostBazovaya,
-        sebestoimostDostavka: 0,
-        sebestoimostItogo: dto.sebestoimostBazovaya,
-      },
-    });
-
-    return this.findOne(poletId);
-  }
-
-  async updatePoziciya(poletId: string, poziciyaId: string, dto: UpdatePoziciyaDto): Promise<PoletDto> {
-    const polet = await this.prisma.polet.findUnique({
-      where: { id: poletId },
-    });
-
-    if (!polet) {
-      throw new NotFoundException(`Полет с ID ${poletId} не найден`);
-    }
-
-    if (polet.status !== 'DRAFT') {
-      throw new BadRequestException('Можно редактировать позиции только в полетах со статусом ЧЕРНОВИК');
-    }
-
-    const poziciya = await this.prisma.poziciyaPoleta.findUnique({
-      where: { id: poziciyaId },
-    });
-
-    if (!poziciya || poziciya.poletId !== poletId) {
-      throw new NotFoundException(`Позиция с ID ${poziciyaId} не найдена в полете ${poletId}`);
-    }
-
-    const updateData: Prisma.PoziciyaPoletaUpdateInput = {};
-
-    if (dto.artikul !== undefined) {
-      updateData.artikul = dto.artikul;
-    }
-    if (dto.nazvanie !== undefined) {
-      updateData.nazvanie = dto.nazvanie;
-    }
-    if (dto.kolichestvo !== undefined) {
-      updateData.kolichestvo = dto.kolichestvo;
-    }
-    if (dto.sebestoimostBazovaya !== undefined) {
-      updateData.sebestoimostBazovaya = dto.sebestoimostBazovaya;
-      // Пересчитать итого (без доставки, т.к. она рассчитывается при принятии)
-      updateData.sebestoimostItogo = dto.sebestoimostBazovaya + poziciya.sebestoimostDostavka;
-    }
-
-    await this.prisma.poziciyaPoleta.update({
-      where: { id: poziciyaId },
-      data: updateData,
-    });
-
-    return this.findOne(poletId);
-  }
-
-  async deletePoziciya(poletId: string, poziciyaId: string): Promise<PoletDto> {
-    const polet = await this.prisma.polet.findUnique({
-      where: { id: poletId },
-    });
-
-    if (!polet) {
-      throw new NotFoundException(`Полет с ID ${poletId} не найден`);
-    }
-
-    if (polet.status !== 'DRAFT') {
-      throw new BadRequestException('Можно удалять позиции только в полетах со статусом ЧЕРНОВИК');
-    }
-
-    const poziciya = await this.prisma.poziciyaPoleta.findUnique({
-      where: { id: poziciyaId },
-    });
-
-    if (!poziciya || poziciya.poletId !== poletId) {
-      throw new NotFoundException(`Позиция с ID ${poziciyaId} не найдена в полете ${poletId}`);
-    }
-
-    await this.prisma.poziciyaPoleta.delete({
-      where: { id: poziciyaId },
-    });
-
-    return this.findOne(poletId);
-  }
-
-  async prinyat(poletId: string): Promise<PoletDto> {
-    const polet = await this.prisma.polet.findUnique({
-      where: { id: poletId },
-      include: { pozicii: true },
-    });
-
-    if (!polet) {
-      throw new NotFoundException(`Полет с ID ${poletId} не найден`);
-    }
-
-    if (polet.status !== 'DRAFT') {
-      throw new BadRequestException('Можно принять только полеты со статусом ЧЕРНОВИК');
-    }
-
-    if (polet.pozicii.length === 0) {
-      throw new BadRequestException('Нельзя принять полет без позиций');
-    }
-
-    // Рассчитать распределение доставки
-    const obshayaDostavka = polet.stoimostDostavki + polet.prochieRashody;
-
-    await this.prisma.$transaction(async (tx) => {
-      if (polet.metodRaspredeleniya === 'BY_QUANTITY') {
-        // Метод ПО_КОЛИЧЕСТВУ
-        const vsegoEdinits = polet.pozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0);
-        const dostavkaNaEdinitsu = Math.round(obshayaDostavka / vsegoEdinits);
-
-        await Promise.all(
-          polet.pozicii.map((poz) =>
-            tx.poziciyaPoleta.update({
-              where: { id: poz.id },
-              data: {
-                sebestoimostDostavka: dostavkaNaEdinitsu,
-                sebestoimostItogo: poz.sebestoimostBazovaya + dostavkaNaEdinitsu,
-              },
-            })
-          )
-        );
-      } else {
-        // Метод ПО_СТОИМОСТИ
-        const obshayaBazovayaStoimost = polet.pozicii.reduce(
-          (sum, poz) => sum + poz.kolichestvo * poz.sebestoimostBazovaya,
-          0
-        );
-
-        await Promise.all(
-          polet.pozicii.map((poz) => {
-            const bazovayaStoimostPozicii = poz.kolichestvo * poz.sebestoimostBazovaya;
-            const dolyPozicii = obshayaBazovayaStoimost > 0 ? bazovayaStoimostPozicii / obshayaBazovayaStoimost : 0;
-            const dostavkaPozicii = Math.round(dolyPozicii * obshayaDostavka);
-            const dostavkaNaEdinitsu = Math.round(dostavkaPozicii / poz.kolichestvo);
-
-            return tx.poziciyaPoleta.update({
-              where: { id: poz.id },
-              data: {
-                sebestoimostDostavka: dostavkaNaEdinitsu,
-                sebestoimostItogo: poz.sebestoimostBazovaya + dostavkaNaEdinitsu,
-              },
-            });
-          })
-        );
-      }
-    });
-
-    // Обновить статус полета
     const updated = await this.prisma.polet.update({
       where: { id: poletId },
       data: {
-        status: 'ACCEPTED',
-        dataPriemki: new Date(),
+        status: 'RECEIVED',
       },
       include: {
         pozicii: {
@@ -340,7 +186,7 @@ export class AdminPoletService {
     return mapPoletToDto(updated);
   }
 
-  async sozdanieTovarov(poletId: string): Promise<PoletDto> {
+  async addPoziciya(poletId: string, dto: CreatePoziciyaDto): Promise<PoletDto> {
     const polet = await this.prisma.polet.findUnique({
       where: { id: poletId },
       include: { pozicii: true },
@@ -350,37 +196,231 @@ export class AdminPoletService {
       throw new NotFoundException(`Полет с ID ${poletId} не найден`);
     }
 
-    if (polet.status !== 'ACCEPTED') {
-      throw new BadRequestException('Можно создавать товары только из принятых полетов');
+    if (polet.status !== 'RECEIVED') {
+      throw new BadRequestException('Можно добавлять позиции только в полеты со статусом ПОЛУЧЕН');
     }
 
-    // Создать товары для позиций без товара
-    const poziciiBezTovara = polet.pozicii.filter((poz) => !poz.tovarId);
+    // Рассчитать себестоимость на единицу для всех позиций
+    const vsegoEdinits = polet.pozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0) + dto.kolichestvo;
+    const sebestoimostNaEd = vsegoEdinits > 0 ? Math.round(polet.obshayaSumma / vsegoEdinits) : 0;
 
-    if (poziciiBezTovara.length === 0) {
-      throw new BadRequestException('Все позиции уже имеют связанные товары');
+    // Обновить себестоимость всех существующих позиций
+    await this.prisma.$transaction(async (tx) => {
+      // Добавить новую позицию
+      await tx.poziciyaPoleta.create({
+        data: {
+          poletId,
+          nazvanie: dto.nazvanie,
+          kolichestvo: dto.kolichestvo,
+          sebestoimostNaEd,
+        },
+      });
+
+      // Обновить себестоимость всех существующих позиций
+      if (polet.pozicii.length > 0) {
+        await Promise.all(
+          polet.pozicii.map((poz) =>
+            tx.poziciyaPoleta.update({
+              where: { id: poz.id },
+              data: { sebestoimostNaEd },
+            })
+          )
+        );
+      }
+    });
+
+    return this.findOne(poletId);
+  }
+
+  async updatePoziciya(poletId: string, poziciyaId: string, dto: UpdatePoziciyaDto): Promise<PoletDto> {
+    const polet = await this.prisma.polet.findUnique({
+      where: { id: poletId },
+      include: { pozicii: true },
+    });
+
+    if (!polet) {
+      throw new NotFoundException(`Полет с ID ${poletId} не найден`);
+    }
+
+    if (polet.status !== 'RECEIVED') {
+      throw new BadRequestException('Можно редактировать позиции только в полетах со статусом ПОЛУЧЕН');
+    }
+
+    const poziciya = await this.prisma.poziciyaPoleta.findUnique({
+      where: { id: poziciyaId },
+    });
+
+    if (!poziciya || poziciya.poletId !== poletId) {
+      throw new NotFoundException(`Позиция с ID ${poziciyaId} не найдена в полете ${poletId}`);
     }
 
     await this.prisma.$transaction(async (tx) => {
-      for (const poz of poziciiBezTovara) {
-        const tovar = await tx.product.create({
-          data: {
-            title: poz.nazvanie,
-            sku: poz.artikul || undefined,
-            price: 0, // Цена будет установлена позже
-            costPrice: poz.sebestoimostItogo,
-            status: 'DRAFT',
-            stock: 0,
-            sourcePoletId: poletId,
-            sourcePoziciyaId: poz.id,
-          },
-        });
+      const updateData: Prisma.PoziciyaPoletaUpdateInput = {};
 
-        await tx.poziciyaPoleta.update({
-          where: { id: poz.id },
-          data: { tovarId: tovar.id },
-        });
+      if (dto.nazvanie !== undefined) {
+        updateData.nazvanie = dto.nazvanie;
       }
+      if (dto.kolichestvo !== undefined) {
+        updateData.kolichestvo = dto.kolichestvo;
+      }
+
+      await tx.poziciyaPoleta.update({
+        where: { id: poziciyaId },
+        data: updateData,
+      });
+
+      // Пересчитать себестоимость для всех позиций
+      const updatedPozicii = await tx.poziciyaPoleta.findMany({
+        where: { poletId },
+      });
+      const vsegoEdinits = updatedPozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0);
+      const sebestoimostNaEd = vsegoEdinits > 0 ? Math.round(polet.obshayaSumma / vsegoEdinits) : 0;
+
+      await Promise.all(
+        updatedPozicii.map((poz) =>
+          tx.poziciyaPoleta.update({
+            where: { id: poz.id },
+            data: { sebestoimostNaEd },
+          })
+        )
+      );
+    });
+
+    return this.findOne(poletId);
+  }
+
+  async deletePoziciya(poletId: string, poziciyaId: string): Promise<PoletDto> {
+    const polet = await this.prisma.polet.findUnique({
+      where: { id: poletId },
+      include: { pozicii: true },
+    });
+
+    if (!polet) {
+      throw new NotFoundException(`Полет с ID ${poletId} не найден`);
+    }
+
+    if (polet.status !== 'RECEIVED') {
+      throw new BadRequestException('Можно удалять позиции только в полетах со статусом ПОЛУЧЕН');
+    }
+
+    const poziciya = await this.prisma.poziciyaPoleta.findUnique({
+      where: { id: poziciyaId },
+    });
+
+    if (!poziciya || poziciya.poletId !== poletId) {
+      throw new NotFoundException(`Позиция с ID ${poziciyaId} не найдена в полете ${poletId}`);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.poziciyaPoleta.delete({
+        where: { id: poziciyaId },
+      });
+
+      // Пересчитать себестоимость для оставшихся позиций
+      const remainingPozicii = await tx.poziciyaPoleta.findMany({
+        where: { poletId },
+      });
+
+      if (remainingPozicii.length > 0) {
+        const vsegoEdinits = remainingPozicii.reduce((sum, poz) => sum + poz.kolichestvo, 0);
+        const sebestoimostNaEd = vsegoEdinits > 0 ? Math.round(polet.obshayaSumma / vsegoEdinits) : 0;
+
+        await Promise.all(
+          remainingPozicii.map((poz) =>
+            tx.poziciyaPoleta.update({
+              where: { id: poz.id },
+              data: { sebestoimostNaEd },
+            })
+          )
+        );
+      }
+    });
+
+    return this.findOne(poletId);
+  }
+
+  async razobrat(poletId: string): Promise<PoletDto> {
+    const polet = await this.prisma.polet.findUnique({
+      where: { id: poletId },
+      include: { pozicii: true },
+    });
+
+    if (!polet) {
+      throw new NotFoundException(`Полет с ID ${poletId} не найден`);
+    }
+
+    if (polet.status !== 'RECEIVED') {
+      throw new BadRequestException('Можно разобрать только полеты со статусом ПОЛУЧЕН');
+    }
+
+    if (polet.pozicii.length === 0) {
+      throw new BadRequestException('Нельзя разобрать полет без позиций');
+    }
+
+    const updated = await this.prisma.polet.update({
+      where: { id: poletId },
+      data: {
+        status: 'DISASSEMBLED',
+      },
+      include: {
+        pozicii: {
+          include: {
+            tovar: {
+              select: {
+                id: true,
+                title: true,
+                price: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return mapPoletToDto(updated);
+  }
+
+  async sozdatTovar(poletId: string, poziciyaId: string): Promise<PoletDto> {
+    const polet = await this.prisma.polet.findUnique({
+      where: { id: poletId },
+      include: { pozicii: true },
+    });
+
+    if (!polet) {
+      throw new NotFoundException(`Полет с ID ${poletId} не найден`);
+    }
+
+    if (polet.status !== 'DISASSEMBLED') {
+      throw new BadRequestException('Можно создавать товары только из разобранных полетов');
+    }
+
+    const poziciya = await this.prisma.poziciyaPoleta.findUnique({
+      where: { id: poziciyaId },
+    });
+
+    if (!poziciya || poziciya.poletId !== poletId) {
+      throw new NotFoundException(`Позиция с ID ${poziciyaId} не найдена в полете ${poletId}`);
+    }
+
+    if (poziciya.tovarId) {
+      throw new BadRequestException('Товар для этой позиции уже создан');
+    }
+
+    const tovar = await this.prisma.product.create({
+      data: {
+        title: poziciya.nazvanie,
+        price: 0, // Цена будет установлена позже
+        costPrice: poziciya.sebestoimostNaEd,
+        status: 'DRAFT',
+        stock: 0,
+        sourcePoletId: poletId,
+        sourcePoziciyaId: poziciyaId,
+      },
+    });
+
+    await this.prisma.poziciyaPoleta.update({
+      where: { id: poziciyaId },
+      data: { tovarId: tovar.id },
     });
 
     return this.findOne(poletId);
@@ -402,8 +442,8 @@ export class AdminPoletService {
       throw new NotFoundException(`Полет с ID ${poletId} не найден`);
     }
 
-    if (polet.status !== 'ACCEPTED') {
-      throw new BadRequestException('Можно провести только принятые полеты');
+    if (polet.status !== 'DISASSEMBLED') {
+      throw new BadRequestException('Можно провести только разобранные полеты');
     }
 
     const poziciiSTovarom = polet.pozicii.filter((poz) => poz.tovarId && poz.tovar);
@@ -422,7 +462,7 @@ export class AdminPoletService {
         await tx.inventoryLot.create({
           data: {
             productId: poz.tovar.id,
-            unitCost: poz.sebestoimostItogo,
+            unitCost: poz.sebestoimostNaEd,
             qtyReceived: poz.kolichestvo,
             qtyRemaining: poz.kolichestvo,
             receivedAt: new Date(),
@@ -437,7 +477,6 @@ export class AdminPoletService {
       where: { id: poletId },
       data: {
         status: 'POSTED',
-        dataProvedeniya: new Date(),
       },
       include: {
         pozicii: {
@@ -457,4 +496,3 @@ export class AdminPoletService {
     return mapPoletToDto(updated);
   }
 }
-

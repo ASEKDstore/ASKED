@@ -695,13 +695,10 @@ export interface CreateLabWorkMediaDto {
 export interface PoziciyaPoleta {
   id: string;
   poletId: string;
-  tovarId: string | null;
-  artikul: string | null;
   nazvanie: string;
   kolichestvo: number;
-  sebestoimostBazovaya: number;
-  sebestoimostDostavka: number;
-  sebestoimostItogo: number;
+  sebestoimostNaEd: number;
+  tovarId: string | null;
   tovar?: {
     id: string;
     title: string;
@@ -712,14 +709,13 @@ export interface PoziciyaPoleta {
 export interface Polet {
   id: string;
   nazvanie: string;
-  status: 'DRAFT' | 'ACCEPTED' | 'POSTED' | 'CANCELED';
-  metodRaspredeleniya: 'BY_QUANTITY' | 'BY_COST';
-  stoimostPoleta: number;
-  stoimostDostavki: number;
+  status: 'DRAFT' | 'RECEIVED' | 'DISASSEMBLED' | 'POSTED' | 'CANCELED';
+  cenaPoleta: number;
+  dostavka: number;
   prochieRashody: number;
-  obshayaSummaZatrat: number;
-  dataPriemki: string | null;
-  dataProvedeniya: string | null;
+  obshayaSumma: number;
+  metodRaspredeleniya: 'BY_QUANTITY';
+  primernoeKolvo: number | null;
   createdAt: string;
   updatedAt: string;
   pozicii: PoziciyaPoleta[];
@@ -727,32 +723,28 @@ export interface Polet {
 
 export interface CreatePoletDto {
   nazvanie: string;
-  metodRaspredeleniya?: 'BY_QUANTITY' | 'BY_COST';
-  stoimostPoleta: number;
-  stoimostDostavki: number;
+  cenaPoleta: number;
+  dostavka: number;
   prochieRashody?: number;
+  primernoeKolvo?: number;
 }
 
 export interface UpdatePoletDto {
   nazvanie?: string;
-  metodRaspredeleniya?: 'BY_QUANTITY' | 'BY_COST';
-  stoimostPoleta?: number;
-  stoimostDostavki?: number;
+  cenaPoleta?: number;
+  dostavka?: number;
   prochieRashody?: number;
+  primernoeKolvo?: number | null;
 }
 
 export interface CreatePoziciyaDto {
-  artikul?: string;
   nazvanie: string;
   kolichestvo: number;
-  sebestoimostBazovaya: number;
 }
 
 export interface UpdatePoziciyaDto {
-  artikul?: string;
   nazvanie?: string;
   kolichestvo?: number;
-  sebestoimostBazovaya?: number;
 }
 
 export const api = {
@@ -2235,15 +2227,22 @@ export const api = {
     });
   },
 
-  async prinyatPolet(initData: string | null, id: string): Promise<Polet> {
-    return request<Polet>(`/admin/polet/${id}/prinyat`, {
+  async poluchenPolet(initData: string | null, id: string): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${id}/poluchen`, {
       method: 'POST',
       initData,
     });
   },
 
-  async sozdanieTovarov(initData: string | null, id: string): Promise<Polet> {
-    return request<Polet>(`/admin/polet/${id}/sozdanie-tovarov`, {
+  async razobratPolet(initData: string | null, id: string): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${id}/razobrat`, {
+      method: 'POST',
+      initData,
+    });
+  },
+
+  async sozdatTovar(initData: string | null, poletId: string, poziciyaId: string): Promise<Polet> {
+    return request<Polet>(`/admin/polet/${poletId}/sozdat-tovar/${poziciyaId}`, {
       method: 'POST',
       initData,
     });
