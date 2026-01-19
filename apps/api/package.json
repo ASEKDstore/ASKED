@@ -35,6 +35,7 @@
     "db:migrate:status": "prisma migrate status",
     "db:seed": "prisma db seed",
     "backfill:order-numbers": "ts-node scripts/backfill-order-numbers.ts",
+    "predeploy:render": "bash scripts/render-predeploy.sh",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

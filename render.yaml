@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: asked-api
+    env: node
+    buildCommand: pnpm install:ci && pnpm build:api
+    startCommand: pnpm start:api
+    preDeployCommand: bash apps/api/scripts/render-predeploy.sh
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: PORT
+        value: 3001
+      - key: FRONTEND_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_ADMIN_CHAT_ID
+        sync: false
+      - key: ADMIN_PANEL_URL
+        sync: false
+      - key: TELEGRAM_AUTH_MAX_AGE_SEC
+        value: 86400
+
