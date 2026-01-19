@@ -67,13 +67,13 @@ bot.command('start', async (ctx: Context) => {
   console.log('[START] WEBAPP_URL:', webappUrl);
   console.log('[START] Sending LAB image and button');
   
-  // LAB image URL - use environment variable or fallback to public image
+  // LAB image URL - use environment variable or fallback to custom image
   // Set LAB_START_IMAGE_URL in .env to use custom image
-  // Example: LAB_START_IMAGE_URL=https://i.pinimg.com/originals/...
-  const labImageUrl = process.env.LAB_START_IMAGE_URL || `${webappUrl}/lab/mascot.png`;
+  // Example: LAB_START_IMAGE_URL=https://i.pinimg.com/736x/70/07/18/70071823db81854c4a934fe111f6a8b2.jpg
+  const labImageUrl = process.env.LAB_START_IMAGE_URL || 'https://i.pinimg.com/736x/70/07/18/70071823db81854c4a934fe111f6a8b2.jpg';
   
   // Create inline keyboard with web_app button for LAB mode (direct link to LAB)
-  const keyboard = new InlineKeyboard().webApp('🚀 Открыть LAB', `${webappUrl}/lab`);
+  const keyboard = new InlineKeyboard().webApp('🧪 Открыть LAB', `${webappUrl}/lab`);
   
   // Send photo with caption and button
   await ctx.replyWithPhoto(labImageUrl, {
