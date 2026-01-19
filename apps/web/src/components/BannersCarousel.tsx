@@ -195,8 +195,9 @@ function BannerSlide({ banner, index, onClick, isDragging }: BannerSlideProps): 
         damping: 30,
       }}
     >
-      {/* Glass Container */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-[28px] border border-white/5" />
+      {/* Glass Container - Dark background */}
+      <div className="absolute inset-0 bg-black rounded-[28px] border border-white/5" />
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-[28px]" />
 
       {/* Media Layer */}
       <div className="absolute inset-0 rounded-[28px] overflow-hidden">
@@ -237,14 +238,14 @@ function BannerSlide({ banner, index, onClick, isDragging }: BannerSlideProps): 
         )}
 
         {/* Gradient Overlay for Text Readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/70 to-black/50" />
 
         {/* Subtle Edge Highlight */}
         <div className="absolute inset-0 rounded-[28px] ring-1 ring-white/10 pointer-events-none" />
       </div>
 
       {/* Content */}
-      <div className="relative h-full flex flex-col justify-between p-6 z-10">
+      <div className="relative h-full flex flex-col justify-between p-6 z-10" style={{ paddingTop: 'clamp(60px, 15vw, 80px)' }}>
         {/* Top spacing */}
         <div className="flex-1" />
 
