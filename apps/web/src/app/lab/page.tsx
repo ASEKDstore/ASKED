@@ -5,6 +5,7 @@ import { ArrowLeft, User, ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useCallback } from 'react';
 
+import { BannersCarousel } from '@/components/BannersCarousel';
 import { CustomSteps } from '@/components/CustomSteps';
 import { HEADER_HEIGHT_PX } from '@/components/Header';
 import { ArtistCard } from '@/components/lab/ArtistCard';
@@ -354,6 +355,11 @@ export default function LabPage(): JSX.Element {
             }}
           >
             <div className="min-h-full flex flex-col items-center justify-start pb-16">
+              {/* Banners Carousel - First element below header */}
+              <div className="w-full" style={{ paddingTop: 'clamp(16px, 4vw, 24px)', paddingBottom: 'clamp(24px, 5vw, 32px)' }}>
+                <BannersCarousel />
+              </div>
+
               {/* Artist Card - Hero */}
               <div className="w-full" style={{ paddingTop: 'clamp(24px, 6vw, 40px)', paddingBottom: 'clamp(24px, 6vw, 32px)' }}>
                 <ArtistCard onOrderClick={handleOrderClick} />
