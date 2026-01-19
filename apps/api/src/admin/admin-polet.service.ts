@@ -14,6 +14,18 @@ import { mapPoletToDto } from './dto/polet.dto';
 export class AdminPoletService {
   private readonly logger = new Logger(AdminPoletService.name);
 
+  // Reusable select for product in pallet positions - must match PoletDto requirements
+  private readonly poletProductSelect = {
+    id: true,
+    title: true,
+    price: true,
+    stock: true,
+    status: true,
+    sku: true,
+    costPrice: true,
+    deletedAt: true,
+  } as const;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(includeDeleted = false): Promise<PoletDto[]> {
@@ -33,14 +45,7 @@ export class AdminPoletService {
           pozicii: {
             include: {
               tovar: {
-                select: {
-                  id: true,
-                  title: true,
-                  price: true,
-                  stock: true,
-                  status: true,
-                  deletedAt: true,
-                },
+                select: this.poletProductSelect,
               },
             },
           },
@@ -76,16 +81,7 @@ export class AdminPoletService {
         pozicii: {
           include: {
             tovar: {
-              select: {
-                id: true,
-                title: true,
-                price: true,
-                stock: true,
-                status: true,
-                deletedAt: true,
-                sku: true,
-                costPrice: true,
-              },
+              select: this.poletProductSelect,
             },
           },
         },
@@ -117,11 +113,7 @@ export class AdminPoletService {
         pozicii: {
           include: {
             tovar: {
-              select: {
-                id: true,
-                title: true,
-                price: true,
-              },
+              select: this.poletProductSelect,
             },
           },
         },
@@ -175,11 +167,7 @@ export class AdminPoletService {
         pozicii: {
           include: {
             tovar: {
-              select: {
-                id: true,
-                title: true,
-                price: true,
-              },
+              select: this.poletProductSelect,
             },
           },
         },
@@ -211,11 +199,7 @@ export class AdminPoletService {
         pozicii: {
           include: {
             tovar: {
-              select: {
-                id: true,
-                title: true,
-                price: true,
-              },
+              select: this.poletProductSelect,
             },
           },
         },
@@ -495,11 +479,7 @@ export class AdminPoletService {
         pozicii: {
           include: {
             tovar: {
-              select: {
-                id: true,
-                title: true,
-                price: true,
-              },
+              select: this.poletProductSelect,
             },
           },
         },
@@ -536,7 +516,7 @@ export class AdminPoletService {
     }
 
     // Use transaction to ensure atomicity
-    const result = await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx) => {
       // Конвертируем RUB в копейки для costPrice (Warehouse использует копейки)
       const costPriceInCents = poziciya.sebestoimostItogoRub * 100;
 
@@ -559,8 +539,6 @@ export class AdminPoletService {
         where: { id: poziciyaId },
         data: { tovarId: tovar.id },
       });
-
-      return tovar.id;
     });
 
     // Return updated polet with product data
@@ -573,7 +551,9 @@ export class AdminPoletService {
       include: {
         pozicii: {
           include: {
-            tovar: true,
+            tovar: {
+              select: this.poletProductSelect,
+            },
           },
         },
       },
@@ -626,11 +606,7 @@ export class AdminPoletService {
         pozicii: {
           include: {
             tovar: {
-              select: {
-                id: true,
-                title: true,
-                price: true,
-              },
+              select: this.poletProductSelect,
             },
           },
         },
@@ -663,16 +639,7 @@ export class AdminPoletService {
           pozicii: {
             include: {
               tovar: {
-                select: {
-                  id: true,
-                  title: true,
-                  price: true,
-                  stock: true,
-                  status: true,
-                  deletedAt: true,
-                  sku: true,
-                  costPrice: true,
-                },
+                select: this.poletProductSelect,
               },
             },
           },
@@ -692,16 +659,7 @@ export class AdminPoletService {
           pozicii: {
             include: {
               tovar: {
-                select: {
-                  id: true,
-                  title: true,
-                  price: true,
-                  stock: true,
-                  status: true,
-                  deletedAt: true,
-                  sku: true,
-                  costPrice: true,
-                },
+                select: this.poletProductSelect,
               },
             },
           },

@@ -351,12 +351,6 @@ export class AdminProductsService {
       throw new NotFoundException(`Product with id ${id} not found`);
     }
 
-    // Check if product has relations that prevent deletion
-    const hasOrders = existing.orderItems.length > 0;
-    const hasMovements = existing.inventoryMovements.length > 0;
-    const hasLots = existing.InventoryLot.length > 0;
-    const hasReviews = existing.reviews.length > 0;
-
     // Always use soft delete for safety
     // Set deletedAt and status to ARCHIVED
     await this.prisma.product.update({
