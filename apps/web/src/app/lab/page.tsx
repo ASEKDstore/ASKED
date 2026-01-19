@@ -97,6 +97,8 @@ export default function LabPage(): JSX.Element {
     placement: string | null;
     description: string;
     attachment: File | null;
+    phoneRaw: string;
+    address: string;
   }) => {
     try {
       // Upload attachment if provided
@@ -115,9 +117,9 @@ export default function LabPage(): JSX.Element {
       const customerPhone = telegramUser?.username ? `@${telegramUser.username}` : 'Не указано';
 
       // Format phone for API (ensure it starts with 7)
-      let formattedPhone = data.phoneRaw;
-      if (formattedPhone.length === 11 && formattedPhone[0] === '8') {
-        formattedPhone = '7' + formattedPhone.slice(1);
+      let formattedPhone: string | undefined = undefined;
+      if (data.phoneRaw && data.phoneRaw.length === 11) {
+        formattedPhone = data.phoneRaw[0] === '8' ? '7' + data.phoneRaw.slice(1) : data.phoneRaw;
       }
 
       // Send LAB order to backend
