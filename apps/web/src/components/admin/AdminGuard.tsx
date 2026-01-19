@@ -3,7 +3,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Lock } from 'lucide-react';
 
+import { LabLoadingScreen } from '@/components/lab/LabLoadingScreen';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTelegram } from '@/hooks/useTelegram';
 import { api } from '@/lib/api';
 import { isInTelegramWebApp } from '@/lib/telegram';
 
@@ -13,6 +15,7 @@ interface AdminGuardProps {
 
 export function AdminGuard({ children }: AdminGuardProps): JSX.Element {
   const isTelegram = isInTelegramWebApp();
+  const { webApp } = useTelegram();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'me'],
@@ -20,6 +23,10 @@ export function AdminGuard({ children }: AdminGuardProps): JSX.Element {
     enabled: isTelegram,
     retry: false,
   });
+
+  const telegramUser = webApp?.initDataUnsafe?.user;
+  const userName = telegramUser?.first_name || undefined;
+  const avatarUrl = telegramUser?.photo_url || undefined;
 
   if (!isTelegram) {
     return (
@@ -48,14 +55,7 @@ export function AdminGuard({ children }: AdminGuardProps): JSX.Element {
   }
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-          <p className="mt-4 text-gray-600">Проверка доступа...</p>
-        </div>
-      </div>
-    );
+    return <LabLoadingScreen userName={userName} avatarUrl={avatarUrl} />;
   }
 
   if (error || !data) {

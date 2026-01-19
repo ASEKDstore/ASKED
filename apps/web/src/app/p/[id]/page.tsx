@@ -8,6 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { HEADER_HEIGHT_PX } from '@/components/Header';
+import { LabLoadingScreen } from '@/components/lab/LabLoadingScreen';
 import { AddReviewSheet } from '@/components/reviews/AddReviewSheet';
 import { ReviewsList } from '@/components/reviews/ReviewsList';
 import { StarRating } from '@/components/reviews/StarRating';
@@ -23,7 +24,7 @@ export default function ProductPage(): JSX.Element {
   const router = useRouter();
   const productId = params.id as string;
   const addItem = useCartStore((state) => state.addItem);
-  const { initData } = useTelegram();
+  const { initData, webApp } = useTelegram();
   const queryClient = useQueryClient();
   const [isAddReviewOpen, setIsAddReviewOpen] = useState(false);
 
@@ -55,15 +56,12 @@ export default function ProductPage(): JSX.Element {
     });
   };
 
+  const telegramUser = webApp?.initDataUnsafe?.user;
+  const userName = telegramUser?.first_name || undefined;
+  const avatarUrl = telegramUser?.photo_url || undefined;
+
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-          <p className="mt-4 text-gray-600">Загрузка товара...</p>
-        </div>
-      </div>
-    );
+    return <LabLoadingScreen userName={userName} avatarUrl={avatarUrl} />;
   }
 
   if (error || !product) {
