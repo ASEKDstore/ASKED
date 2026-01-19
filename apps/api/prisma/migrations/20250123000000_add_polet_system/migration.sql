@@ -40,15 +40,15 @@ CREATE INDEX "poziciya_poleta_poletId_idx" ON "poziciya_poleta"("poletId");
 ALTER TABLE "poziciya_poleta" ADD CONSTRAINT "poziciya_poleta_poletId_fkey" FOREIGN KEY ("poletId") REFERENCES "polet"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "poziciya_poleta" ADD CONSTRAINT "poziciya_poleta_tovarId_fkey" FOREIGN KEY ("tovarId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "poziciya_poleta" ADD CONSTRAINT "poziciya_poleta_tovarId_fkey" FOREIGN KEY ("tovarId") REFERENCES "products"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AlterTable: Add sourcePoletId and sourcePoziciyaPoletaId to Product
-ALTER TABLE "Product" ADD COLUMN "sourcePoletId" TEXT,
+ALTER TABLE "products" ADD COLUMN "sourcePoletId" TEXT,
 ADD COLUMN "sourcePoziciyaPoletaId" TEXT;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_sourcePoletId_fkey" FOREIGN KEY ("sourcePoletId") REFERENCES "polet"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "products" ADD CONSTRAINT "products_sourcePoletId_fkey" FOREIGN KEY ("sourcePoletId") REFERENCES "polet"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_sourcePoziciyaPoletaId_fkey" FOREIGN KEY ("sourcePoziciyaPoletaId") REFERENCES "poziciya_poleta"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "products" ADD CONSTRAINT "products_sourcePoziciyaPoletaId_fkey" FOREIGN KEY ("sourcePoziciyaPoletaId") REFERENCES "poziciya_poleta"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
