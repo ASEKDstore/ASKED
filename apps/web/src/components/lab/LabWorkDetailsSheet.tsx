@@ -16,9 +16,10 @@ interface LabWorkDetailsSheetProps {
   labWorkId: string | null;
   isOpen: boolean;
   onClose: () => void;
+  onOrderClick?: () => void;
 }
 
-export function LabWorkDetailsSheet({ labWorkId, isOpen, onClose }: LabWorkDetailsSheetProps): JSX.Element | null {
+export function LabWorkDetailsSheet({ labWorkId, isOpen, onClose, onOrderClick }: LabWorkDetailsSheetProps): JSX.Element | null {
   const { initData, webApp } = useTelegram();
   const queryClient = useQueryClient();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -329,11 +330,24 @@ export function LabWorkDetailsSheet({ labWorkId, isOpen, onClose }: LabWorkDetai
                 paddingBottom: `calc(1.5rem + env(safe-area-inset-bottom, 0px))`,
               }}
             >
-              <Link href="/lab" className="block">
-                <Button size="lg" className="w-full bg-white text-black hover:bg-white/90">
+              {onOrderClick ? (
+                <Button
+                  size="lg"
+                  className="w-full bg-white text-black hover:bg-white/90"
+                  onClick={() => {
+                    onClose();
+                    onOrderClick();
+                  }}
+                >
                   Хочу такой кастом
                 </Button>
-              </Link>
+              ) : (
+                <Link href="/lab" className="block">
+                  <Button size="lg" className="w-full bg-white text-black hover:bg-white/90">
+                    Хочу такой кастом
+                  </Button>
+                </Link>
+              )}
             </div>
           )}
         </motion.div>

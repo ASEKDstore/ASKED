@@ -9,7 +9,11 @@ import { LabWorkDetailsSheet } from '@/components/lab/LabWorkDetailsSheet';
 import { StarRating } from '@/components/reviews/StarRating';
 import { api } from '@/lib/api';
 
-export function LabWorksCarousel(): JSX.Element {
+interface LabWorksCarouselProps {
+  onOrderClick?: () => void;
+}
+
+export function LabWorksCarousel({ onOrderClick }: LabWorksCarouselProps = {}): JSX.Element {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-50px' });
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
@@ -156,6 +160,7 @@ export function LabWorksCarousel(): JSX.Element {
         labWorkId={selectedWorkId}
         isOpen={!!selectedWorkId}
         onClose={() => setSelectedWorkId(null)}
+        onOrderClick={onOrderClick}
       />
 
       <style jsx>{`

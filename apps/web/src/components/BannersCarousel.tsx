@@ -196,7 +196,7 @@ function BannerSlide({ banner, index, onClick, isDragging }: BannerSlideProps): 
       }}
     >
       {/* Glass Container */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-[28px] border border-white/5" />
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-[28px] border border-white/5" />
 
       {/* Media Layer */}
       <div className="absolute inset-0 rounded-[28px] overflow-hidden">

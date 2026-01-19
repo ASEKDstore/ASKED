@@ -375,7 +375,7 @@ export default function LabPage(): JSX.Element {
 
               {/* Ready Works Carousel */}
               <div className="w-full" style={{ paddingBottom: 'clamp(32px, 8vw, 48px)' }}>
-                <LabWorksCarousel />
+                <LabWorksCarousel onOrderClick={handleOrderClick} />
               </div>
 
               {/* Bottom Spacing */}
