@@ -119,7 +119,12 @@ export default function AdminPoletDetailPage(): JSX.Element {
   if (error || !polet) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-red-600">Ошибка загрузки полета</div>
+        <div className="text-center text-red-600">
+          Ошибка загрузки паллеты
+          {error instanceof Error && (
+            <div className="mt-2 text-sm text-muted-foreground">{error.message}</div>
+          )}
+        </div>
         <Button onClick={() => router.push('/admin/polet')} className="mt-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Назад к списку
@@ -152,7 +157,7 @@ export default function AdminPoletDetailPage(): JSX.Element {
         </div>
         {polet.status === 'DRAFT' && (
           <p className="text-sm text-muted-foreground mt-2">
-            💡 Состав полета определяется после получения
+            💡 Состав паллеты определяется после получения
           </p>
         )}
       </div>
@@ -164,7 +169,7 @@ export default function AdminPoletDetailPage(): JSX.Element {
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Цена полета:</span>
+              <span className="text-muted-foreground">Цена паллеты:</span>
               <span className="font-medium">{formatPrice(polet.cenaPoleta)}</span>
             </div>
             <div className="flex justify-between">
@@ -243,7 +248,7 @@ export default function AdminPoletDetailPage(): JSX.Element {
       {polet.status === 'RECEIVED' || polet.status === 'DISASSEMBLED' || polet.status === 'POSTED' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Позиции полета</CardTitle>
+            <CardTitle>Позиции паллеты</CardTitle>
             <CardDescription>
               {polet.pozicii.length} {polet.pozicii.length === 1 ? 'позиция' : 'позиций'}
             </CardDescription>
@@ -264,7 +269,7 @@ export default function AdminPoletDetailPage(): JSX.Element {
                 {polet.pozicii.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      Нет позиций. Добавьте первую позицию после получения полета.
+                      Нет позиций. Добавьте первую позицию после получения паллеты.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -314,7 +319,7 @@ export default function AdminPoletDetailPage(): JSX.Element {
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
-              Позиции появятся после отметки полета как «Получен»
+              Позиции появятся после отметки паллеты как «Получен»
             </p>
           </CardContent>
         </Card>
@@ -325,7 +330,7 @@ export default function AdminPoletDetailPage(): JSX.Element {
           <DialogHeader>
             <DialogTitle>Добавить позицию</DialogTitle>
             <DialogDescription>
-              Себестоимость будет рассчитана автоматически на основе общей суммы полета
+              Себестоимость будет рассчитана автоматически на основе общей суммы паллеты
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

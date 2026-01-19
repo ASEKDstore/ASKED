@@ -691,7 +691,7 @@ export interface CreateLabWorkMediaDto {
   sort?: number;
 }
 
-// ПОЛЕТЫ (Polet)
+// Паллеты (Polet)
 export interface PoziciyaPoleta {
   id: string;
   poletId: string;
@@ -2173,7 +2173,7 @@ export const api = {
     });
   },
 
-  // Admin Polet (ПОЛЕТЫ)
+  // Admin Polet (Паллеты)
   async getAdminPoleti(initData: string | null): Promise<Polet[]> {
     return request<Polet[]>('/admin/polet', {
       method: 'GET',

@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 
 import { AdminGuard } from '../auth/admin.guard';
@@ -25,11 +26,21 @@ import type { PoletDto } from './dto/polet.dto';
 @Controller('admin/polet')
 @UseGuards(DevAdminAuthGuard, TelegramAuthGuard, AdminGuard)
 export class AdminPoletController {
+  private readonly logger = new Logger(AdminPoletController.name);
+
   constructor(private readonly poletService: AdminPoletService) {}
 
   @Get()
   async findAll(): Promise<PoletDto[]> {
-    return this.poletService.findAll();
+    try {
+      this.logger.log('GET /admin/polet - Fetching all poleti');
+      const result = await this.poletService.findAll();
+      this.logger.log(`GET /admin/polet - Success: found ${result.length} poleti`);
+      return result;
+    } catch (error) {
+      this.logger.error('GET /admin/polet - Error:', error instanceof Error ? error.stack : error);
+      throw error;
+    }
   }
 
   @Get(':id')

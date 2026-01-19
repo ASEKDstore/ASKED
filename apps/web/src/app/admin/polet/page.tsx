@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plane, Plus, Eye } from 'lucide-react';
+import { Boxes, Plus, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -103,7 +103,12 @@ export default function AdminPoletPage(): JSX.Element {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-red-600">Ошибка загрузки полетов</div>
+        <div className="text-center text-red-600">
+          Ошибка загрузки паллет
+          {error instanceof Error && (
+            <div className="mt-2 text-sm text-muted-foreground">{error.message}</div>
+          )}
+        </div>
       </div>
     );
   }
@@ -113,29 +118,29 @@ export default function AdminPoletPage(): JSX.Element {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Plane className="w-8 h-8" />
-            ПОЛЕТЫ
+            <Boxes className="w-8 h-8" />
+            Паллеты
           </h1>
-          <p className="text-muted-foreground mt-1">Управление полетами и расчет себестоимости</p>
+          <p className="text-muted-foreground mt-1">Управление паллетами и расчет себестоимости</p>
         </div>
         <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Создать полет
+          Создать паллету
         </Button>
       </div>
 
       {poleti && poleti.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">Нет полетов</p>
-            <Button onClick={() => setCreateDialogOpen(true)}>Создать первый полет</Button>
+            <p className="text-muted-foreground mb-4">Пока нет паллет</p>
+            <Button onClick={() => setCreateDialogOpen(true)}>Создать первую паллету</Button>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Список полетов</CardTitle>
-            <CardDescription>Все полеты системы</CardDescription>
+            <CardTitle>Список паллет</CardTitle>
+            <CardDescription>Все паллеты системы</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -182,8 +187,8 @@ export default function AdminPoletPage(): JSX.Element {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Создать полет</DialogTitle>
-            <DialogDescription>Заполните данные для нового полета</DialogDescription>
+            <DialogTitle>Создать паллету</DialogTitle>
+            <DialogDescription>Заполните данные для новой паллеты</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -192,11 +197,11 @@ export default function AdminPoletPage(): JSX.Element {
                 id="nazvanie"
                 value={formData.nazvanie}
                 onChange={(e) => setFormData({ ...formData, nazvanie: e.target.value })}
-                placeholder="Например: Полет №1 Global Mini"
+                placeholder="Например: Паллета №1 Global Mini"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="cenaPoleta">Цена полета (копейки) *</Label>
+              <Label htmlFor="cenaPoleta">Цена паллеты (копейки) *</Label>
               <Input
                 id="cenaPoleta"
                 type="number"

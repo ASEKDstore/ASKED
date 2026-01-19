@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,10 +12,14 @@ import { mapPoletToDto } from './dto/polet.dto';
 
 @Injectable()
 export class AdminPoletService {
+  private readonly logger = new Logger(AdminPoletService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(): Promise<PoletDto[]> {
-    const poleti = await this.prisma.polet.findMany({
+    try {
+      this.logger.log('findAll() - Querying polet table');
+      const poleti = await this.prisma.polet.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
         pozicii: {
@@ -32,7 +36,19 @@ export class AdminPoletService {
       },
     });
 
-    return poleti.map(mapPoletToDto);
+      this.logger.log(`findAll() - Found ${poleti.length} poleti`);
+      return poleti.map(mapPoletToDto);
+    } catch (error) {
+      this.logger.error('findAll() - Error:', error instanceof Error ? error.stack : error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2021' || error.code === '42P01') {
+          // Table does not exist
+          this.logger.error('findAll() - Table "polet" does not exist. Migration may not be applied.');
+          throw new BadRequestException('Таблица паллет не найдена. Необходимо применить миграцию базы данных.');
+        }
+      }
+      throw error;
+    }
   }
 
   async findOne(id: string): Promise<PoletDto> {
