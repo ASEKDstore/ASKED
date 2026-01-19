@@ -53,7 +53,7 @@ Required variables:
 
 If you need to run migrations before deploy:
 ```bash
-cd apps/api && pnpm prisma migrate deploy
+cd apps/api && pnpm prisma migrate resolve --rolled-back 20250106000000_allow_guest_checkout || true && pnpm prisma migrate resolve --rolled-back 20250123000000_add_polet_system || true && pnpm prisma migrate deploy && pnpm prisma generate
 ```
 
 **Settings → Health Check Path (optional):**

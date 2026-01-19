@@ -5,7 +5,7 @@
 Скопируйте эту команду в **Pre-Deploy Command** в настройках вашего API сервиса в Render Dashboard:
 
 ```bash
-cd apps/api && pnpm prisma migrate resolve --rolled-back 20250106000000_allow_guest_checkout || true && pnpm prisma migrate deploy && pnpm prisma generate
+cd apps/api && pnpm prisma migrate resolve --rolled-back 20250106000000_allow_guest_checkout || true && pnpm prisma migrate resolve --rolled-back 20250123000000_add_polet_system || true && pnpm prisma migrate deploy && pnpm prisma generate
 ```
 
 **Что делает:**
@@ -20,6 +20,7 @@ cd apps/api && pnpm prisma migrate resolve --rolled-back 20250106000000_allow_gu
 ```bash
 cd apps/api
 pnpm prisma migrate resolve --rolled-back 20250106000000_allow_guest_checkout || true
+pnpm prisma migrate resolve --rolled-back 20250123000000_add_polet_system || true
 pnpm prisma migrate deploy
 pnpm prisma generate
 ```
@@ -54,7 +55,8 @@ chmod +x apps/api/fix-migrations.sh && apps/api/fix-migrations.sh
 
 1. В Render Dashboard → Your API Service → Logs
 2. Ищите строки:
-   - `Migration 20250106000000_allow_guest_checkout marked as rolled back`
+   - `Migration 20250106000000_allow_guest_checkout marked as rolled back` (if needed)
+   - `Migration 20250123000000_add_polet_system marked as rolled back` (if needed)
    - `Applying migration 20250107000000_banners_and_promos`
    - `All migrations have been successfully applied`
 
@@ -71,6 +73,7 @@ chmod +x apps/api/fix-migrations.sh && apps/api/fix-migrations.sh
 ```bash
 cd apps/api
 pnpm prisma migrate resolve --rolled-back 20250106000000_allow_guest_checkout
+pnpm prisma migrate resolve --rolled-back 20250123000000_add_polet_system
 pnpm prisma migrate deploy
 pnpm prisma migrate status
 pnpm prisma generate
