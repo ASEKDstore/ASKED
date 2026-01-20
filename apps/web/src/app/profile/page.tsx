@@ -28,6 +28,7 @@ export default function ProfilePage(): JSX.Element {
   // Get dev token from environment variable for admin link
   const DEV_ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_DEV_TOKEN ?? '';
 
+  // Parallel queries for user and last order
   const {
     data: user,
     isLoading: isLoadingUser,
@@ -37,6 +38,8 @@ export default function ProfilePage(): JSX.Element {
     queryFn: () => api.getMe(initData),
     enabled: !!initData && isTelegram,
     retry: false,
+    staleTime: 0, // Always fetch fresh user data
+    refetchOnWindowFocus: true, // Refresh on focus for profile
   });
 
   const {
@@ -48,6 +51,7 @@ export default function ProfilePage(): JSX.Element {
     queryFn: () => api.getMyLastOrder(initData),
     enabled: !!initData && isTelegram,
     retry: false,
+    staleTime: 0, // Always fetch fresh order data
   });
 
   if (!isTelegram) {

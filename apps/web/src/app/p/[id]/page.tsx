@@ -28,22 +28,27 @@ export default function ProductPage(): JSX.Element {
   const queryClient = useQueryClient();
   const [isAddReviewOpen, setIsAddReviewOpen] = useState(false);
 
+  // Parallel queries - React Query runs them concurrently
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['product', productId],
     queryFn: () => api.getProduct(productId),
     enabled: !!productId,
+    staleTime: 60 * 1000, // Cache product details for 60s
   });
 
   const { data: similarProducts, isLoading: isLoadingSimilar } = useQuery({
     queryKey: ['product', productId, 'similar'],
     queryFn: () => api.getSimilarProducts(productId, 8),
     enabled: !!productId && !!product,
+    staleTime: 60 * 1000,
   });
 
   const { data: reviews, isLoading: isLoadingReviews } = useQuery({
     queryKey: ['reviews', productId],
     queryFn: () => api.getProductReviews(productId, { page: 1, pageSize: 20 }),
     enabled: !!productId && !!product,
+    staleTime: 30 * 1000, // Reviews may change more frequently
+    keepPreviousData: true,
   });
 
   const handleAddToCart = () => {

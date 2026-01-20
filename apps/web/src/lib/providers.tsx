@@ -12,7 +12,20 @@ export function Providers({ children }: { children: ReactNode }): JSX.Element {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000,
+            staleTime: 30 * 1000, // 30s for public data (products, banners, lab works)
+            refetchOnWindowFocus: false, // Avoid Telegram focus spam
+            retry: (failureCount, error: unknown) => {
+              // Don't retry on 4xx errors
+              if (error && typeof error === 'object' && 'statusCode' in error) {
+                const statusCode = (error as { statusCode?: number }).statusCode;
+                if (statusCode && statusCode >= 400 && statusCode < 500) {
+                  return false;
+                }
+              }
+              // Retry once for other errors
+              return failureCount < 1;
+            },
+            keepPreviousData: true, // Prevent flicker on paginated lists
           },
         },
       })

@@ -22,9 +22,9 @@ export function LabWorksCarousel({ onOrderClick }: LabWorksCarouselProps = {}): 
   const { data: labWorks, isLoading } = useQuery({
     queryKey: ['lab-works'],
     queryFn: () => api.getLabWorks(50),
-    staleTime: 60_000,
+    staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
-    placeholderData: (previousData) => previousData,
+    keepPreviousData: true, // Use keepPreviousData instead of placeholderData
   });
 
   const publishedWorks = labWorks?.filter((w) => w.status === 'PUBLISHED') || [];
@@ -89,6 +89,7 @@ export function LabWorksCarousel({ onOrderClick }: LabWorksCarouselProps = {}): 
                 delay: 0.3 + index * 0.1,
               }}
               whileTap={{ scale: 0.98 }}
+              style={{ willChange: isInView ? 'transform, opacity' : 'auto' }}
               className="flex-shrink-0 w-[280px] rounded-[24px] bg-black/30 backdrop-blur-xl 
                        border border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.3)]
                        overflow-hidden cursor-pointer transition-all duration-200
@@ -106,7 +107,7 @@ export function LabWorksCarousel({ onOrderClick }: LabWorksCarouselProps = {}): 
                         fill
                         className="object-cover"
                         sizes="280px"
-                        unoptimized
+                        loading="lazy"
                         onError={() => setImageErrors((prev) => ({ ...prev, [work.id]: true }))}
                       />
                       {hasMultipleMedia && (

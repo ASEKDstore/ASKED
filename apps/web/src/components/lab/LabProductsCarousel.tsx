@@ -18,6 +18,8 @@ export function LabProductsCarousel(): JSX.Element {
   const { data: labProducts, isLoading } = useQuery({
     queryKey: ['lab-products'],
     queryFn: () => api.getPublicLabProducts(),
+    staleTime: 60 * 1000, // Cache lab products for 60s
+    refetchOnWindowFocus: false,
   });
 
   const activeProducts = labProducts?.filter((p) => p.isActive) || [];
@@ -89,6 +91,7 @@ export function LabProductsCarousel(): JSX.Element {
                 delay: 0.3 + index * 0.1,
               }}
               whileTap={{ scale: 0.98 }}
+              style={{ willChange: isInView ? 'transform, opacity' : 'auto' }}
               onClick={handleClick}
               className="flex-shrink-0 w-[280px] rounded-[24px] bg-black/30 backdrop-blur-xl 
                        border border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.3)]
@@ -105,7 +108,7 @@ export function LabProductsCarousel(): JSX.Element {
                     fill
                     className="object-cover"
                     sizes="280px"
-                    unoptimized
+                    loading="lazy"
                     onError={() => setImageErrors((prev) => ({ ...prev, [product.id]: true }))}
                   />
                 ) : (

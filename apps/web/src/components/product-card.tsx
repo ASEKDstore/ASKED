@@ -38,6 +38,7 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
               fill
               className="object-contain bg-gray-50 group-hover:scale-105 transition-transform"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              loading="lazy"
               onError={(e) => {
                 // Fallback to "No image" on error
                 const target = e.target as HTMLImageElement;

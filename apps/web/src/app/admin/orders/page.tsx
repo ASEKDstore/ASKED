@@ -77,6 +77,9 @@ export default function AdminOrdersPage(): JSX.Element {
         pageSize: 50,
       }),
     enabled: !!initData,
+    staleTime: 0, // Orders should always be fresh
+    refetchOnWindowFocus: true, // Refresh orders on focus
+    keepPreviousData: true, // Prevent flicker when filtering
   });
 
   const { data: selectedOrder, isLoading: isLoadingOrder } = useQuery({

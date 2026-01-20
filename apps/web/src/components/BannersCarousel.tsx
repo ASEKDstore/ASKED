@@ -32,6 +32,8 @@ export function BannersCarousel({ className = '' }: BannersCarouselProps): JSX.E
   const { data: banners, isLoading } = useQuery({
     queryKey: ['banners'],
     queryFn: () => api.getBanners(),
+    staleTime: 60 * 1000, // Cache banners for 60s
+    refetchOnWindowFocus: false,
   });
 
   // Filter active banners and sort by sortOrder
@@ -194,6 +196,7 @@ function BannerSlide({ banner, index, onClick, isDragging }: BannerSlideProps): 
         stiffness: 400,
         damping: 30,
       }}
+      style={{ willChange: 'transform' }} // Optimize transform animations
     >
       {/* Black background */}
       <div className="absolute inset-0 bg-black rounded-[28px] border border-white/5" />
@@ -201,15 +204,15 @@ function BannerSlide({ banner, index, onClick, isDragging }: BannerSlideProps): 
       {/* Media Layer */}
       <div className="absolute inset-0 rounded-[28px] overflow-hidden">
         {banner.mediaType === 'IMAGE' && normalizedMediaUrl ? (
-          <Image
-            src={normalizedMediaUrl}
-            alt={banner.title}
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
-            sizes="100vw"
-            priority={index === 0}
-            unoptimized
-            onError={(e) => {
+            <Image
+              src={normalizedMediaUrl}
+              alt={banner.title}
+              fill
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              sizes="100vw"
+              priority={index === 0}
+              loading={index === 0 ? 'eager' : 'lazy'}
+              onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
               const parent = target.parentElement;

@@ -33,6 +33,8 @@ export default function CatalogPage(): JSX.Element {
         page,
         pageSize: 20,
       }),
+    staleTime: 30 * 1000, // Cache for 30s
+    keepPreviousData: true, // Prevent flicker when paginating
   });
 
   const categories = Array.from(

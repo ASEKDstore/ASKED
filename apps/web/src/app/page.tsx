@@ -37,11 +37,12 @@ export default function Home(): JSX.Element {
         {/* Dark Overlay Gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
         
-        {/* Blur Layer */}
+        {/* Blur Layer - Static (not animated) for better performance */}
         <div 
           className="absolute inset-0 backdrop-blur-[12px]"
           style={{
             WebkitBackdropFilter: 'blur(12px)',
+            willChange: 'auto', // Prevent unnecessary repaints
           }}
         />
         

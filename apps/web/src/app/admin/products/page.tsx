@@ -69,6 +69,9 @@ export default function AdminProductsPage(): JSX.Element {
         pageSize: 50,
       }),
     enabled: !!initData || isDevMode,
+    staleTime: 0, // Admin data should always be fresh
+    refetchOnWindowFocus: true, // Refresh admin data on focus
+    keepPreviousData: true, // Prevent flicker when filtering
   });
 
   const archiveMutation = useMutation({

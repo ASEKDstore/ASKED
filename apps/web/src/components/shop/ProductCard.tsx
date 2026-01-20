@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 
 import type { Product } from '@/lib/api';
 import { getMainImageUrl, normalizeImageUrl } from '@/lib/image-utils';
@@ -14,14 +14,14 @@ interface ProductCardProps {
   priority?: boolean;
 }
 
-export function ProductCard({ product, onTap, priority = false }: ProductCardProps): JSX.Element {
+function ProductCardComponent({ product, onTap, priority = false }: ProductCardProps): JSX.Element {
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const mainImage = getMainImageUrl(product.images);
   const normalizedImage = normalizeImageUrl(mainImage);
 
-  const handleTap = () => {
+  const handleTap = useCallback(() => {
     // Haptic feedback for Telegram WebView
     try {
       window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
@@ -29,7 +29,7 @@ export function ProductCard({ product, onTap, priority = false }: ProductCardPro
       // Ignore if not in Telegram
     }
     onTap(product);
-  };
+  }, [onTap, product]);
 
   // Determine badge/tag
   const badge = product.tags?.find((tag) => ['NEW', 'LAB', 'DROP'].includes(tag.name.toUpperCase()))
@@ -56,7 +56,7 @@ export function ProductCard({ product, onTap, priority = false }: ProductCardPro
               className="object-contain transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 768px) 50vw, 33vw"
               priority={priority}
-              unoptimized
+              loading={priority ? 'eager' : 'lazy'}
               onError={() => setImageError(true)}
               onLoad={() => setIsLoading(false)}
             />
@@ -109,4 +109,17 @@ export function ProductCard({ product, onTap, priority = false }: ProductCardPro
     </motion.div>
   );
 }
+
+// Memoize to prevent unnecessary rerenders
+export const ProductCard = memo(ProductCardComponent, (prev, next) => {
+  // Only rerender if product id, title, price, stock, or images changed
+  return (
+    prev.product.id === next.product.id &&
+    prev.product.title === next.product.title &&
+    prev.product.price === next.product.price &&
+    prev.product.stock === next.product.stock &&
+    JSON.stringify(prev.product.images) === JSON.stringify(next.product.images) &&
+    prev.priority === next.priority
+  );
+});
 
