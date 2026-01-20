@@ -91,13 +91,15 @@ export function LabProductsCarousel(): JSX.Element {
                 delay: 0.3 + index * 0.1,
               }}
               whileTap={{ scale: 0.98 }}
-              style={{ willChange: isInView ? 'transform, opacity' : 'auto' }}
+              style={{
+                willChange: isInView ? 'transform, opacity' : 'auto',
+                scrollSnapAlign: 'start',
+              }}
               onClick={handleClick}
               className="flex-shrink-0 w-[280px] rounded-[24px] bg-black/30 backdrop-blur-xl 
                        border border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.3)]
                        overflow-hidden cursor-pointer transition-all duration-200
                        hover:bg-black/35"
-              style={{ scrollSnapAlign: 'start' }}
             >
               {/* Image */}
               <div className="relative w-full h-[180px] bg-black/20">

@@ -188,6 +188,7 @@ function BannerSlide({ banner, index, onClick, isDragging }: BannerSlideProps): 
         minHeight: 'clamp(200px, 56.25vw, 400px)',
         scrollSnapAlign: 'center',
         scrollSnapStop: 'always',
+        willChange: 'transform', // Optimize transform animations
       }}
       onClick={handleTap}
       whileTap={{ scale: isDragging ? 1 : 0.99 }}
@@ -196,7 +197,6 @@ function BannerSlide({ banner, index, onClick, isDragging }: BannerSlideProps): 
         stiffness: 400,
         damping: 30,
       }}
-      style={{ willChange: 'transform' }} // Optimize transform animations
     >
       {/* Black background */}
       <div className="absolute inset-0 bg-black rounded-[28px] border border-white/5" />
