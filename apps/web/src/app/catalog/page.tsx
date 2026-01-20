@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { ShoppingCart, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -34,7 +34,7 @@ export default function CatalogPage(): JSX.Element {
         pageSize: 20,
       }),
     staleTime: 30 * 1000, // Cache for 30s
-    keepPreviousData: true, // Prevent flicker when paginating
+    placeholderData: keepPreviousData, // Prevent flicker when paginating
   });
 
   const categories = Array.from(

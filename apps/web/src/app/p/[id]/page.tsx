@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -48,7 +48,7 @@ export default function ProductPage(): JSX.Element {
     queryFn: () => api.getProductReviews(productId, { page: 1, pageSize: 20 }),
     enabled: !!productId && !!product,
     staleTime: 30 * 1000, // Reviews may change more frequently
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   const handleAddToCart = () => {

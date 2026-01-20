@@ -1,6 +1,6 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, keepPreviousData } from '@tanstack/react-query';
 import { useEffect, useState, useRef, type ReactNode } from 'react';
 
 import { api } from './api';
@@ -25,7 +25,7 @@ export function Providers({ children }: { children: ReactNode }): JSX.Element {
               // Retry once for other errors
               return failureCount < 1;
             },
-            keepPreviousData: true, // Prevent flicker on paginated lists
+            placeholderData: keepPreviousData, // Prevent flicker on paginated lists
           },
         },
       })

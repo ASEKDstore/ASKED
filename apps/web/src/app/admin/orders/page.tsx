@@ -4,7 +4,7 @@ import { ShoppingBag, Eye, ArrowLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 // eslint-disable-next-line import/order
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 
 import {
   AlertDialog,
@@ -79,7 +79,7 @@ export default function AdminOrdersPage(): JSX.Element {
     enabled: !!initData,
     staleTime: 0, // Orders should always be fresh
     refetchOnWindowFocus: true, // Refresh orders on focus
-    keepPreviousData: true, // Prevent flicker when filtering
+    placeholderData: keepPreviousData, // Prevent flicker when filtering
   });
 
   const { data: selectedOrder, isLoading: isLoadingOrder } = useQuery({

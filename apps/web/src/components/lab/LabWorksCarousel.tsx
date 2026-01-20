@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { motion, useInView } from 'framer-motion';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
@@ -24,7 +24,7 @@ export function LabWorksCarousel({ onOrderClick }: LabWorksCarouselProps = {}): 
     queryFn: () => api.getLabWorks(50),
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
-    keepPreviousData: true, // Use keepPreviousData instead of placeholderData
+    placeholderData: keepPreviousData, // Use placeholderData with keepPreviousData function
   });
 
   const publishedWorks = labWorks?.filter((w) => w.status === 'PUBLISHED') || [];

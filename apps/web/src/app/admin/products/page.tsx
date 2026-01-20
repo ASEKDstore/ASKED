@@ -2,7 +2,7 @@
 
 import { Package, Plus, Edit, Archive, Search } from 'lucide-react';
 // eslint-disable-next-line import/order
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 // eslint-disable-next-line import/order
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -71,7 +71,7 @@ export default function AdminProductsPage(): JSX.Element {
     enabled: !!initData || isDevMode,
     staleTime: 0, // Admin data should always be fresh
     refetchOnWindowFocus: true, // Refresh admin data on focus
-    keepPreviousData: true, // Prevent flicker when filtering
+    placeholderData: keepPreviousData, // Prevent flicker when filtering
   });
 
   const archiveMutation = useMutation({
